@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>How It Works — RVPark Success</title>
+<meta name="description" content="Five steps from free audit to your RV park selling for maximum value." />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23f5a623'/%3E%3Ctext x='16' y='22' font-family='Arial,sans-serif' font-size='16' font-weight='800' fill='%23080c08' text-anchor='middle'%3ER%3C/text%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/src/css/tokens.css">
+<link rel="stylesheet" href="/src/css/components.css">
+<style>
+  .page-hero { padding: calc(var(--sp-16) + var(--sp-4)) 0 var(--sp-6); text-align: center; }
+  .page-hero h1 { font-size: clamp(2.5rem, 5vw, 4rem); margin-top: var(--sp-2); }
+  .page-hero .lede { max-width: 560px; margin: var(--sp-2) auto 0; }
+
+  .hscroll-step .ic { transition: transform 0.5s var(--ease-spring), background 0.4s ease; }
+  .hscroll-step.is-active .ic { transform: scale(1.12); background: rgba(245,166,35,0.22); }
+  .hscroll-hint { text-align: center; padding: var(--sp-3) 0; color: var(--cream-dim); font-size: 0.8125rem; font-family: var(--font-mono); }
+  @media (prefers-reduced-motion: reduce) {
+    .hscroll-pin { height: auto !important; overflow: visible; }
+    .hscroll-track { position: static !important; transform: none !important; flex-direction: column; align-items: flex-start; padding: var(--sp-4) var(--sp-4); height: auto; }
+    .hscroll-step { width: 100%; margin-bottom: var(--sp-6); }
+    .hscroll-progress { display: none; }
+  }
+  @media (max-width: 720px) {
+    .hscroll-pin { height: auto !important; overflow: visible; }
+    .hscroll-track { position: static !important; transform: none !important; flex-direction: column; align-items: flex-start; padding: var(--sp-4) var(--sp-3); height: auto; }
+    .hscroll-step { width: 100%; margin-bottom: var(--sp-6); }
+    .hscroll-progress { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page-transition" id="pageTransition" aria-hidden="true">
+  <div class="pt-van">
+    <svg viewBox="0 0 140 70" xmlns="http://www.w3.org/2000/svg">
+      <g class="pt-lines">
+        <line x1="0" y1="26" x2="16" y2="26"/>
+        <line x1="0" y1="36" x2="12" y2="36"/>
+        <line x1="0" y1="46" x2="18" y2="46"/>
+      </g>
+      <g class="pt-body">
+        <path d="M22 48 V24 H92 L110 12 H124 V48 Z" fill="currentColor"/>
+        <rect x="30" y="16" width="26" height="10" rx="2" fill="currentColor" opacity="0.55"/>
+        <rect x="98" y="16" width="18" height="10" rx="2" fill="currentColor" opacity="0.55"/>
+      </g>
+      <circle class="pt-wheel" cx="42" cy="50" r="8" fill="currentColor"/>
+      <circle class="pt-wheel" cx="104" cy="50" r="8" fill="currentColor"/>
+    </svg>
+  </div>
+  <div class="pt-word">RVPark</div>
+</div>
+
+<div class="scroll-progress"><div class="scroll-progress-bar"></div></div>
+<div class="cursor-dot"></div>
+<div class="cursor-ring"></div>
+
+<div class="nav-pill-wrap">
+  <div class="nav-pill">
+    <a href="index.html" class="nav-brand"><span class="mark">R</span><span class="name">RVPark Success</span></a>
+  </div>
+  <div style="display:flex; gap: var(--sp-2); pointer-events:auto;">
+    <div class="nav-links-desktop">
+      <a href="index.html">Home</a>
+      <a href="packages.html">Pricing</a>
+      <a href="how-it-works.html">How It Works</a>
+      <a href="results.html">Results</a>
+      <a href="contact.html">Contact</a>
+    </div>
+    <button class="nav-menu-btn" aria-label="Open menu" style="pointer-events:auto;"><span>Menu</span><span class="burger-mini"><span></span><span></span></span></button>
+  </div>
+</div>
+
+<div class="mobile-menu">
+  <div class="mobile-menu-top">
+    <a href="index.html" class="nav-brand"><span class="mark">R</span>RVPark Success</a>
+    <button class="mobile-menu-close" aria-label="Close menu">&times;</button>
+  </div>
+  <div class="mobile-menu-links">
+    <a href="index.html">Home</a>
+    <a href="packages.html">Packages</a>
+    <a href="how-it-works.html">How It Works</a>
+    <a href="results.html">Results</a>
+    <a href="contact.html">Contact</a>
+  </div>
+</div>
+
+<header class="page-hero dot-grid">
+  <div class="wrap" data-reveal>
+    <p class="eyebrow">The Process</p>
+    <h1 data-split-in="words">From free audit to sold for max value</h1>
+    <p class="lede">Scroll to walk through it — this is the same five-step path every park we work with follows.</p>
+  </div>
+</header>
+
+<div class="hscroll-hint">↓ Keep scrolling — this section moves sideways ↓</div>
+
+<section class="hscroll-pin" id="hscrollSection">
+  <div class="hscroll-track" id="hscrollTrack">
+    <div class="hscroll-step" data-order="1">
+      <div class="num">01</div>
+      <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+      <h3>Free Audit</h3>
+      <p>We review your current website, listings, booking flow, and online visibility — and tell you exactly what's costing you bookings. No obligation, no pressure.</p>
+    </div>
+    <div class="hscroll-step" data-order="2">
+      <div class="num">02</div>
+      <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/><path d="M8 4v5"/></svg></div>
+      <h3>Website Built</h3>
+      <p>A fast, mobile-first site goes live — built to convert lookers into bookers, not just look nice. Most parks are live within two weeks.</p>
+    </div>
+    <div class="hscroll-step" data-order="3">
+      <div class="num">03</div>
+      <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 10 10"/><path d="M12 6v6l4 2"/></svg></div>
+      <h3>AI Finds Travelers</h3>
+      <p>Automated outreach and search visibility put your park in front of people already planning a trip near you — before they book somewhere else.</p>
+    </div>
+    <div class="hscroll-step" data-order="4">
+      <div class="num">04</div>
+      <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg></div>
+      <h3>Occupancy Climbs</h3>
+      <p>More qualified visitors turn into more bookings — including the shoulder-season gaps that used to sit empty. You'll see it in the monthly reporting.</p>
+    </div>
+    <div class="hscroll-step" data-order="5">
+      <div class="num">05</div>
+      <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 2 7l10 5 10-5-10-5Z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/></svg></div>
+      <h3>Sells for Maximum Value</h3>
+      <p>Whenever you're ready, a park with proven, climbing occupancy commands a stronger number than one coasting on empty sites.</p>
+    </div>
+  </div>
+  <div class="wrap hscroll-progress"><div class="hscroll-progress-bar" id="hscrollBar"></div></div>
+</section>
+
+<section class="section">
+  <div class="wrap" style="text-align:center;" data-reveal>
+    <p class="eyebrow">Ready?</p>
+    <h2 data-split-in="words" style="margin-top: var(--sp-2);">Let's start with the free audit</h2>
+    <div class="hero-ctas" style="justify-content:center; margin-top: var(--sp-4); display:flex; gap: var(--sp-2);">
+      <a href="contact.html" class="btn btn-primary magnetic"><span>Book a Free Audit</span></a>
+      <a href="packages.html" class="btn btn-ghost magnetic"><span>View Packages</span></a>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="wrap">
+    <div class="footer-grid">
+      <div>
+        <a href="index.html" class="nav-brand"><span class="mark">R</span>RVPark Success</a>
+        <p style="margin-top: var(--sp-2); font-size: 0.875rem; color: var(--cream-dim); max-width: 320px; line-height: 1.6;">Done-for-you AI marketing for RV park owners who want higher occupancy today and maximum sale value down the road.</p>
+      </div>
+      <div>
+        <h4>Explore</h4>
+        <div class="footer-links">
+          <a href="packages.html">Pricing</a>
+          <a href="how-it-works.html">How It Works</a>
+          <a href="results.html">Results</a>
+        </div>
+      </div>
+      <div>
+        <h4>Company</h4>
+        <div class="footer-links">
+          <a href="contact.html">Contact</a>
+          <a href="contact.html">Book a Free Audit</a>
+        </div>
+      </div>
+      <div>
+        <h4>Get in touch</h4>
+        <div class="footer-links">
+          <a href="mailto:hello@rvparksuccess.example">hello@rvparksuccess.example</a>
+          <a href="tel:+18505550199">(850) 555-0199</a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 RVPark Success. All rights reserved.</span>
+      <span>Sample template — placeholder content, not live claims.</span>
+    </div>
+  </div>
+</footer>
+
+<script type="module" src="/src/js/how-it-works.js"></script>
+</body>
+</html>

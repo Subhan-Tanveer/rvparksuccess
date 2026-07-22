@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Services &amp; Pricing — RVPark Success</title>
+<meta name="description" content="Individual AI marketing services for RV park owners — pick exactly what you need, pause what you don't, no long-term contracts." />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23f5a623'/%3E%3Ctext x='16' y='22' font-family='Arial,sans-serif' font-size='16' font-weight='800' fill='%23080c08' text-anchor='middle'%3ER%3C/text%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/src/css/tokens.css">
+<link rel="stylesheet" href="/src/css/components.css">
+<style>
+  .page-hero { padding: calc(var(--sp-16) + var(--sp-4)) 0 var(--sp-6); text-align: center; }
+  .page-hero h1 { font-size: clamp(2.5rem, 5vw, 4rem); margin-top: var(--sp-2); }
+  .page-hero .lede { max-width: 600px; margin: var(--sp-2) auto 0; }
+
+  /* -- payment modal -- */
+  .pay-modal-backdrop { position: fixed; inset: 0; z-index: 400; background: rgba(8,12,8,0.75); backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center; padding: var(--sp-3); opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease; }
+  .pay-modal-backdrop.is-open { opacity: 1; visibility: visible; }
+  .pay-modal { width: 100%; max-width: 460px; border-radius: var(--radius-lg); padding: var(--sp-5); background: var(--forest-light); border: 1px solid var(--border-amber); transform: scale(0.94) translateY(10px); transition: transform 0.35s var(--ease-spring); }
+  .pay-modal-backdrop.is-open .pay-modal { transform: scale(1) translateY(0); }
+  .pay-modal-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: var(--sp-3); }
+  .pay-modal-close { width: 36px; height: 36px; border-radius: 50%; background: var(--surface-glass); border: 1px solid var(--border-glass); color: var(--cream); font-size: 1.1rem; }
+  .pay-modal-breakdown { display: flex; gap: var(--sp-3); margin-bottom: var(--sp-3); padding-bottom: var(--sp-3); border-bottom: 1px solid var(--border-glass); }
+  .pay-modal-breakdown .item .val { font-family: var(--font-mono); font-weight: 700; font-size: 1.25rem; }
+  .pay-modal-breakdown .item .val.is-setup { color: var(--amber-light); }
+  .pay-modal-breakdown .item .val.is-monthly { color: var(--cream); }
+  .pay-modal-breakdown .item .lbl { font-size: 0.75rem; color: var(--cream-dim); text-transform: uppercase; letter-spacing: 0.04em; }
+  .pay-option { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-2); padding: var(--sp-3); border-radius: var(--radius-md); border: 1px solid var(--border-glass); background: var(--surface-glass); margin-bottom: var(--sp-2); }
+  .pay-option .name { font-weight: 600; font-size: 0.9375rem; }
+  .pay-option .sub { font-size: 0.8125rem; color: var(--cream-dim); margin-top: 2px; }
+  .zelle-box { padding: var(--sp-3); border-radius: var(--radius-md); background: rgba(245,166,35,0.08); border: 1px solid var(--border-amber); font-size: 0.875rem; color: var(--cream-dim); line-height: 1.6; }
+  .zelle-box b { color: var(--amber-light); font-family: var(--font-mono); }
+</style>
+</head>
+<body>
+
+<div class="page-transition" id="pageTransition" aria-hidden="true">
+  <div class="pt-van">
+    <svg viewBox="0 0 140 70" xmlns="http://www.w3.org/2000/svg">
+      <g class="pt-lines">
+        <line x1="0" y1="26" x2="16" y2="26"/>
+        <line x1="0" y1="36" x2="12" y2="36"/>
+        <line x1="0" y1="46" x2="18" y2="46"/>
+      </g>
+      <g class="pt-body">
+        <path d="M22 48 V24 H92 L110 12 H124 V48 Z" fill="currentColor"/>
+        <rect x="30" y="16" width="26" height="10" rx="2" fill="currentColor" opacity="0.55"/>
+        <rect x="98" y="16" width="18" height="10" rx="2" fill="currentColor" opacity="0.55"/>
+      </g>
+      <circle class="pt-wheel" cx="42" cy="50" r="8" fill="currentColor"/>
+      <circle class="pt-wheel" cx="104" cy="50" r="8" fill="currentColor"/>
+    </svg>
+  </div>
+  <div class="pt-word">RVPark</div>
+</div>
+
+<div class="scroll-progress"><div class="scroll-progress-bar"></div></div>
+<div class="cursor-dot"></div>
+<div class="cursor-ring"></div>
+
+<div class="nav-pill-wrap">
+  <div class="nav-pill">
+    <a href="index.html" class="nav-brand"><span class="mark">R</span><span class="name">RVPark Success</span></a>
+  </div>
+  <div style="display:flex; gap: var(--sp-2); pointer-events:auto;">
+    <div class="nav-links-desktop">
+      <a href="index.html">Home</a>
+      <a href="packages.html">Pricing</a>
+      <a href="how-it-works.html">How It Works</a>
+      <a href="results.html">Results</a>
+      <a href="contact.html">Contact</a>
+    </div>
+    <button class="nav-menu-btn" aria-label="Open menu" style="pointer-events:auto;"><span>Menu</span><span class="burger-mini"><span></span><span></span></span></button>
+  </div>
+</div>
+
+<div class="mobile-menu">
+  <div class="mobile-menu-top">
+    <a href="index.html" class="nav-brand"><span class="mark">R</span>RVPark Success</a>
+    <button class="mobile-menu-close" aria-label="Close menu">&times;</button>
+  </div>
+  <div class="mobile-menu-links">
+    <a href="index.html">Home</a>
+    <a href="packages.html">Pricing</a>
+    <a href="how-it-works.html">How It Works</a>
+    <a href="results.html">Results</a>
+    <a href="contact.html">Contact</a>
+  </div>
+</div>
+
+<header class="page-hero dot-grid">
+  <div class="wrap" data-reveal>
+    <p class="eyebrow">Services &amp; Pricing</p>
+    <h1 data-split-in="words">Pick what you need. Pause what you don't.</h1>
+    <p class="lede">No bundled tiers, no long-term contracts — individual AI marketing services, priced on their own, so you build exactly the setup your park needs.</p>
+  </div>
+</header>
+
+<section class="section" style="padding-top: 0;">
+  <div class="wrap">
+    <div class="section-head" data-reveal>
+      <p class="eyebrow">Website Design — One Time</p>
+      <h2>A site built specifically for your RV park</h2>
+    </div>
+    <div class="website-compare" id="websiteCompare" data-reveal-stagger></div>
+  </div>
+</section>
+
+<section class="section dot-grid">
+  <div class="wrap">
+    <p class="bold-line" data-reveal>Pick what you need. Pause what you don't. No long term contracts.</p>
+    <div class="section-head" data-reveal>
+      <p class="eyebrow">Individual Services</p>
+      <h2>Build your own combination</h2>
+    </div>
+    <div class="service-grid" id="servicesGrid" data-reveal-stagger></div>
+  </div>
+</section>
+
+<section class="section" style="padding-top: 0;">
+  <div class="wrap">
+    <div class="bundle-cta dot-grid" data-reveal>
+      <p class="eyebrow">Not Sure What You Need?</p>
+      <h2 data-split-in="words">Book a free audit and we'll tell you exactly which services will move the needle for your park.</h2>
+      <div class="hero-ctas" style="justify-content:center; display:flex; gap: var(--sp-2); flex-wrap: wrap; margin-top: var(--sp-5);">
+        <a href="contact.html" class="btn btn-primary magnetic"><span>Book Free Audit</span></a>
+        <a href="contact.html" class="btn btn-ghost magnetic"><span>Contact Us</span></a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Payment modal: PayPal + Zelle + card-checkout only — no raw card fields collected on this page. -->
+<div class="pay-modal-backdrop" id="payModalBackdrop">
+  <div class="pay-modal glass-strong">
+    <div class="pay-modal-top">
+      <div>
+        <p class="eyebrow" id="payModalService">Service</p>
+        <h3 id="payModalHeadline" style="font-size: 1.25rem; margin-top: 4px;"></h3>
+      </div>
+      <button class="pay-modal-close" id="payModalClose" aria-label="Close">&times;</button>
+    </div>
+    <div class="pay-modal-breakdown" id="payModalBreakdown"></div>
+    <div class="pay-option">
+      <div><div class="name">Pay with PayPal</div><div class="sub">Redirects to PayPal checkout</div></div>
+      <a href="#" class="btn btn-primary btn-sm" id="paypalBtn" target="_blank" rel="noopener">Continue</a>
+    </div>
+    <div class="pay-option">
+      <div><div class="name">Pay by Card</div><div class="sub" id="cardBtnSub">Secure Stripe checkout</div></div>
+      <button type="button" class="btn btn-ghost btn-sm" id="cardBtn">Continue</button>
+    </div>
+    <div class="zelle-box">
+      <div class="name" style="color: var(--cream); font-weight:600; margin-bottom:4px;">Pay with Zelle</div>
+      Send your payment to <b>payments@rvparksuccess.example</b>, then email your receipt to <b>hello@rvparksuccess.example</b> to activate service.
+    </div>
+    <p class="form-note">Payment placeholder — connect a real PayPal business account and Stripe secret key before launch. See README.</p>
+  </div>
+</div>
+
+<footer class="footer">
+  <div class="wrap">
+    <div class="footer-grid">
+      <div>
+        <a href="index.html" class="nav-brand"><span class="mark">R</span>RVPark Success</a>
+        <p style="margin-top: var(--sp-2); font-size: 0.875rem; color: var(--cream-dim); max-width: 320px; line-height: 1.6;">Done-for-you AI systems, websites, and marketing for small and medium businesses.</p>
+      </div>
+      <div>
+        <h4>Explore</h4>
+        <div class="footer-links">
+          <a href="packages.html">Pricing</a>
+          <a href="how-it-works.html">How It Works</a>
+          <a href="results.html">Results</a>
+        </div>
+      </div>
+      <div>
+        <h4>Company</h4>
+        <div class="footer-links">
+          <a href="contact.html">Contact</a>
+          <a href="contact.html">Book a Free Audit</a>
+        </div>
+      </div>
+      <div>
+        <h4>Get in touch</h4>
+        <div class="footer-links">
+          <a href="mailto:hello@rvparksuccess.example">hello@rvparksuccess.example</a>
+          <a href="tel:+18505550199">(850) 555-0199</a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 RVPark Success. All rights reserved.</span>
+      <span>Sample template — placeholder content, not live claims.</span>
+    </div>
+  </div>
+</footer>
+
+<script type="module" src="/src/js/packages.js"></script>
+</body>
+</html>

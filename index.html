@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>RVPark Success — Done-For-You AI Marketing for RV Park Owners</title>
+<meta name="description" content="RVPark Success helps RV park owners increase occupancy and sell for maximum value with done-for-you AI marketing — website, lead finder, booking automation, and reporting." />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23f5a623'/%3E%3Ctext x='16' y='22' font-family='Arial,sans-serif' font-size='16' font-weight='800' fill='%23080c08' text-anchor='middle'%3ER%3C/text%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/src/css/tokens.css">
+<link rel="stylesheet" href="/src/css/components.css">
+<style>
+  .hero { position: relative; height: 100vh; min-height: 680px; overflow: hidden; }
+  .hero-video-wrap { position: absolute; inset: 0; z-index: 0; background: var(--black); }
+  .hero-video-wrap video { width: 100%; height: 100%; object-fit: cover; }
+  .hero-overlay { position: absolute; inset: 0; z-index: 1; background: linear-gradient(to bottom, rgba(8,12,8,0.35) 0%, rgba(8,12,8,0.15) 30%, rgba(8,12,8,0.65) 78%, rgba(8,12,8,0.95) 100%); }
+  .hero-badge { position: absolute; top: calc(var(--sp-3) + 60px); left: 50%; transform: translateX(-50%); z-index: 2; }
+  .hero-word-wrap { position: absolute; top: 50%; left: 0; right: 0; transform: translateY(-50%); z-index: 2; text-align: center; }
+  .hero-word { font-family: var(--font-display); font-weight: 700; letter-spacing: -0.02em; font-size: clamp(2.75rem, 8.5vw, 7.5rem); line-height: 0.95; color: var(--cream); text-transform: uppercase; }
+  .hero-word .char { white-space: pre; }
+  .hero-bottom { position: absolute; left: 0; right: 0; bottom: var(--sp-5); z-index: 2; display: flex; flex-direction: column; gap: var(--sp-4); }
+  .hero-ctas { display: flex; gap: var(--sp-2); flex-wrap: wrap; justify-content: center; }
+  @media (max-width: 720px) { .hero-word { font-size: clamp(2.25rem, 10vw, 4rem); } }
+
+  .glitch-highlight { color: var(--amber); font-family: var(--font-mono); }
+  .problem-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-6); align-items: center; }
+  @media (max-width: 900px) { .problem-grid { grid-template-columns: 1fr; } }
+  .problem-list { display: flex; flex-direction: column; gap: var(--sp-3); margin-top: var(--sp-4); }
+  .problem-item { display: flex; gap: 14px; align-items: flex-start; }
+  .problem-item svg { width: 22px; height: 22px; stroke: var(--amber); flex-shrink: 0; margin-top: 3px; }
+  .problem-item p { color: var(--cream-dim); font-size: 1rem; line-height: 1.6; }
+
+  .math-card { padding: var(--sp-6); border-radius: var(--radius-lg); text-align: center; position: relative; overflow: hidden; }
+  .math-row { display: flex; align-items: center; justify-content: center; gap: var(--sp-4); flex-wrap: wrap; margin-top: var(--sp-4); }
+  .math-num { font-family: var(--font-mono); font-weight: 700; font-size: clamp(2.5rem, 6vw, 4.5rem); color: var(--amber-light); }
+  .math-op { font-family: var(--font-mono); font-size: 2rem; color: var(--cream-dim); }
+  .math-label { font-size: 0.8125rem; color: var(--cream-dim); margin-top: 6px; text-transform: uppercase; letter-spacing: 0.06em; }
+
+  .hteaser-scroll { display: flex; gap: var(--sp-3); overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: var(--sp-3); -webkit-overflow-scrolling: touch; }
+  .hteaser-scroll::-webkit-scrollbar { height: 6px; }
+  .hteaser-scroll::-webkit-scrollbar-thumb { background: var(--border-glass); border-radius: 4px; }
+  .hteaser-card { flex: 0 0 auto; width: min(78vw, 280px); scroll-snap-align: start; padding: var(--sp-3); border-radius: var(--radius-md); }
+  .hteaser-card .num { font-family: var(--font-mono); color: var(--amber); font-size: 1.5rem; font-weight: 700; }
+  .hteaser-card h4 { font-size: 1.0625rem; margin: var(--sp-2) 0 6px; }
+  .hteaser-card p { font-size: 0.875rem; color: var(--cream-dim); line-height: 1.55; }
+
+  .final-cta { position: relative; border-radius: var(--radius-lg); overflow: hidden; padding: var(--sp-10) var(--sp-6); text-align: center; background: linear-gradient(135deg, var(--forest-light), var(--black-soft)); border: 1px solid var(--border-glass); }
+</style>
+</head>
+<body>
+
+<div class="page-transition" id="pageTransition" aria-hidden="true">
+  <div class="pt-van">
+    <svg viewBox="0 0 140 70" xmlns="http://www.w3.org/2000/svg">
+      <g class="pt-lines">
+        <line x1="0" y1="26" x2="16" y2="26"/>
+        <line x1="0" y1="36" x2="12" y2="36"/>
+        <line x1="0" y1="46" x2="18" y2="46"/>
+      </g>
+      <g class="pt-body">
+        <path d="M22 48 V24 H92 L110 12 H124 V48 Z" fill="currentColor"/>
+        <rect x="30" y="16" width="26" height="10" rx="2" fill="currentColor" opacity="0.55"/>
+        <rect x="98" y="16" width="18" height="10" rx="2" fill="currentColor" opacity="0.55"/>
+      </g>
+      <circle class="pt-wheel" cx="42" cy="50" r="8" fill="currentColor"/>
+      <circle class="pt-wheel" cx="104" cy="50" r="8" fill="currentColor"/>
+    </svg>
+  </div>
+  <div class="pt-word">RVPark</div>
+</div>
+
+<div class="scroll-progress"><div class="scroll-progress-bar"></div></div>
+<div class="cursor-dot"></div>
+<div class="cursor-ring"></div>
+
+<div class="nav-pill-wrap">
+  <div class="nav-pill">
+    <a href="index.html" class="nav-brand"><span class="mark">R</span><span class="name">RVPark Success</span></a>
+  </div>
+  <div style="display:flex; gap: var(--sp-2); pointer-events:auto;">
+    <div class="nav-links-desktop">
+      <a href="index.html">Home</a>
+      <a href="packages.html">Pricing</a>
+      <a href="how-it-works.html">How It Works</a>
+      <a href="results.html">Results</a>
+      <a href="contact.html">Contact</a>
+    </div>
+    <button class="nav-menu-btn" aria-label="Open menu" style="pointer-events:auto;"><span>Menu</span><span class="burger-mini"><span></span><span></span></span></button>
+  </div>
+</div>
+
+<div class="mobile-menu">
+  <div class="mobile-menu-top">
+    <a href="index.html" class="nav-brand"><span class="mark">R</span>RVPark Success</a>
+    <button class="mobile-menu-close" aria-label="Close menu">&times;</button>
+  </div>
+  <div class="mobile-menu-links">
+    <a href="index.html">Home</a>
+    <a href="packages.html">Packages</a>
+    <a href="how-it-works.html">How It Works</a>
+    <a href="results.html">Results</a>
+    <a href="contact.html">Contact</a>
+  </div>
+</div>
+
+<header class="hero" id="hero">
+  <div class="hero-video-wrap">
+    <video id="heroVideo" muted playsinline preload="auto" poster="/images/hero/hero-poster.jpg">
+      <source src="/video/hero-scrub.mp4" type="video/mp4">
+    </video>
+  </div>
+  <div class="hero-overlay"></div>
+  <div class="ai-badge hero-badge"><span class="dot"></span>AI POWERED</div>
+  <div class="hero-bottom wrap">
+    <div class="stat-row" data-reveal-stagger>
+      <div class="stat-pill glass"><span class="num" data-counter="47">0</span><span class="label">Parks Enrolled</span></div>
+      <div class="stat-pill glass"><span class="num" data-counter="34" data-counter-suffix="%">0%</span><span class="label">Avg. Occupancy Increase</span></div>
+      <div class="stat-pill glass"><span class="num" data-counter="2.1" data-counter-decimals="1" data-counter-prefix="$" data-counter-suffix="M">$0</span><span class="label">Average Value Added</span></div>
+      <div class="stat-pill glass"><span class="num" data-counter="90" data-counter-suffix=" Days">0</span><span class="label">To See Results</span></div>
+    </div>
+    <div class="hero-ctas">
+      <a href="contact.html" class="btn btn-primary magnetic"><span>Get Your Free Audit</span></a>
+      <a href="results.html" class="btn btn-ghost magnetic"><span>See Real Results</span></a>
+    </div>
+  </div>
+</header>
+
+<div class="marquee">
+  <div class="marquee-track" id="marqueeTrack"></div>
+</div>
+
+<section class="section dot-grid">
+  <div class="wrap">
+    <div class="problem-grid">
+      <div data-reveal>
+        <p class="eyebrow">The Problem</p>
+        <h2 data-split-in="words" style="font-size: clamp(2rem,4.2vw,3rem); margin-top: var(--sp-2);">Most RV parks are invisible to the travelers searching for them.</h2>
+        <p class="lede" style="margin-top: var(--sp-3);">Outdated websites, no booking automation, and zero presence where modern travelers actually search — it's not a <span class="glitch-highlight" data-glitch>OCCUPANCY</span> problem, it's a marketing problem.</p>
+      </div>
+      <div class="problem-list" data-reveal-stagger>
+        <div class="problem-item"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><p>A site built years ago that doesn't work on phones, where 70%+ of bookings start.</p></div>
+        <div class="problem-item"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><p>No system finding travelers before they book somewhere else nearby.</p></div>
+        <div class="problem-item"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><p>Empty sites in shoulder season that a little visibility could fill.</p></div>
+        <div class="problem-item"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><p>Lower occupancy means a lower valuation on the day you decide to sell.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="wrap">
+    <div class="section-head" style="margin: 0 auto var(--sp-6); text-align: center;" data-reveal>
+      <p class="eyebrow">The Math</p>
+      <h2 data-split-in="words">What a <span class="glitch-highlight" data-glitch>VALUE</span> increase actually looks like</h2>
+    </div>
+    <div class="math-card glass dot-grid" data-reveal>
+      <p class="lede">A typical 60-site park we work with sees this kind of shift:</p>
+      <div class="math-row">
+        <div><span class="math-num" data-counter="52" data-counter-suffix="%">0%</span><div class="math-label">Starting Occupancy</div></div>
+        <span class="math-op">→</span>
+        <div><span class="math-num" data-counter="78" data-counter-suffix="%">0%</span><div class="math-label">After 90 Days</div></div>
+        <span class="math-op">=</span>
+        <div><span class="math-num" data-counter="410" data-counter-prefix="$" data-counter-suffix="K">$0K</span><div class="math-label">Added Park Value*</div></div>
+      </div>
+      <p class="form-note" style="margin-top: var(--sp-4);">*Illustrative example based on typical income-multiple valuation. Individual results vary by market and site count.</p>
+    </div>
+  </div>
+</section>
+
+<section class="section dot-grid">
+  <div class="wrap">
+    <p class="bold-line" data-reveal>Pick what you need. Pause what you don't. No long term contracts.</p>
+    <div class="section-head" data-reveal>
+      <p class="eyebrow">Individual Services</p>
+      <h2 data-split-in="words">Build your own combination</h2>
+    </div>
+    <div class="service-grid" id="homeServicesGrid" data-reveal-stagger></div>
+    <p style="text-align:center; margin-top: var(--sp-5);"><a href="packages.html" class="btn btn-ghost btn-sm">See Full Pricing &amp; Website Design</a></p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="wrap">
+    <div class="section-head" data-reveal>
+      <p class="eyebrow">How It Works</p>
+      <h2 data-split-in="words">Five steps, ninety days</h2>
+    </div>
+    <div class="hteaser-scroll" data-reveal>
+      <div class="hteaser-card glass"><div class="num">01</div><h4>Free Audit</h4><p>We review your current site, listings, and booking flow.</p></div>
+      <div class="hteaser-card glass"><div class="num">02</div><h4>Website Built</h4><p>A fast, mobile-first site designed to convert lookers into bookers.</p></div>
+      <div class="hteaser-card glass"><div class="num">03</div><h4>AI Finds Travelers</h4><p>Automated outreach puts your park in front of people already searching.</p></div>
+      <div class="hteaser-card glass"><div class="num">04</div><h4>Occupancy Climbs</h4><p>More qualified visitors, more bookings, filled shoulder-season gaps.</p></div>
+      <div class="hteaser-card glass"><div class="num">05</div><h4>Sells for Max Value</h4><p>Higher occupancy means a stronger number on the day you decide to sell.</p></div>
+    </div>
+    <a href="how-it-works.html" class="btn btn-ghost btn-sm" style="margin-top: var(--sp-4);">Walk Through the Full Process</a>
+  </div>
+</section>
+
+<section class="section" style="padding-top:0;">
+  <div class="wrap">
+    <div class="final-cta dot-grid" data-reveal>
+      <p class="eyebrow">Results in 90 Days</p>
+      <h2 data-split-in="words">Ready to see what your park could look like?</h2>
+      <p class="lede" style="max-width: 480px; margin: var(--sp-3) auto var(--sp-5);">Get a free audit — no obligation, just a real look at what's leaving occupancy (and value) on the table.</p>
+      <div class="hero-ctas">
+        <a href="contact.html" class="btn btn-primary magnetic"><span>Book a Free Audit</span></a>
+        <a href="packages.html" class="btn btn-ghost magnetic"><span>View Packages</span></a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="wrap">
+    <div class="section-head" data-reveal>
+      <p class="eyebrow">What Owners Say</p>
+      <h2 data-split-in="words">Real parks, real numbers</h2>
+    </div>
+    <div class="testi-grid" data-reveal-stagger>
+      <div class="testi-card glass"><div class="stars">★★★★★</div><p>"Our shoulder-season bookings were basically zero. Three months in, we're seeing real midweek traffic we never had before."</p><p class="who">— Owner, 40-site park, Texas</p></div>
+      <div class="testi-card glass"><div class="stars">★★★★★</div><p>"The new site alone paid for itself in the first month. The reporting makes it obvious what's working."</p><p class="who">— Owner, 75-site resort, Arizona</p></div>
+      <div class="testi-card glass"><div class="stars">★★★★★</div><p>"We were planning to sell in two years. Knowing our occupancy trend is actually helping the valuation conversation already."</p><p class="who">— Owner, 28-site campground, Colorado</p></div>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="wrap">
+    <div class="footer-grid">
+      <div>
+        <a href="index.html" class="nav-brand"><span class="mark">R</span>RVPark Success</a>
+        <p style="margin-top: var(--sp-2); font-size: 0.875rem; color: var(--cream-dim); max-width: 320px; line-height: 1.6;">Done-for-you AI marketing for RV park owners who want higher occupancy today and maximum sale value down the road.</p>
+      </div>
+      <div>
+        <h4>Explore</h4>
+        <div class="footer-links">
+          <a href="packages.html">Pricing</a>
+          <a href="how-it-works.html">How It Works</a>
+          <a href="results.html">Results</a>
+        </div>
+      </div>
+      <div>
+        <h4>Company</h4>
+        <div class="footer-links">
+          <a href="contact.html">Contact</a>
+          <a href="contact.html">Book a Free Audit</a>
+        </div>
+      </div>
+      <div>
+        <h4>Get in touch</h4>
+        <div class="footer-links">
+          <a href="mailto:hello@rvparksuccess.example">hello@rvparksuccess.example</a>
+          <a href="tel:+18505550199">(850) 555-0199</a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 RVPark Success. All rights reserved.</span>
+      <span>Sample template — placeholder content, not live claims.</span>
+    </div>
+  </div>
+</footer>
+
+<script type="module" src="/src/js/home.js"></script>
+</body>
+</html>
