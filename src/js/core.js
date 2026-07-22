@@ -1,6 +1,7 @@
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import Lenis from 'lenis';
+import { placeholderDataUri } from './placeholder.js';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -345,6 +346,55 @@ function initPageTransition() {
   const el = document.getElementById('pageTransition');
   if (!el) return;
   el.addEventListener('animationend', () => { el.style.display = 'none'; }, { once: true });
+}
+
+/* ---------------------------------------------------------------- */
+/* Hero video: plays once on load, holds on the final frame (no loop,  */
+/* no scroll-scrub). Falls back to a generated placeholder if the      */
+/* video genuinely fails to load — reversible, so it un-hides itself   */
+/* if the video finishes loading even after the fallback fired.        */
+/* Guards against the metadata/data events firing before this script   */
+/* attaches its listeners (happens whenever the video is cached) by    */
+/* also checking readyState directly.                                  */
+/* ---------------------------------------------------------------- */
+export function initHeroVideo({ videoId = 'heroVideo', wrapSelector = '.hero-video-wrap', placeholderLabel = 'Video coming soon' } = {}) {
+  const heroVideo = document.getElementById(videoId);
+  const heroBg = document.querySelector(wrapSelector);
+  if (!heroVideo) return;
+
+  if (heroBg) {
+    let fallbackShown = false;
+    const showFallback = () => {
+      if (fallbackShown) return;
+      fallbackShown = true;
+      heroVideo.style.display = 'none';
+      heroBg.style.backgroundImage = `url("${placeholderDataUri(placeholderLabel)}")`;
+      heroBg.style.backgroundSize = 'cover';
+      heroBg.style.backgroundPosition = 'center';
+    };
+    const hideFallback = () => {
+      if (!fallbackShown) return;
+      fallbackShown = false;
+      heroVideo.style.display = '';
+      heroBg.style.backgroundImage = '';
+    };
+    if (heroVideo.readyState >= 2) hideFallback();
+    heroVideo.addEventListener('loadeddata', hideFallback);
+    heroVideo.addEventListener('error', showFallback, true);
+    setTimeout(() => { if (heroVideo.readyState === 0) showFallback(); }, 5000);
+  }
+
+  heroVideo.loop = false;
+  const onMetadataReady = () => {
+    if (prefersReduced) { heroVideo.currentTime = heroVideo.duration; return; }
+    heroVideo.play().catch(() => { heroVideo.currentTime = heroVideo.duration; });
+  };
+  if (heroVideo.readyState >= 1) onMetadataReady();
+  else heroVideo.addEventListener('loadedmetadata', onMetadataReady);
+
+  if (!prefersReduced) {
+    heroVideo.addEventListener('ended', () => { heroVideo.pause(); });
+  }
 }
 
 /* ---------------------------------------------------------------- */

@@ -1,7 +1,8 @@
 import '../css/tokens.css';
-import { initCore, ScrollTrigger, prefersReduced } from './core.js';
+import { initCore, initHeroVideo, ScrollTrigger, prefersReduced } from './core.js';
 
 initCore();
+initHeroVideo({ placeholderLabel: 'RESULTS — HERO VIDEO COMING SOON' });
 
 /* -- animated occupancy graph: bars grow to their data-height when scrolled into view -- */
 const graph = document.getElementById('occGraph');

@@ -1,8 +1,9 @@
 import '../css/tokens.css';
-import { initCore } from './core.js';
+import { initCore, initHeroVideo } from './core.js';
 import { WEBSITE_TIERS, SERVICES, formatUsd } from './services-data.js';
 
 initCore();
+initHeroVideo({ placeholderLabel: 'PRICING — HERO VIDEO COMING SOON' });
 
 const ICONS = {
   share: '<path d="M18 8a3 3 0 1 0-2.83-4H15a3 3 0 0 0 .05.54L8.09 8.49a3 3 0 1 0 0 5.02l6.96 3.95a3 3 0 1 0 .8-1.74L8.9 11.76a3 3 0 0 0 0-1.52l6.95-3.95c.34.44.77.8 1.15 1.03A3 3 0 0 0 18 8Z"/>',

@@ -1,7 +1,8 @@
 import '../css/tokens.css';
-import { initCore, gsap, ScrollTrigger, prefersReduced } from './core.js';
+import { initCore, initHeroVideo, gsap, ScrollTrigger, prefersReduced } from './core.js';
 
 initCore();
+initHeroVideo({ placeholderLabel: 'HOW IT WORKS — HERO VIDEO COMING SOON' });
 
 const section = document.getElementById('hscrollSection');
 const track = document.getElementById('hscrollTrack');

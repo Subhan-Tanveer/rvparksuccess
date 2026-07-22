@@ -1,9 +1,9 @@
 import '../css/tokens.css';
-import { initCore, buildMarquee, prefersReduced } from './core.js';
-import { placeholderDataUri } from './placeholder.js';
+import { initCore, initHeroVideo, buildMarquee } from './core.js';
 import { SERVICES, formatUsd } from './services-data.js';
 
 initCore();
+initHeroVideo({ placeholderLabel: 'RVPARK SUCCESS — HERO VIDEO COMING SOON' });
 
 /* -- individual services grid (mirrors packages.js's rendering) -- */
 const HOME_ICONS = {
@@ -34,62 +34,6 @@ if (homeServicesGrid) {
       <a href="packages.html" class="btn btn-primary magnetic" style="width:100%; margin-top: var(--sp-3); justify-content:center;"><span>Get Started</span></a>
     </div>`;
   }).join('');
-}
-
-/* -- hero background fallback: only kicks in if the video genuinely fails to load
-   (e.g. file missing/404). Reversible — if the video finishes loading even after
-   the timeout fires, it un-hides itself instead of getting stuck on the placeholder. -- */
-const heroBg = document.querySelector('.hero-video-wrap');
-const heroVideo = document.getElementById('heroVideo');
-if (heroBg && heroVideo) {
-  let fallbackShown = false;
-  const showFallback = () => {
-    if (fallbackShown) return;
-    fallbackShown = true;
-    heroVideo.style.display = 'none';
-    heroBg.style.backgroundImage = `url("${placeholderDataUri('RVPARK SUCCESS — HERO VIDEO COMING SOON')}")`;
-    heroBg.style.backgroundSize = 'cover';
-    heroBg.style.backgroundPosition = 'center';
-  };
-  const hideFallback = () => {
-    if (!fallbackShown) return;
-    fallbackShown = false;
-    heroVideo.style.display = '';
-    heroBg.style.backgroundImage = '';
-  };
-  // readyState >= 2 (HAVE_CURRENT_DATA) already reached by the time this script ran —
-  // 'loadeddata' already fired and would otherwise be missed.
-  if (heroVideo.readyState >= 2) hideFallback();
-  heroVideo.addEventListener('loadeddata', hideFallback);
-  heroVideo.addEventListener('error', showFallback, true);
-  // Generous window before assuming the video is actually missing (not just loading slowly).
-  setTimeout(() => { if (heroVideo.readyState === 0) showFallback(); }, 5000);
-}
-
-/* -- hero video: plays once on load, holds on the final frame (no loop, no scroll-scrub).
-   Guards against the metadata event firing before this script attaches its listener
-   (happens whenever the video is cached/fast-loading) by also checking readyState directly. -- */
-if (heroVideo) {
-  heroVideo.loop = false;
-  const onMetadataReady = () => {
-    if (prefersReduced) {
-      heroVideo.currentTime = heroVideo.duration;
-      return;
-    }
-    heroVideo.play().catch(() => {
-      // Autoplay blocked (rare, given muted+playsinline) — fall back to holding the last frame.
-      heroVideo.currentTime = heroVideo.duration;
-    });
-  };
-  // readyState >= 1 (HAVE_METADATA) means 'loadedmetadata' already fired before this ran.
-  if (heroVideo.readyState >= 1) onMetadataReady();
-  else heroVideo.addEventListener('loadedmetadata', onMetadataReady);
-
-  if (!prefersReduced) {
-    // Video's own default behavior already pauses on the final frame once playback ends —
-    // this just makes sure it never restarts.
-    heroVideo.addEventListener('ended', () => { heroVideo.pause(); });
-  }
 }
 
 /* -- recently-updated marquee -- */

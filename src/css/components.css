@@ -5,7 +5,17 @@
 /* -- page-transition intro (wipes in from left, holds, wipes out right).
    Pure CSS animation (not JS-triggered) so it covers the screen from the very
    first paint — a JS-driven version always starts a beat late, after the
-   browser has already painted the real page underneath, causing a flash. -- */
+   browser has already painted the real page underneath, causing a flash. --
+
+   The panel's cover-in phase is itself a wipe, meaning the real page is
+   naturally still partly visible while the panel is only partway across —
+   that's normal for a wipe, but it means the destination page's content
+   *is* visible (progressively less so) during that ~0.45s. To have the page
+   be completely invisible until the panel has fully covered it, the page's
+   own content is hidden (`body { visibility: hidden }`) and only flips
+   visible at the exact keyframe percentage where the panel finishes
+   covering — at that instant the flip is imperceptible since the opaque
+   panel is already covering the whole viewport. */
 .page-transition {
   position: fixed; inset: 0; z-index: 500;
   background: linear-gradient(135deg, var(--forest-light), var(--black));
@@ -13,6 +23,7 @@
   align-items: center; justify-content: center; flex-direction: column; gap: var(--sp-2);
   pointer-events: none;
   transform: translateX(-100%);
+  visibility: visible;
   animation: pt-wipe 2.05s cubic-bezier(0.65, 0, 0.35, 1) forwards;
 }
 @keyframes pt-wipe {
@@ -20,6 +31,15 @@
   22% { transform: translateX(0%); }
   70% { transform: translateX(0%); }
   100% { transform: translateX(100%); }
+}
+body { visibility: hidden; animation: pt-reveal-body 2.05s steps(1) forwards; }
+@keyframes pt-reveal-body {
+  0% { visibility: hidden; }
+  22% { visibility: visible; }
+  100% { visibility: visible; }
+}
+@media (prefers-reduced-motion: reduce) {
+  body { visibility: visible !important; animation: none !important; }
 }
 .pt-van { width: 130px; color: var(--amber); }
 .pt-van svg { width: 100%; height: auto; display: block; }
@@ -33,6 +53,16 @@
 @keyframes pt-lines-move { 0% { transform: translateX(8px); opacity: 0; } 40% { opacity: 0.8; } 100% { transform: translateX(-10px); opacity: 0; } }
 .pt-word { font-family: var(--font-display); font-weight: 700; font-size: 1.5rem; letter-spacing: 0.1em; color: var(--cream); text-transform: uppercase; }
 @media (prefers-reduced-motion: reduce) { .page-transition { display: none !important; animation: none !important; } }
+
+/* -- video hero used on subpages (Packages/How It Works/Results/Contact) —
+   shorter than the full-viewport home hero, same autoplay-once-hold-last-frame
+   video treatment behind the page's existing heading/lede text. -- */
+.page-hero-video { position: relative; min-height: 64vh; display: flex; align-items: flex-end; overflow: hidden; }
+.page-hero-video .hero-video-wrap { position: absolute; inset: 0; z-index: 0; background: var(--black); }
+.page-hero-video .hero-video-wrap video { width: 100%; height: 100%; object-fit: cover; }
+.page-hero-video .hero-overlay { position: absolute; inset: 0; z-index: 1; background: linear-gradient(to bottom, rgba(8,12,8,0.3) 0%, rgba(8,12,8,0.25) 35%, rgba(8,12,8,0.8) 82%, rgba(8,12,8,0.96) 100%); }
+.page-hero-video > .wrap { position: relative; z-index: 2; width: 100%; padding-bottom: var(--sp-8); }
+@media (max-width: 720px) { .page-hero-video { min-height: 52vh; } }
 
 /* -- scroll progress bar -- */
 .scroll-progress { position: fixed; top: 0; left: 0; height: 3px; width: 100%; z-index: 200; background: transparent; }

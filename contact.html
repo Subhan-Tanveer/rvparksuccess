@@ -12,8 +12,7 @@
 <link rel="stylesheet" href="/src/css/tokens.css">
 <link rel="stylesheet" href="/src/css/components.css">
 <style>
-  .page-hero { padding: calc(var(--sp-16) + var(--sp-4)) 0 var(--sp-6); }
-  .page-hero h1 { font-size: clamp(2.25rem, 5vw, 3.5rem); margin-top: var(--sp-2); }
+  .page-hero-video h1 { font-size: clamp(2.25rem, 5vw, 3.5rem); margin-top: var(--sp-2); }
   .contact-layout { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: var(--sp-6); align-items: start; }
   @media (max-width: 900px) { .contact-layout { grid-template-columns: 1fr; } }
   .contact-card { padding: var(--sp-5); border-radius: var(--radius-lg); }
@@ -81,7 +80,13 @@
   </div>
 </div>
 
-<header class="page-hero dot-grid">
+<header class="page-hero-video">
+  <div class="hero-video-wrap">
+    <video id="heroVideo" muted playsinline preload="auto" poster="/images/hero/contact-poster.jpg" aria-label="An RV glowing warm at dusk">
+      <source src="/video/contact-scrub.mp4" type="video/mp4">
+    </video>
+  </div>
+  <div class="hero-overlay"></div>
   <div class="wrap" data-reveal>
     <p class="eyebrow">Free, No-Obligation</p>
     <h1 data-split-in="words">Book your free audit</h1>

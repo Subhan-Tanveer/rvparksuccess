@@ -12,9 +12,9 @@
 <link rel="stylesheet" href="/src/css/tokens.css">
 <link rel="stylesheet" href="/src/css/components.css">
 <style>
-  .page-hero { padding: calc(var(--sp-16) + var(--sp-4)) 0 var(--sp-6); text-align: center; }
-  .page-hero h1 { font-size: clamp(2.5rem, 5vw, 4rem); margin-top: var(--sp-2); }
-  .page-hero .lede { max-width: 600px; margin: var(--sp-2) auto 0; }
+  .page-hero-video { text-align: center; padding-top: calc(var(--sp-16) + var(--sp-4)); }
+  .page-hero-video h1 { font-size: clamp(2.5rem, 5vw, 4rem); margin-top: var(--sp-2); }
+  .page-hero-video .lede { max-width: 600px; margin: var(--sp-2) auto 0; }
 
   /* -- payment modal -- */
   .pay-modal-backdrop { position: fixed; inset: 0; z-index: 400; background: rgba(8,12,8,0.75); backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center; padding: var(--sp-3); opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease; }
@@ -91,7 +91,13 @@
   </div>
 </div>
 
-<header class="page-hero dot-grid">
+<header class="page-hero-video">
+  <div class="hero-video-wrap">
+    <video id="heroVideo" muted playsinline preload="auto" poster="/images/hero/packages-poster.jpg" aria-label="A thriving RV park at golden hour">
+      <source src="/video/packages-scrub.mp4" type="video/mp4">
+    </video>
+  </div>
+  <div class="hero-overlay"></div>
   <div class="wrap" data-reveal>
     <p class="eyebrow">Services &amp; Pricing</p>
     <h1 data-split-in="words">Pick what you need. Pause what you don't.</h1>

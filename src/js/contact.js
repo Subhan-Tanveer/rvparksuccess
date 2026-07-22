@@ -1,7 +1,8 @@
 import '../css/tokens.css';
-import { initCore } from './core.js';
+import { initCore, initHeroVideo } from './core.js';
 
 initCore();
+initHeroVideo({ placeholderLabel: 'CONTACT — HERO VIDEO COMING SOON' });
 
 const form = document.getElementById('auditForm');
 const success = document.getElementById('auditSuccess');

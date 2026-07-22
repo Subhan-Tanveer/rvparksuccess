@@ -12,9 +12,9 @@
 <link rel="stylesheet" href="/src/css/tokens.css">
 <link rel="stylesheet" href="/src/css/components.css">
 <style>
-  .page-hero { padding: calc(var(--sp-16) + var(--sp-4)) 0 var(--sp-6); text-align: center; }
-  .page-hero h1 { font-size: clamp(2.5rem, 5vw, 4rem); margin-top: var(--sp-2); }
-  .page-hero .lede { max-width: 560px; margin: var(--sp-2) auto 0; }
+  .page-hero-video { text-align: center; padding-top: calc(var(--sp-16) + var(--sp-4)); }
+  .page-hero-video h1 { font-size: clamp(2.5rem, 5vw, 4rem); margin-top: var(--sp-2); }
+  .page-hero-video .lede { max-width: 560px; margin: var(--sp-2) auto 0; }
 
   .case-split { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-6); align-items: center; }
   @media (max-width: 900px) { .case-split { grid-template-columns: 1fr; } }
@@ -91,7 +91,13 @@
   </div>
 </div>
 
-<header class="page-hero dot-grid">
+<header class="page-hero-video">
+  <div class="hero-video-wrap">
+    <video id="heroVideo" muted playsinline preload="auto" poster="/images/hero/results-poster.jpg" aria-label="A fully-occupied RV park at sunrise">
+      <source src="/video/results-scrub.mp4" type="video/mp4">
+    </video>
+  </div>
+  <div class="hero-overlay"></div>
   <div class="wrap" data-reveal>
     <p class="eyebrow">Real Numbers</p>
     <h1 data-split-in="words">What <span class="glitch-highlight" data-glitch>RESULTS</span> actually look like</h1>
