@@ -7,9 +7,11 @@
 //   GMAIL_APP_PASSWORD  a Gmail App Password for that account (Google Account
 //                        → Security → 2-Step Verification → App passwords)
 //
-// Sends two emails per submission: an internal notification to NOTIFY_EMAIL,
-// and a confirmation to the customer's own submitted address.
+// Sends two branded emails per submission (see api/_lib/email-template.js):
+// an internal notification to NOTIFY_EMAIL, and a confirmation to the
+// customer's own submitted address.
 import nodemailer from 'nodemailer';
+import { renderEmail } from './_lib/email-template.js';
 
 const NOTIFY_EMAIL = 'marie@rvparksales.com';
 
@@ -34,14 +36,30 @@ export default async function handler(req, res) {
     auth: { user: process.env.GMAIL_USER, pass: process.env.GMAIL_APP_PASSWORD },
   });
 
-  const details = `
-    <p><b>Name:</b> ${escapeHtml(name)}</p>
-    <p><b>Park Name:</b> ${escapeHtml(park)}</p>
-    <p><b>Location:</b> ${escapeHtml(location || '—')}</p>
-    <p><b>Current Occupancy:</b> ${escapeHtml(occupancy || '—')}%</p>
-    <p><b>Phone:</b> ${escapeHtml(phone || '—')}</p>
-    <p><b>Email:</b> ${escapeHtml(email)}</p>
-  `;
+  const details = [
+    ['Name', name],
+    ['Park Name', park],
+    ['Location', location],
+    ['Occupancy', occupancy ? `${occupancy}%` : ''],
+    ['Phone', phone],
+    ['Email', email],
+  ];
+
+  const internalHtml = renderEmail({
+    eyebrow: 'New Lead',
+    title: 'New free audit request',
+    intro: `${name} just requested a free audit for ${park}. Reply directly to this email to reach them.`,
+    details,
+    cta: { label: `Reply to ${name}`, href: `mailto:${email}` },
+  });
+
+  const customerHtml = renderEmail({
+    eyebrow: 'Free, No-Obligation',
+    title: 'We got your free audit request',
+    intro: `Hi ${name}, thanks for booking a free audit for ${park}. We'll review your current site, listings, and booking flow and get back to you within one business day with a plain-English breakdown of what's leaving occupancy on the table.`,
+    details,
+    closing: "If anything above isn't quite right, just reply to this email and let us know.",
+  });
 
   try {
     await transporter.sendMail({
@@ -49,20 +67,14 @@ export default async function handler(req, res) {
       to: NOTIFY_EMAIL,
       replyTo: email,
       subject: `Free Audit Request: ${park}`,
-      html: `<h2>New free audit request</h2>${details}`,
+      html: internalHtml,
     });
 
     await transporter.sendMail({
       from: `"RVPark Success" <${process.env.GMAIL_USER}>`,
       to: email,
       subject: 'We got your free audit request — RVPark Success',
-      html: `
-        <p>Hi ${escapeHtml(name)},</p>
-        <p>Thanks for booking a free audit for <b>${escapeHtml(park)}</b> — we'll review your current site, listings, and booking flow and get back to you within one business day with a plain-English breakdown of what's leaving occupancy on the table.</p>
-        <p>Here's what you submitted, for your records:</p>
-        ${details}
-        <p>Talk soon,<br>RVPark Success</p>
-      `,
+      html: customerHtml,
     });
 
     res.status(200).json({ ok: true });
@@ -70,8 +82,4 @@ export default async function handler(req, res) {
     console.error('Email send error:', err.message);
     res.status(500).json({ error: 'Unable to send email right now.' });
   }
-}
-
-function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
