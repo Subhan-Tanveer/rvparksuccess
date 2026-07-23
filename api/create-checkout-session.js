@@ -20,6 +20,7 @@ const SERVICES = {
   'ai-booking': { name: 'RVPark Success — AI Booking System', setup: 0, monthly: 29700 },
   'ai-content': { name: 'RVPark Success — AI Content Creation', setup: 0, monthly: 47000 },
   'review-reputation': { name: 'RVPark Success — Review and Reputation Marketing', setup: 0, monthly: 19700 },
+  'financial-records': { name: 'RVPark Success — Financial Records & Revenue Tracking', setup: 0, monthly: 14700 },
   'monthly-reporting': { name: 'RVPark Success — Monthly Reporting', setup: 0, monthly: 9700 },
   'voice-ai': { name: 'RVPark Success — Voice AI Receptionist', setup: 100000, monthly: 45000 },
   'conversational-ai': { name: 'RVPark Success — Conversational AI (Email, SMS & DMs)', setup: 70000, monthly: 30000 },
