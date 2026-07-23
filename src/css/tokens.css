@@ -4,22 +4,35 @@
    ============================================================ */
 
 :root {
-  /* -- color -- */
-  --forest: #0d1f0f;
-  --forest-light: #14301a;
-  --black: #080c08;
-  --black-soft: #0b100b;
-  --amber: #f5a623;
-  --amber-light: #ffc866;
-  --amber-dim: #b97c1a;
+  /* -- color: extracted from the RVParkSuccess logo (blue → teal → green → amber
+     growth-bar gradient, RV + pine silhouette). --amber/--forest/--black variable
+     NAMES are kept as-is on purpose (they're referenced everywhere in this file
+     and every page) but their VALUES are now the logo palette, not the old
+     orange-amber theme — this is what actually recolors the whole site in one
+     place instead of hunting down every individual usage. -- */
+  --forest: #0a1d22;
+  --forest-light: #102e32;
+  --black: #06090a;
+  --black-soft: #080d0f;
+  --amber: #2e9b54;
+  --amber-light: #4fc072;
+  --amber-dim: #1f6e3b;
   --cream: #f5f0e8;
   --cream-dim: rgba(245, 240, 232, 0.7);
   --white: #ffffff;
 
+  /* -- supplementary brand colors (blue/teal/orange from the logo's cooler and
+     warmer ends) — used for gradients and secondary accents alongside --amber -- */
+  --brand-blue: #1b4f72;
+  --brand-blue-light: #3a7fb0;
+  --brand-teal: #157a72;
+  --brand-orange: #d97f2e;
+  --brand-gradient: linear-gradient(135deg, var(--brand-blue), var(--brand-teal), var(--amber), var(--brand-orange));
+
   --surface-glass: rgba(245, 240, 232, 0.06);
   --surface-glass-strong: rgba(245, 240, 232, 0.1);
   --border-glass: rgba(245, 240, 232, 0.14);
-  --border-amber: rgba(245, 166, 35, 0.4);
+  --border-amber: rgba(46, 155, 84, 0.4);
 
   /* -- type -- */
   --font-display: 'Space Grotesk', 'Inter', sans-serif;
@@ -97,16 +110,16 @@ button { font-family: inherit; cursor: pointer; background: none; border: none; 
 
 /* -- buttons -- */
 .btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--sp-1); padding: 15px 30px; border-radius: var(--radius-pill); font-size: 0.9375rem; font-weight: 600; border: 1px solid transparent; transition: transform 0.3s var(--ease-out), background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease; white-space: nowrap; }
-.btn-primary { background: linear-gradient(135deg, var(--amber-light), var(--amber)); color: var(--black); box-shadow: 0 8px 28px -10px rgba(245, 166, 35, 0.65); }
-.btn-primary:hover { box-shadow: 0 14px 36px -8px rgba(245, 166, 35, 0.8); }
+.btn-primary { background: linear-gradient(135deg, var(--amber-light), var(--amber)); color: var(--black); box-shadow: 0 8px 28px -10px rgba(46, 155, 84, 0.65); }
+.btn-primary:hover { box-shadow: 0 14px 36px -8px rgba(46, 155, 84, 0.8); }
 .btn-ghost { background: var(--surface-glass); color: var(--cream); border-color: var(--border-glass); }
 .btn-ghost:hover { background: var(--surface-glass-strong); border-color: var(--border-amber); }
 .btn-sm { padding: 11px 22px; font-size: 0.8125rem; }
 
 /* -- AI powered pulsing badge -- */
-.ai-badge { display: inline-flex; align-items: center; gap: 8px; padding: 7px 16px 7px 12px; border-radius: var(--radius-pill); background: rgba(245, 166, 35, 0.1); border: 1px solid var(--border-amber); font-family: var(--font-mono); font-size: 0.75rem; font-weight: 600; letter-spacing: 0.06em; color: var(--amber-light); }
-.ai-badge .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--amber); box-shadow: 0 0 0 0 rgba(245, 166, 35, 0.7); animation: pulseDot 1.8s infinite; }
-@keyframes pulseDot { 0% { box-shadow: 0 0 0 0 rgba(245, 166, 35, 0.55); } 70% { box-shadow: 0 0 0 8px rgba(245, 166, 35, 0); } 100% { box-shadow: 0 0 0 0 rgba(245, 166, 35, 0); } }
+.ai-badge { display: inline-flex; align-items: center; gap: 8px; padding: 7px 16px 7px 12px; border-radius: var(--radius-pill); background: rgba(46, 155, 84, 0.1); border: 1px solid var(--border-amber); font-family: var(--font-mono); font-size: 0.75rem; font-weight: 600; letter-spacing: 0.06em; color: var(--amber-light); }
+.ai-badge .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--amber); box-shadow: 0 0 0 0 rgba(46, 155, 84, 0.7); animation: pulseDot 1.8s infinite; }
+@keyframes pulseDot { 0% { box-shadow: 0 0 0 0 rgba(46, 155, 84, 0.55); } 70% { box-shadow: 0 0 0 8px rgba(46, 155, 84, 0); } 100% { box-shadow: 0 0 0 0 rgba(46, 155, 84, 0); } }
 
 /* -- animated underline (drawn left-to-right via JS/CSS var --underline-progress) -- */
 .underline-draw { position: relative; display: inline; }

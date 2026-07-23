@@ -14,11 +14,15 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 // line item alongside the recurring one (Stripe supports mixing the two
 // in subscription mode). A service with only `setup` is a one-time payment.
 const SERVICES = {
-  'website-basic': { name: 'RVPark Success — Website Design (Basic)', setup: 185000, monthly: 0 },
-  'website-premium': { name: 'RVPark Success — Website Design (Premium)', setup: 340000, monthly: 0 },
-  'ai-setter': { name: 'RVPark Success — AI Setter System', setup: 0, monthly: 249700 },
-  'social-media': { name: 'RVPark Success — Social Media Management', setup: 0, monthly: 129700 },
+  'website-design': { name: 'RVPark Success — Website Design', setup: 185000, monthly: 0 },
+  'social-media': { name: 'RVPark Success — Social Media Management', setup: 0, monthly: 49700 },
+  'ai-guest-finder': { name: 'RVPark Success — AI Guest Finder', setup: 0, monthly: 99700 },
+  'ai-booking': { name: 'RVPark Success — AI Booking System', setup: 0, monthly: 29700 },
+  'ai-content': { name: 'RVPark Success — AI Content Creation', setup: 0, monthly: 47000 },
+  'review-reputation': { name: 'RVPark Success — Review and Reputation Marketing', setup: 0, monthly: 19700 },
+  'monthly-reporting': { name: 'RVPark Success — Monthly Reporting', setup: 0, monthly: 9700 },
   'voice-ai': { name: 'RVPark Success — Voice AI Receptionist', setup: 100000, monthly: 45000 },
+  'conversational-ai': { name: 'RVPark Success — Conversational AI (Email, SMS & DMs)', setup: 70000, monthly: 30000 },
 };
 
 export default async function handler(req, res) {

@@ -1,15 +1,15 @@
 // Shared branded HTML email layout — dark premium theme matching the site
-// (near-black background, forest-green card, amber accent, cream text).
-// Table-based layout with fully inline styles, since that's what actually
-// renders consistently across Gmail/Outlook/Apple Mail, unlike a linked
-// stylesheet or even a <style> block (Outlook especially ignores most of
-// modern CSS). Not exported as an API route — this file lives under an
-// underscore-prefixed folder, which Vercel excludes from routing.
+// (near-black background, deep teal-green card, green accent from the logo,
+// cream text). Table-based layout with fully inline styles, since that's
+// what actually renders consistently across Gmail/Outlook/Apple Mail, unlike
+// a linked stylesheet or even a <style> block (Outlook especially ignores
+// most of modern CSS). Not exported as an API route — this file lives under
+// an underscore-prefixed folder, which Vercel excludes from routing.
 const COLORS = {
-  black: '#080c08',
-  forest: '#0d1f0f',
-  border: '#1f3320',
-  amber: '#f5a623',
+  black: '#06090a',
+  forest: '#0a1d22',
+  border: '#1c3a3d',
+  amber: '#2e9b54',
   cream: '#f5f0e8',
   dim: '#9a9488',
 };

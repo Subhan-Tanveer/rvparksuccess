@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>How It Works — RVPark Success</title>
 <meta name="description" content="Five steps from free audit to your RV park selling for maximum value." />
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23f5a623'/%3E%3Ctext x='16' y='22' font-family='Arial,sans-serif' font-size='16' font-weight='800' fill='%23080c08' text-anchor='middle'%3ER%3C/text%3E%3C/svg%3E" />
+<link rel="icon" type="image/png" href="/favicon.png" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -17,7 +17,7 @@
   .page-hero-video .lede { max-width: 560px; margin: var(--sp-2) auto 0; }
 
   .hscroll-step .ic { transition: transform 0.5s var(--ease-spring), background 0.4s ease; }
-  .hscroll-step.is-active .ic { transform: scale(1.12); background: rgba(245,166,35,0.22); }
+  .hscroll-step.is-active .ic { transform: scale(1.12); background: rgba(46,155,84,0.22); }
   .hscroll-hint { text-align: center; padding: var(--sp-3) 0; color: var(--cream-dim); font-size: 0.8125rem; font-family: var(--font-mono); }
   @media (prefers-reduced-motion: reduce) {
     .hscroll-pin { height: auto !important; overflow: visible; }
@@ -37,19 +37,21 @@
 
 <div class="page-transition" id="pageTransition" aria-hidden="true">
   <div class="pt-van">
-    <svg viewBox="0 0 140 70" xmlns="http://www.w3.org/2000/svg">
+    <svg viewBox="0 0 160 74" xmlns="http://www.w3.org/2000/svg">
       <g class="pt-lines">
-        <line x1="0" y1="26" x2="16" y2="26"/>
-        <line x1="0" y1="36" x2="12" y2="36"/>
-        <line x1="0" y1="46" x2="18" y2="46"/>
+        <line x1="0" y1="28" x2="16" y2="28"/>
+        <line x1="0" y1="38" x2="12" y2="38"/>
+        <line x1="0" y1="48" x2="18" y2="48"/>
       </g>
       <g class="pt-body">
-        <path d="M22 48 V24 H92 L110 12 H124 V48 Z" fill="currentColor"/>
-        <rect x="30" y="16" width="26" height="10" rx="2" fill="currentColor" opacity="0.55"/>
-        <rect x="98" y="16" width="18" height="10" rx="2" fill="currentColor" opacity="0.55"/>
+        <path d="M138 58 L138 44 L126 26 L142 20 L122 12 L30 12 Q22 12 22 18 L22 58 Z" fill="currentColor"/>
+        <rect x="126" y="14" width="8" height="6" rx="1" fill="var(--forest)"/>
+        <rect x="121" y="31" width="8" height="10" rx="1.5" fill="var(--forest)"/>
+        <rect x="78" y="22" width="18" height="15" rx="2" fill="var(--forest)"/>
+        <rect x="50" y="22" width="18" height="15" rx="2" fill="var(--forest)"/>
       </g>
-      <circle class="pt-wheel" cx="42" cy="50" r="8" fill="currentColor"/>
-      <circle class="pt-wheel" cx="104" cy="50" r="8" fill="currentColor"/>
+      <circle class="pt-wheel" cx="118" cy="58" r="9" fill="currentColor"/>
+      <circle class="pt-wheel" cx="48" cy="58" r="9" fill="currentColor"/>
     </svg>
   </div>
   <div class="pt-word">RVPark</div>
@@ -61,7 +63,7 @@
 
 <div class="nav-pill-wrap">
   <div class="nav-pill">
-    <a href="index.html" class="nav-brand"><span class="mark">R</span><span class="name">RVPark Success</span></a>
+    <a href="index.html" class="nav-brand"><span class="mark mark-logo"><img src="/images/logo/rvparksuccess-icon.png" alt="RVPark Success logo"></span><span class="name">RVPark Success</span></a>
   </div>
   <div style="display:flex; gap: var(--sp-2); pointer-events:auto;">
     <div class="nav-links-desktop">
@@ -69,6 +71,7 @@
       <a href="packages.html">Pricing</a>
       <a href="how-it-works.html">How It Works</a>
       <a href="results.html">Results</a>
+      <a href="sample.html">Live Demo</a>
       <a href="contact.html">Contact</a>
     </div>
     <button class="nav-menu-btn" aria-label="Open menu" style="pointer-events:auto;"><span>Menu</span><span class="burger-mini"><span></span><span></span></span></button>
@@ -77,7 +80,7 @@
 
 <div class="mobile-menu">
   <div class="mobile-menu-top">
-    <a href="index.html" class="nav-brand"><span class="mark">R</span>RVPark Success</a>
+    <a href="index.html" class="nav-brand"><span class="mark mark-logo"><img src="/images/logo/rvparksuccess-icon.png" alt="RVPark Success logo"></span>RVPark Success</a>
     <button class="mobile-menu-close" aria-label="Close menu">&times;</button>
   </div>
   <div class="mobile-menu-links">
@@ -85,6 +88,7 @@
     <a href="packages.html">Packages</a>
     <a href="how-it-works.html">How It Works</a>
     <a href="results.html">Results</a>
+    <a href="sample.html">Live Demo</a>
     <a href="contact.html">Contact</a>
   </div>
 </div>
@@ -156,7 +160,7 @@
   <div class="wrap">
     <div class="footer-grid">
       <div>
-        <a href="index.html" class="nav-brand"><span class="mark">R</span>RVPark Success</a>
+        <a href="index.html" class="nav-brand"><span class="mark mark-logo"><img src="/images/logo/rvparksuccess-icon.png" alt="RVPark Success logo"></span>RVPark Success</a>
         <p style="margin-top: var(--sp-2); font-size: 0.875rem; color: var(--cream-dim); max-width: 320px; line-height: 1.6;">Done-for-you AI marketing for RV park owners who want higher occupancy today and maximum sale value down the road.</p>
       </div>
       <div>
@@ -182,6 +186,7 @@
         </div>
       </div>
     </div>
+    <div class="footer-partner">RVParkSuccess.com is proudly partnered with <a href="https://www.rvparksales.com" target="_blank" rel="noopener">RVParkSales.com</a> — when you're ready to sell, we're ready to get you maximum value.</div>
     <div class="footer-bottom">
       <span>© 2026 RVPark Success. All rights reserved.</span>
       <span>Sample template — placeholder content, not live claims.</span>

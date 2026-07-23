@@ -12,6 +12,7 @@ export default defineConfig({
         howItWorks: resolve(__dirname, 'how-it-works.html'),
         results: resolve(__dirname, 'results.html'),
         contact: resolve(__dirname, 'contact.html'),
+        sample: resolve(__dirname, 'sample.html'),
       },
     },
   },
