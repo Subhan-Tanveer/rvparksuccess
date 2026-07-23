@@ -18,23 +18,17 @@
   .hero-overlay { position: absolute; inset: 0; z-index: 1; background: linear-gradient(to bottom, rgba(8,12,8,0.35) 0%, rgba(8,12,8,0.15) 30%, rgba(8,12,8,0.65) 78%, rgba(8,12,8,0.95) 100%); }
   .hero-badge { position: absolute; top: calc(var(--sp-3) + 60px); left: 50%; transform: translateX(-50%); z-index: 2; }
   .hero-word-wrap { position: absolute; top: 50%; left: 0; right: 0; transform: translateY(-50%); z-index: 2; text-align: center; }
-  .hero-word { font-family: var(--font-display); font-weight: 700; letter-spacing: -0.02em; font-size: clamp(2.75rem, 8.5vw, 7.5rem); line-height: 0.95; color: var(--white); text-transform: uppercase; }
+  .hero-word { font-family: var(--font-display); font-weight: 700; letter-spacing: -0.02em; font-size: clamp(2.75rem, 8.5vw, 7.5rem); line-height: 0.95; color: var(--cream); text-transform: uppercase; }
   .hero-word .char { white-space: pre; }
   .hero-bottom { position: absolute; left: 0; right: 0; bottom: var(--sp-5); z-index: 2; display: flex; flex-direction: column; gap: var(--sp-4); }
   .hero-ctas { display: flex; gap: var(--sp-2); flex-wrap: wrap; justify-content: center; }
   @media (max-width: 720px) { .hero-word { font-size: clamp(2.25rem, 10vw, 4rem); } }
   .hero-headline-wrap { text-align: center; padding: 0 var(--sp-3); }
-  .hero-headline { font-family: var(--font-display); font-weight: 700; letter-spacing: -0.02em; font-size: clamp(2rem, 5vw, 3.75rem); line-height: 1.08; color: var(--white); }
-  .hero-sub { max-width: 640px; margin: var(--sp-2) auto 0; font-size: clamp(1rem, 1.6vw, 1.1875rem); color: rgba(255,255,255,0.82); line-height: 1.6; }
+  .hero-headline { font-family: var(--font-display); font-weight: 700; letter-spacing: -0.02em; font-size: clamp(2rem, 5vw, 3.75rem); line-height: 1.08; color: var(--cream); }
+  .hero-sub { max-width: 640px; margin: var(--sp-2) auto 0; font-size: clamp(1rem, 1.6vw, 1.1875rem); color: var(--cream-dim); line-height: 1.6; }
   .stat-pill.is-text .num { font-size: 1.0625rem; }
-  /* stat pills sit on the dark hero video, not the light page bg — keep their
-     glass treatment and text light regardless of the site-wide light theme */
-  .hero .stat-pill.glass { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.24); }
-  .hero .stat-pill .label { color: rgba(255,255,255,0.78); }
-  .hero .stat-pill .num { color: var(--white); }
-  .hero .ai-badge { background: rgba(255,255,255,0.14); color: var(--white); }
 
-  .glitch-highlight { color: var(--amber-dim); font-family: var(--font-mono); }
+  .glitch-highlight { color: var(--amber); font-family: var(--font-mono); }
   .problem-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-6); align-items: center; }
   @media (max-width: 900px) { .problem-grid { grid-template-columns: 1fr; } }
   .problem-list { display: flex; flex-direction: column; gap: var(--sp-3); margin-top: var(--sp-4); }
@@ -44,7 +38,7 @@
 
   .math-card { padding: var(--sp-6); border-radius: var(--radius-lg); text-align: center; position: relative; overflow: hidden; }
   .math-row { display: flex; align-items: center; justify-content: center; gap: var(--sp-4); flex-wrap: wrap; margin-top: var(--sp-4); }
-  .math-num { font-family: var(--font-mono); font-weight: 700; font-size: clamp(2.5rem, 6vw, 4.5rem); color: var(--amber-dim); }
+  .math-num { font-family: var(--font-mono); font-weight: 700; font-size: clamp(2.5rem, 6vw, 4.5rem); color: var(--amber-light); }
   .math-op { font-family: var(--font-mono); font-size: 2rem; color: var(--cream-dim); }
   .math-label { font-size: 0.8125rem; color: var(--cream-dim); margin-top: 6px; text-transform: uppercase; letter-spacing: 0.06em; }
 
@@ -52,7 +46,7 @@
   .hteaser-scroll::-webkit-scrollbar { height: 6px; }
   .hteaser-scroll::-webkit-scrollbar-thumb { background: var(--border-glass); border-radius: 4px; }
   .hteaser-card { flex: 0 0 auto; width: min(78vw, 280px); scroll-snap-align: start; padding: var(--sp-3); border-radius: var(--radius-md); }
-  .hteaser-card .num { font-family: var(--font-mono); color: var(--amber-dim); font-size: 1.5rem; font-weight: 700; }
+  .hteaser-card .num { font-family: var(--font-mono); color: var(--amber); font-size: 1.5rem; font-weight: 700; }
   .hteaser-card h4 { font-size: 1.0625rem; margin: var(--sp-2) 0 6px; }
   .hteaser-card p { font-size: 0.875rem; color: var(--cream-dim); line-height: 1.55; }
 
@@ -71,10 +65,10 @@
       </g>
       <g class="pt-body">
         <path d="M138 58 L138 44 L126 26 L142 20 L122 12 L30 12 Q22 12 22 18 L22 58 Z" fill="currentColor"/>
-        <rect x="126" y="14" width="8" height="6" rx="1" fill="var(--brand-purple)"/>
-        <rect x="121" y="31" width="8" height="10" rx="1.5" fill="var(--brand-purple)"/>
-        <rect x="78" y="22" width="18" height="15" rx="2" fill="var(--brand-purple)"/>
-        <rect x="50" y="22" width="18" height="15" rx="2" fill="var(--brand-purple)"/>
+        <rect x="126" y="14" width="8" height="6" rx="1" fill="var(--forest)"/>
+        <rect x="121" y="31" width="8" height="10" rx="1.5" fill="var(--forest)"/>
+        <rect x="78" y="22" width="18" height="15" rx="2" fill="var(--forest)"/>
+        <rect x="50" y="22" width="18" height="15" rx="2" fill="var(--forest)"/>
       </g>
       <circle class="pt-wheel" cx="118" cy="58" r="9" fill="currentColor"/>
       <circle class="pt-wheel" cx="48" cy="58" r="9" fill="currentColor"/>
