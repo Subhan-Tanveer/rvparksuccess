@@ -23,7 +23,7 @@ npm run preview  # preview the production build
 
 ## ⚠️ Everything here is a template — not verified content
 
-- **All stats, testimonials, and the "Pine Glen RV Park" pilot case study are illustrative placeholders**, not real, verified numbers. Replace with actual client results as they come in — the copy is written to make swapping easy (search for "Pine Glen" and the stat/counter values in `index.html`, `results.html`).
+- **All stats, testimonials, and the "Best RV Park" pilot case study are illustrative placeholders**, not real, verified numbers. Replace with actual client results as they come in — the copy is written to make swapping easy (search for "Best RV Park" and the stat/counter values in `index.html`, `results.html`).
 - **Contact details** (`hello@rvparksuccess.example`, `payments@rvparksuccess.example`, `(850) 555-0199`) are placeholders.
 - **No real video/photos are used anywhere** — see the asset list and Gemini prompts below.
 
@@ -69,8 +69,8 @@ The notification recipient (`marie@rvparksales.com`) is hardcoded in `api/send-a
 |---|---|---|
 | `public/video/hero-scrub.mp4` | Home hero, scroll-scrubbed | Until this exists, the `poster` image below shows as a static hero (graceful fallback — see Animation notes) |
 | `public/images/hero/hero-poster.jpg` | Home hero poster / fallback | 1920×1080+ landscape |
-| `public/images/case-study/pine-glen-before.jpg` | (optional, add if doing a before/after slider) | 1200×900 |
-| `public/images/case-study/pine-glen-after.jpg` | Results page case study | 1200×900 — falls back to a generated placeholder if missing |
+| `public/images/case-study/best-rv-park-before.jpg` | (optional, add if doing a before/after slider) | 1200×900 |
+| `public/images/case-study/best-rv-park-after.jpg` | Results page case study | 1200×900 — falls back to a generated placeholder if missing |
 | `public/images/results/dashboard.jpg` | (optional — the dashboard is currently a live CSS/JS mockup, not an image) | 1600×1000 |
 | `public/images/misc/results-proof.jpg` | (not yet placed — see prompt below, add wherever you want a proof photo) | 1200×900 |
 
@@ -131,7 +131,7 @@ Happy RV park owner couple standing in front of their park with sold sign, smili
 ## Content still needed from the client
 
 - Real logo (currently a text wordmark + generated favicon mark)
-- Verified pilot/case-study data to replace the Pine Glen placeholder
+- Verified pilot/case-study data to replace the Best RV Park placeholder
 - Real PayPal/Stripe/Zelle payment details
 - Confirmed package feature lists and pricing (currently mirrors the brief exactly: Starter $497, Growth $697, Premium $997)
 

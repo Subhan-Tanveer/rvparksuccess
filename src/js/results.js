@@ -27,7 +27,7 @@ if (caseImg) {
     caseImg.src =
       'data:image/svg+xml;utf8,' +
       encodeURIComponent(
-        `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600"><rect width="800" height="600" fill="#102e32"/><text x="40" y="560" font-family="Georgia,serif" font-size="26" fill="#f5f0e8cc">Pine Glen RV Park — photo coming soon</text></svg>`
+        `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600"><rect width="800" height="600" fill="#102e32"/><text x="40" y="560" font-family="Georgia,serif" font-size="26" fill="#f5f0e8cc">Best RV Park — photo coming soon</text></svg>`
       );
   }, { once: true });
 }

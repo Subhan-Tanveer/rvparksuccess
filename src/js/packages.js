@@ -15,6 +15,7 @@ const ICONS = {
   phone: '<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>',
   globe: '<circle cx="12" cy="12" r="9"/><line x1="3" y1="12" x2="21" y2="12"/><path d="M12 3a14 14 0 0 1 0 18a14 14 0 0 1 0-18Z"/>',
   chat: '<path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>',
+  'file-text': '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/>',
 };
 const CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
 const PAUSE_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';
@@ -25,7 +26,7 @@ function svgIcon(key) {
 
 function priceRowHtml(item) {
   if (item.startingAt) {
-    return `<div class="price-row is-single"><div><span class="p-starting">Starting At</span><span class="p-monthly" style="color:var(--amber-light);">${formatUsd(item.setup)}</span></div></div>`;
+    return `<div class="price-row is-single"><div><span class="p-starting">Starting At</span><span class="p-monthly" style="color: var(--amber-dim);">${formatUsd(item.setup)}</span></div></div>`;
   }
   if (item.setup && item.monthly) {
     return `<div class="price-row"><span class="p-setup">${formatUsd(item.setup)}<span class="p-label">setup</span></span><span class="p-plus">+</span><span class="p-monthly">${formatUsd(item.monthly)}<span class="p-label">/mo</span></span></div>`;
@@ -44,6 +45,7 @@ if (servicesGrid) {
       ${priceRowHtml(s)}
       ${s.monthly ? `<div class="pause-note">${PAUSE_ICON} Pause anytime — perfect for seasonal parks</div>` : ''}
       <button class="btn btn-primary btn-get-started magnetic" style="width:100%; margin-top: var(--sp-3);" data-key="${s.key}"><span>Get Started</span></button>
+      ${s.disclaimer ? `<p class="service-disclaimer">${s.disclaimer}</p>` : ''}
     </div>`).join('');
 }
 
