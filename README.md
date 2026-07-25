@@ -31,9 +31,7 @@ npm run preview  # preview the production build
 
 `packages.html`'s "Get Started" flow intentionally does **not** collect card numbers directly anywhere on this site — that's a PCI-compliance/security line that isn't worth crossing when Stripe's own hosted checkout already solves it for free.
 
-- **Pay by Card → real Stripe Checkout.** Clicking "Continue" calls the Vercel serverless function at `api/create-checkout-session.js`, which creates a Stripe Checkout Session server-side (subscription mode for anything with a monthly fee, one-time payment mode for the website packages) and redirects the browser to Stripe's own hosted payment page. Card details never touch this codebase. Services priced as "Custom Quote" skip checkout entirely — their "Get a Quote" button links straight to the Contact page instead.
-- **PayPal**: button links to a `paypal.me`-style placeholder URL (`src/js/packages.js`) — replace with your real PayPal Business `paypal.me` link, or leave it and rely on Stripe.
-- **Zelle**: displays static instructions (send payment, then email a receipt) since Zelle has no public checkout API — update `payments@rvparksuccess.example` to the real recipient, or remove this option if you'd rather funnel everyone through Stripe.
+- **Stripe Checkout only.** Clicking "Continue to Secure Checkout" calls the Vercel serverless function at `api/create-checkout-session.js`, which creates a Stripe Checkout Session server-side (subscription mode, since all three pricing levels are monthly) and redirects the browser to Stripe's own hosted payment page. Card details never touch this codebase. PayPal and Zelle options were intentionally removed — Stripe is the only payment method offered.
 
 ### Stripe setup (one-time, done by you — not by an AI assistant)
 
@@ -42,7 +40,7 @@ npm run preview  # preview the production build
 3. Deploy this project to Vercel (connect the GitHub repo, or `vercel` CLI from this folder).
 4. In the Vercel project dashboard: **Settings → Environment Variables** → add `STRIPE_SECRET_KEY` with that secret key as the value. Vercel injects it into `api/create-checkout-session.js` at request time via `process.env.STRIPE_SECRET_KEY` — it's never visible in the deployed frontend code.
 5. Test with a `sk_test_...` key and [Stripe's test card numbers](https://docs.stripe.com/testing) first. Switch to `sk_live_...` only once you've confirmed a full test purchase works end-to-end.
-6. To test the `/api` function locally before deploying, use `npx vercel dev` instead of `npm run dev` (plain Vite has no serverless runtime, so `/api/create-checkout-session` will fail under `npm run dev` — the card button falls back gracefully and points people to PayPal/Zelle in that case, this is expected until you deploy or run `vercel dev`).
+6. To test the `/api` function locally before deploying, use `npx vercel dev` instead of `npm run dev` (plain Vite has no serverless runtime, so `/api/create-checkout-session` will fail under `npm run dev` — the button shows an "unavailable" message and re-enables itself in that case, this is expected until you deploy or run `vercel dev`).
 
 Prices are hardcoded in two places that must be kept in sync — `src/js/services-data.js` (drives what's displayed on the page) and the `SERVICES` object in `api/create-checkout-session.js` (drives what Stripe actually charges). Update both if pricing changes.
 
@@ -132,7 +130,7 @@ Happy RV park owner couple standing in front of their park with sold sign, smili
 
 - Real logo (currently a text wordmark + generated favicon mark)
 - Verified pilot/case-study data to replace the Best RV Park placeholder
-- Real PayPal/Stripe/Zelle payment details
+- Real Stripe payment details (see the Stripe setup steps above)
 - Confirmed package feature lists and pricing (currently mirrors the brief exactly: Starter $497, Growth $697, Premium $997)
 
 ## Known scope not covered

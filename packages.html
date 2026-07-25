@@ -28,11 +28,6 @@
   .pay-modal-breakdown .item .val.is-setup { color: var(--amber-light); }
   .pay-modal-breakdown .item .val.is-monthly { color: var(--cream); }
   .pay-modal-breakdown .item .lbl { font-size: 0.75rem; color: var(--cream-dim); text-transform: uppercase; letter-spacing: 0.04em; }
-  .pay-option { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-2); padding: var(--sp-3); border-radius: var(--radius-md); border: 1px solid var(--border-glass); background: var(--surface-glass); margin-bottom: var(--sp-2); }
-  .pay-option .name { font-weight: 600; font-size: 0.9375rem; }
-  .pay-option .sub { font-size: 0.8125rem; color: var(--cream-dim); margin-top: 2px; }
-  .zelle-box { padding: var(--sp-3); border-radius: var(--radius-md); background: rgba(46,155,84,0.08); border: 1px solid var(--border-amber); font-size: 0.875rem; color: var(--cream-dim); line-height: 1.6; }
-  .zelle-box b { color: var(--amber-light); font-family: var(--font-mono); }
 </style>
 </head>
 <body>
@@ -133,7 +128,7 @@
   </div>
 </section>
 
-<!-- Payment modal: PayPal + Zelle + card-checkout only — no raw card fields collected on this page. -->
+<!-- Payment modal: Stripe Checkout only — no raw card fields collected on this page. -->
 <div class="pay-modal-backdrop" id="payModalBackdrop">
   <div class="pay-modal glass-strong">
     <div class="pay-modal-top">
@@ -144,19 +139,9 @@
       <button class="pay-modal-close" id="payModalClose" aria-label="Close">&times;</button>
     </div>
     <div class="pay-modal-breakdown" id="payModalBreakdown"></div>
-    <div class="pay-option">
-      <div><div class="name">Pay with PayPal</div><div class="sub">Redirects to PayPal checkout</div></div>
-      <a href="#" class="btn btn-primary btn-sm" id="paypalBtn" target="_blank" rel="noopener">Continue</a>
-    </div>
-    <div class="pay-option">
-      <div><div class="name">Pay by Card</div><div class="sub" id="cardBtnSub">Secure Stripe checkout</div></div>
-      <button type="button" class="btn btn-ghost btn-sm" id="cardBtn">Continue</button>
-    </div>
-    <div class="zelle-box">
-      <div class="name" style="color: var(--cream); font-weight:600; margin-bottom:4px;">Pay with Zelle</div>
-      Send your payment to <b>payments@rvparksuccess.example</b>, then email your receipt to <b>hello@rvparksuccess.example</b> to activate service.
-    </div>
-    <p class="form-note">Payment placeholder — connect a real PayPal business account and Stripe secret key before launch. See README.</p>
+    <button type="button" class="btn btn-primary magnetic" id="cardBtn" style="width:100%; justify-content:center;"><span>Continue to Secure Checkout</span></button>
+    <p class="form-note" id="cardBtnSub" style="text-align:center; margin-top: var(--sp-2);">Secure payment powered by Stripe</p>
+    <p class="form-note">Payment placeholder — connect a real Stripe secret key before launch. See README.</p>
   </div>
 </div>
 

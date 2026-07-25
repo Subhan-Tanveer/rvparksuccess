@@ -24,13 +24,12 @@ if (packageGrid) {
     </div>`).join('');
 }
 
-/* -- Payment modal: works for any monthly-subscription package -- */
+/* -- Payment modal: Stripe Checkout only, works for any monthly-subscription package -- */
 const backdrop = document.getElementById('payModalBackdrop');
 const closeBtn = document.getElementById('payModalClose');
 const serviceLabel = document.getElementById('payModalService');
 const headline = document.getElementById('payModalHeadline');
 const breakdown = document.getElementById('payModalBreakdown');
-const paypalBtn = document.getElementById('paypalBtn');
 const cardBtn = document.getElementById('cardBtn');
 const cardBtnSub = document.getElementById('cardBtnSub');
 
@@ -48,10 +47,8 @@ document.addEventListener('click', (e) => {
 
   breakdown.innerHTML = `<div class="item"><div class="val is-monthly">${formatUsd(pkg.monthly)}</div><div class="lbl">Per Month</div></div><div class="item"><div class="val is-setup">${pkg.commitment}</div><div class="lbl">Commitment</div></div>`;
 
-  const totalDollars = pkg.monthly / 100;
-  paypalBtn.href = `https://www.paypal.com/paypalme/rvparksuccess/${totalDollars}`;
   cardBtn.disabled = false;
-  cardBtnSub.textContent = 'Secure Stripe checkout';
+  cardBtnSub.textContent = 'Secure payment powered by Stripe';
   backdrop.classList.add('is-open');
 });
 
@@ -74,7 +71,7 @@ cardBtn.addEventListener('click', async () => {
     // Most likely cause in local dev: /api routes only run under `vercel dev` or once deployed to Vercel.
     cardBtn.disabled = false;
     cardBtn.textContent = originalLabel;
-    cardBtnSub.textContent = 'Unavailable right now — try PayPal/Zelle, or run `vercel dev` locally';
+    cardBtnSub.textContent = 'Checkout unavailable right now — please try again shortly.';
     console.warn('Stripe checkout unavailable:', err.message);
   }
 });

@@ -62,6 +62,6 @@ export default async function handler(req, res) {
     res.status(200).json({ url: session.url });
   } catch (err) {
     console.error('Stripe checkout session error:', err.message);
-    res.status(500).json({ error: 'Unable to start checkout. Please try again or use PayPal/Zelle.' });
+    res.status(500).json({ error: 'Unable to start checkout. Please try again shortly.' });
   }
 }
