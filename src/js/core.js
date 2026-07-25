@@ -107,14 +107,18 @@ export function initCounters(root = document) {
     const decimals = el.dataset.counterDecimals ? parseInt(el.dataset.counterDecimals, 10) : 0;
     const suffix = el.dataset.counterSuffix || '';
     const prefix = el.dataset.counterPrefix || '';
-    if (prefersReduced) { el.textContent = prefix + target.toFixed(decimals) + suffix; return; }
+    const commas = el.dataset.counterCommas !== undefined;
+    const format = (v) => commas
+      ? v.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals })
+      : v.toFixed(decimals);
+    if (prefersReduced) { el.textContent = prefix + format(target) + suffix; return; }
     const obj = { val: 0 };
     ScrollTrigger.create({
       trigger: el, start: 'top 85%', once: true,
       onEnter: () => {
         gsap.to(obj, {
           val: target, duration: 1.7, ease: 'power2.out',
-          onUpdate: () => { el.textContent = prefix + obj.val.toFixed(decimals) + suffix; },
+          onUpdate: () => { el.textContent = prefix + format(obj.val) + suffix; },
         });
       },
     });

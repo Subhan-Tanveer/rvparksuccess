@@ -133,6 +133,11 @@ body { visibility: hidden; animation: pt-reveal-body 2.05s steps(1) forwards; }
 .package-card { padding: var(--sp-5) var(--sp-4); display: flex; flex-direction: column; }
 .package-card.is-featured { border-color: var(--border-amber); background: linear-gradient(160deg, rgba(46, 155, 84,0.09), var(--forest-light)); }
 .package-card .badge-pop { align-self: flex-start; margin-bottom: var(--sp-2); padding: 5px 14px; border-radius: var(--radius-pill); background: var(--amber); color: var(--black); font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+.package-card .package-level { font-family: var(--font-mono); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--amber-light); margin-bottom: 4px; }
+.package-card .package-tagline { font-size: 0.875rem; color: var(--cream-dim); margin-bottom: var(--sp-3); line-height: 1.5; }
+.package-card .package-commitment { display: inline-flex; align-self: flex-start; padding: 4px 12px; border-radius: var(--radius-pill); background: var(--surface-glass); border: 1px solid var(--border-glass); font-size: 0.75rem; color: var(--cream-dim); margin-bottom: var(--sp-3); }
+.package-card .includes-prior { font-size: 0.8125rem; font-weight: 600; color: var(--amber-light); margin: var(--sp-2) 0 6px; }
+.package-card .package-note { font-size: 0.8125rem; color: rgba(245,240,232,0.5); margin-top: var(--sp-3); line-height: 1.5; }
 .package-card h3 { font-size: 1.375rem; margin-bottom: 6px; }
 .package-card .price { font-family: var(--font-mono); font-size: 2.75rem; font-weight: 700; color: var(--amber-light); margin: var(--sp-2) 0; }
 .package-card .price span { font-size: 1rem; font-weight: 500; color: var(--cream-dim); }

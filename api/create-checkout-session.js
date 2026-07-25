@@ -8,22 +8,12 @@ import Stripe from 'stripe';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
-// Prices in cents. Keep in sync with src/js/services-data.js.
-// setup: one-time fee (billed once at checkout). monthly: recurring fee.
-// A service with both gets a single subscription session with a one-time
-// line item alongside the recurring one (Stripe supports mixing the two
-// in subscription mode). A service with only `setup` is a one-time payment.
+// Prices in cents. Keep in sync with src/js/services-data.js (PACKAGES).
+// All three levels are monthly subscriptions — no one-time setup fees.
 const SERVICES = {
-  'website-design': { name: 'RVPark Success — Website Design', setup: 185000, monthly: 0 },
-  'social-media': { name: 'RVPark Success — Social Media Management', setup: 0, monthly: 49700 },
-  'ai-guest-finder': { name: 'RVPark Success — AI Guest Finder', setup: 0, monthly: 99700 },
-  'ai-booking': { name: 'RVPark Success — AI Booking System', setup: 0, monthly: 29700 },
-  'ai-content': { name: 'RVPark Success — AI Content Creation', setup: 0, monthly: 47000 },
-  'review-reputation': { name: 'RVPark Success — Review and Reputation Marketing', setup: 0, monthly: 19700 },
-  'financial-records': { name: 'RVPark Success — Financial Records & Revenue Tracking', setup: 0, monthly: 14700 },
-  'monthly-reporting': { name: 'RVPark Success — Monthly Reporting', setup: 0, monthly: 9700 },
-  'voice-ai': { name: 'RVPark Success — Voice AI Receptionist', setup: 100000, monthly: 45000 },
-  'conversational-ai': { name: 'RVPark Success — Conversational AI (Email, SMS & DMs)', setup: 70000, monthly: 30000 },
+  foundation: { name: 'RVPark Success — Level 1: Foundation', setup: 0, monthly: 69500 },
+  growth: { name: 'RVPark Success — Level 2: Growth', setup: 0, monthly: 129500 },
+  maximum: { name: 'RVPark Success — Level 3: Maximum', setup: 0, monthly: 199500 },
 };
 
 export default async function handler(req, res) {

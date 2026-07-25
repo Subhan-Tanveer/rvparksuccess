@@ -36,11 +36,23 @@
   .problem-item svg { width: 22px; height: 22px; stroke: var(--amber); flex-shrink: 0; margin-top: 3px; }
   .problem-item p { color: var(--cream-dim); font-size: 1rem; line-height: 1.6; }
 
-  .math-card { padding: var(--sp-6); border-radius: var(--radius-lg); text-align: center; position: relative; overflow: hidden; }
-  .math-row { display: flex; align-items: center; justify-content: center; gap: var(--sp-4); flex-wrap: wrap; margin-top: var(--sp-4); }
-  .math-num { font-family: var(--font-mono); font-weight: 700; font-size: clamp(2.5rem, 6vw, 4.5rem); color: var(--amber-light); }
-  .math-op { font-family: var(--font-mono); font-size: 2rem; color: var(--cream-dim); }
-  .math-label { font-size: 0.8125rem; color: var(--cream-dim); margin-top: 6px; text-transform: uppercase; letter-spacing: 0.06em; }
+  .scenario-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-4); }
+  @media (max-width: 900px) { .scenario-grid { grid-template-columns: 1fr; } }
+  .scenario-card { padding: var(--sp-5) var(--sp-4); border-radius: var(--radius-lg); }
+  .scenario-setup { font-family: var(--font-mono); font-size: 0.9375rem; color: var(--cream-dim); margin-top: 4px; }
+  .scenario-row { display: flex; align-items: center; gap: var(--sp-3); margin-top: var(--sp-5); }
+  @media (max-width: 560px) { .scenario-row { flex-direction: column; } }
+  .scenario-col { flex: 1; text-align: center; }
+  .scenario-col-label { font-size: 0.75rem; color: var(--cream-dim); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: var(--sp-2); }
+  .scenario-figure { margin-bottom: var(--sp-2); }
+  .scenario-figure .num { display: block; font-family: var(--font-mono); font-weight: 700; font-size: clamp(1.25rem, 2.4vw, 1.75rem); color: var(--cream); }
+  .scenario-figure-label { display: block; font-size: 0.75rem; color: var(--cream-dim); margin-top: 2px; }
+  .scenario-arrow { font-family: var(--font-mono); font-size: 1.75rem; color: var(--amber); flex-shrink: 0; }
+  @media (max-width: 560px) { .scenario-arrow { transform: rotate(90deg); } }
+  .scenario-diff { display: flex; justify-content: center; gap: var(--sp-5); margin-top: var(--sp-5); padding: var(--sp-4); border-radius: var(--radius-md); background: rgba(46, 155, 84, 0.1); border: 1px solid var(--border-amber); }
+  .scenario-diff-item .num { display: block; font-family: var(--font-mono); font-weight: 800; font-size: clamp(1.75rem, 3.4vw, 2.5rem); color: var(--amber-light); text-shadow: 0 0 30px rgba(46, 155, 84, 0.5); }
+  .scenario-diff-label { display: block; font-size: 0.75rem; color: var(--cream-dim); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 4px; text-align: center; }
+  .scenario-goal { font-size: 0.875rem; color: var(--cream-dim); text-align: center; margin-top: var(--sp-4); line-height: 1.5; font-style: italic; }
 
   .hteaser-scroll { display: flex; gap: var(--sp-3); overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: var(--sp-3); -webkit-overflow-scrolling: touch; }
   .hteaser-scroll::-webkit-scrollbar { height: 6px; }
@@ -165,31 +177,66 @@
   <div class="wrap">
     <div class="section-head" style="margin: 0 auto var(--sp-6); text-align: center;" data-reveal>
       <p class="eyebrow">The Math</p>
-      <h2 data-split-in="words">What a <span class="glitch-highlight" data-glitch>VALUE</span> increase actually looks like</h2>
+      <h2 data-split-in="words">What a 10% occupancy increase means for <span class="glitch-highlight" data-glitch>YOUR</span> park</h2>
     </div>
-    <div class="math-card glass dot-grid" data-reveal>
-      <p class="lede">A typical 60-site park we work with sees this kind of shift:</p>
-      <div class="math-row">
-        <div><span class="math-num" data-counter="52" data-counter-suffix="%">0%</span><div class="math-label">Starting Occupancy</div></div>
-        <span class="math-op">→</span>
-        <div><span class="math-num" data-counter="78" data-counter-suffix="%">0%</span><div class="math-label">After 90 Days</div></div>
-        <span class="math-op">=</span>
-        <div><span class="math-num" data-counter="410" data-counter-prefix="$" data-counter-suffix="K">$0K</span><div class="math-label">Added Park Value*</div></div>
+    <div class="scenario-grid" data-reveal-stagger>
+      <div class="scenario-card glass dot-grid">
+        <p class="eyebrow">Scenario 1 — Mid Size Park</p>
+        <p class="scenario-setup">50 sites at $60 per night</p>
+        <div class="scenario-row">
+          <div class="scenario-col">
+            <div class="scenario-col-label">Current — 65% Occupancy</div>
+            <div class="scenario-figure"><span class="num" data-counter="854100" data-counter-prefix="$" data-counter-commas>$0</span><span class="scenario-figure-label">Annual Gross</span></div>
+            <div class="scenario-figure"><span class="num" data-counter="469755" data-counter-prefix="$" data-counter-commas>$0</span><span class="scenario-figure-label">Profit</span></div>
+          </div>
+          <span class="scenario-arrow">→</span>
+          <div class="scenario-col">
+            <div class="scenario-col-label">With 10% Increase — 75%</div>
+            <div class="scenario-figure"><span class="num" data-counter="985500" data-counter-prefix="$" data-counter-commas>$0</span><span class="scenario-figure-label">Annual Gross</span></div>
+            <div class="scenario-figure"><span class="num" data-counter="542025" data-counter-prefix="$" data-counter-commas>$0</span><span class="scenario-figure-label">Profit</span></div>
+          </div>
+        </div>
+        <div class="scenario-diff">
+          <div class="scenario-diff-item"><span class="num" data-counter="72270" data-counter-prefix="+$" data-counter-commas>+$0</span><span class="scenario-diff-label">Per Year</span></div>
+          <div class="scenario-diff-item"><span class="num" data-counter="6022" data-counter-prefix="+$" data-counter-commas>+$0</span><span class="scenario-diff-label">Per Month</span></div>
+        </div>
+        <p class="scenario-goal">Our goal is to increase your occupancy by at least 10%. If we do, you'll see results like these.</p>
       </div>
-      <p class="form-note" style="margin-top: var(--sp-4);">*Illustrative example based on typical income-multiple valuation. Individual results vary by market and site count.</p>
+      <div class="scenario-card glass dot-grid">
+        <p class="eyebrow">Scenario 2 — Smaller Park</p>
+        <p class="scenario-setup">30 sites at $45 per night</p>
+        <div class="scenario-row">
+          <div class="scenario-col">
+            <div class="scenario-col-label">Current — 40% Occupancy</div>
+            <div class="scenario-figure"><span class="num" data-counter="197100" data-counter-prefix="$" data-counter-commas>$0</span><span class="scenario-figure-label">Annual Gross</span></div>
+            <div class="scenario-figure"><span class="num" data-counter="118260" data-counter-prefix="$" data-counter-commas>$0</span><span class="scenario-figure-label">Profit</span></div>
+          </div>
+          <span class="scenario-arrow">→</span>
+          <div class="scenario-col">
+            <div class="scenario-col-label">With 10% Increase — 50%</div>
+            <div class="scenario-figure"><span class="num" data-counter="246375" data-counter-prefix="$" data-counter-commas>$0</span><span class="scenario-figure-label">Annual Gross</span></div>
+            <div class="scenario-figure"><span class="num" data-counter="147825" data-counter-prefix="$" data-counter-commas>$0</span><span class="scenario-figure-label">Profit</span></div>
+          </div>
+        </div>
+        <div class="scenario-diff">
+          <div class="scenario-diff-item"><span class="num" data-counter="29565" data-counter-prefix="+$" data-counter-commas>+$0</span><span class="scenario-diff-label">Per Year</span></div>
+          <div class="scenario-diff-item"><span class="num" data-counter="2463" data-counter-prefix="+$" data-counter-commas>+$0</span><span class="scenario-diff-label">Per Month</span></div>
+        </div>
+        <p class="scenario-goal">Our goal is to increase your occupancy by at least 10%. If we do, you'll see results like these.</p>
+      </div>
     </div>
+    <p class="form-note" style="text-align:center; margin-top: var(--sp-4);">*Illustrative examples. Individual results vary by market, site count, nightly rate, and current occupancy.</p>
   </div>
 </section>
 
 <section class="section dot-grid">
   <div class="wrap">
-    <p class="bold-line" data-reveal>Pick what you need. Pause what you don't. No long term contracts. Seasonal flexibility built in.</p>
+    <p class="bold-line" data-reveal>Not sure which level is right for your park? Book a free audit and we'll tell you exactly which level will move the needle most for your specific situation.</p>
     <div class="section-head" data-reveal>
-      <p class="eyebrow">Individual Services</p>
-      <h2 data-split-in="words">Build your own combination</h2>
+      <p class="eyebrow">Pricing Levels</p>
+      <h2 data-split-in="words">Three levels. Pick yours.</h2>
     </div>
-    <div class="service-grid" id="homeServicesGrid" data-reveal-stagger></div>
-    <p style="text-align:center; margin-top: var(--sp-5);"><a href="packages.html" class="btn btn-ghost btn-sm">See Full Pricing &amp; Website Design</a></p>
+    <div class="package-grid" id="homePackageGrid" data-reveal-stagger></div>
   </div>
 </section>
 
