@@ -24,8 +24,13 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const DB_PATH = join(__dirname, '..', '..', 'data', 'reservations-db.json');
 
 const SEED = {
+  // Park names/locations reuse the fictional parks already referenced in
+  // the homepage marquee ticker, so the demo data feels consistent across
+  // the whole site rather than introducing yet more placeholder names.
   parks: [
-    { id: 'best-rv-park', name: 'Best RV Park', location: 'Anytown, USA', timezone: 'America/Chicago' },
+    { id: 'best-rv-park', name: 'Best RV Park', location: 'Anytown, USA', state: 'USA', timezone: 'America/Chicago' },
+    { id: 'cedar-bend', name: 'Cedar Bend Campground', location: 'Lakeview, TX', state: 'TX', timezone: 'America/Chicago' },
+    { id: 'blue-ridge', name: 'Blue Ridge RV Resort', location: 'Asheville, NC', state: 'NC', timezone: 'America/New_York' },
   ],
   sites: [
     { id: 'site-1', parkId: 'best-rv-park', name: 'Site 1', type: 'RV — Full Hookup', capacity: 6, nightlyRateCents: 5200 },
@@ -37,6 +42,21 @@ const SEED = {
     { id: 'site-7', parkId: 'best-rv-park', name: 'Site 7', type: 'Pull-Through Premium', capacity: 8, nightlyRateCents: 6500 },
     { id: 'site-8', parkId: 'best-rv-park', name: 'Site 8', type: 'Tent / Primitive', capacity: 4, nightlyRateCents: 3500 },
     { id: 'site-9', parkId: 'best-rv-park', name: 'Site 9', type: 'Tent / Primitive', capacity: 4, nightlyRateCents: 3500 },
+
+    { id: 'cb-site-1', parkId: 'cedar-bend', name: 'Site A1', type: 'RV — Full Hookup', capacity: 6, nightlyRateCents: 4500 },
+    { id: 'cb-site-2', parkId: 'cedar-bend', name: 'Site A2', type: 'RV — Full Hookup', capacity: 6, nightlyRateCents: 4500 },
+    { id: 'cb-site-3', parkId: 'cedar-bend', name: 'Site A3', type: 'RV — Full Hookup', capacity: 6, nightlyRateCents: 4500 },
+    { id: 'cb-site-4', parkId: 'cedar-bend', name: 'Lakeside 1', type: 'RV — Lakeside', capacity: 6, nightlyRateCents: 5800 },
+    { id: 'cb-site-5', parkId: 'cedar-bend', name: 'Cabin 1', type: 'Cabin', capacity: 4, nightlyRateCents: 9500 },
+    { id: 'cb-site-6', parkId: 'cedar-bend', name: 'Tent Site 1', type: 'Tent / Primitive', capacity: 4, nightlyRateCents: 3000 },
+
+    { id: 'br-site-1', parkId: 'blue-ridge', name: 'Ridge 1', type: 'RV — Full Hookup', capacity: 8, nightlyRateCents: 7200 },
+    { id: 'br-site-2', parkId: 'blue-ridge', name: 'Ridge 2', type: 'RV — Full Hookup', capacity: 8, nightlyRateCents: 7200 },
+    { id: 'br-site-3', parkId: 'blue-ridge', name: 'Ridge 3', type: 'RV — Full Hookup', capacity: 8, nightlyRateCents: 7200 },
+    { id: 'br-site-4', parkId: 'blue-ridge', name: 'Mountain View Deluxe', type: 'RV — Premium', capacity: 8, nightlyRateCents: 9800 },
+    { id: 'br-site-5', parkId: 'blue-ridge', name: 'Glamping Tent 1', type: 'Glamping', capacity: 4, nightlyRateCents: 11500 },
+    { id: 'br-site-6', parkId: 'blue-ridge', name: 'Glamping Tent 2', type: 'Glamping', capacity: 4, nightlyRateCents: 11500 },
+    { id: 'br-site-7', parkId: 'blue-ridge', name: 'Cabin Overlook', type: 'Cabin', capacity: 6, nightlyRateCents: 15000 },
   ],
   reservations: [],
 };
@@ -87,6 +107,24 @@ function isReservationActive(r) {
 
 export function getPark(parkId) {
   return loadDb().parks.find((p) => p.id === parkId) || null;
+}
+
+export function listParks(locationQuery = '') {
+  const db = loadDb();
+  const q = locationQuery.trim().toLowerCase();
+  return db.parks
+    .filter((p) => !q || p.name.toLowerCase().includes(q) || p.location.toLowerCase().includes(q) || p.state.toLowerCase().includes(q))
+    .map((park) => {
+      const sites = db.sites.filter((s) => s.parkId === park.id);
+      const rates = sites.map((s) => s.nightlyRateCents);
+      return {
+        ...park,
+        siteCount: sites.length,
+        siteTypes: [...new Set(sites.map((s) => s.type))],
+        minNightlyRateCents: rates.length ? Math.min(...rates) : null,
+        maxNightlyRateCents: rates.length ? Math.max(...rates) : null,
+      };
+    });
 }
 
 export function getAvailableSites(parkId, checkIn, checkOut) {

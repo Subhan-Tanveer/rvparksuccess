@@ -14,6 +14,7 @@ export default defineConfig({
         contact: resolve(__dirname, 'contact.html'),
         sample: resolve(__dirname, 'sample.html'),
         reservations: resolve(__dirname, 'reservations.html'),
+        findAPark: resolve(__dirname, 'find-a-park.html'),
       },
     },
   },

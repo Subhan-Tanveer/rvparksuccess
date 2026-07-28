@@ -56,6 +56,10 @@ async function searchAvailability() {
       throw new Error(data.error || 'Search failed');
     }
     const data = await res.json();
+    if (data.park) {
+      document.getElementById('resParkHeading').textContent = `Book Your Stay at ${data.park.name}`;
+      document.title = `Book a Site — ${data.park.name}`;
+    }
     renderResults(data.sites, checkIn, checkOut);
   } catch (err) {
     resultsEl.innerHTML = `<div class="res-empty">Couldn't load availability right now${err.message ? ` — ${err.message}` : ''}. (Availability only works when running under \`vercel dev\` or once deployed — plain \`npm run dev\` has no serverless runtime.)</div>`;
