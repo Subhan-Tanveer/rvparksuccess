@@ -20,6 +20,8 @@ npm run preview  # preview the production build
 | How It Works (horizontal pinned scroll) | `how-it-works.html` |
 | Results | `results.html` |
 | Contact / Book a Free Audit | `contact.html` |
+| Live Demo (fictional "Best RV Park") | `sample.html` |
+| Reservations booking demo | `reservations.html` |
 
 ## ⚠️ Everything here is a template — not verified content
 
@@ -43,6 +45,31 @@ npm run preview  # preview the production build
 6. To test the `/api` function locally before deploying, use `npx vercel dev` instead of `npm run dev` (plain Vite has no serverless runtime, so `/api/create-checkout-session` will fail under `npm run dev` — the button shows an "unavailable" message and re-enables itself in that case, this is expected until you deploy or run `vercel dev`).
 
 Prices are hardcoded in two places that must be kept in sync — `src/js/services-data.js` (drives what's displayed on the page) and the `SERVICES` object in `api/create-checkout-session.js` (drives what Stripe actually charges). Update both if pricing changes.
+
+## Reservations system (proof-of-concept — read before relying on it)
+
+`reservations.html` is a working demo of the "bundle a real reservations system into the monthly marketing package" idea — a guest can search real availability, pick a site, and pay through Stripe, for the fictional "Best RV Park" seeded in `api/_lib/reservations-store.js`.
+
+**This is a proof of concept, not a production booking platform yet.** The one thing to understand before showing this to a real park owner or taking a real booking:
+
+- **The data layer is a JSON file, not a real database.** `api/_lib/reservations-store.js` reads/writes `data/reservations-db.json` on disk. That works correctly for local testing (`vercel dev` on your own machine, where the filesystem is real and persists), but **will not reliably prevent double-bookings once deployed to Vercel** — production serverless functions run in ephemeral, isolated instances with a read-only filesystem, so two guests could both see the same site as available at the same time. Before this handles real money and real reservations, swap the read/write functions in that file for calls to a real database (Vercel Postgres, Supabase, etc.) — the rest of the code (the API routes, the booking page) calls a stable set of functions from that one file and won't need to change.
+- **Multi-park / multi-tenant isn't built yet.** Right now there's one seeded park (`best-rv-park`) with 9 sites across 3 site types. Extending this to give every RVPark Success client their own configurable site list, rates, and blackout dates is the next real chunk of work once the core booking flow is proven out.
+- **Who holds the guest's money is still an open decision.** Right now, Stripe Checkout collects payment into *your* Stripe account (the same `STRIPE_SECRET_KEY` used for the marketing subscriptions). For a real multi-park platform, the standard approach is **Stripe Connect** — each park connects its own Stripe account, the guest pays the park directly, and RVPark Success's booking-fee cut is deducted automatically. That's a bigger Stripe setup step (and a business decision about money flow) that hasn't been wired up yet.
+- **GoHighLevel (GHL) isn't connected yet.** The plan discussed with Marie was for confirmed reservations to flow into GHL (as a contact + a record of the booking) so existing marketing automations — review requests, upsell follow-ups — pick guests up automatically. That sync doesn't exist yet; it's a follow-on step once you confirm which GHL sub-account this should write to.
+
+### How the booking flow works today
+
+1. Guest picks check-in/check-out dates on `reservations.html` and clicks **Check Availability** → calls `GET /api/reservations/availability`, which checks every site at the park against existing confirmed/pending reservations for date overlap and returns what's actually open, with pricing.
+2. Guest picks a site, enters their name/email/phone, and clicks **Continue to Secure Checkout** → calls `POST /api/reservations/create-checkout`, which creates a `pending` reservation (holding that site for 20 minutes so two guests can't double-book it mid-checkout) and returns a Stripe Checkout URL.
+3. Guest pays on Stripe's hosted page. Stripe then calls `POST /api/reservations/webhook`, which is the **only** thing that flips the reservation to `confirmed` — the booking page itself never marks a reservation paid, so a guest closing the tab mid-checkout can't fake a confirmed booking.
+
+### Setup to actually test payment end-to-end
+
+In addition to the `STRIPE_SECRET_KEY` setup above, the webhook needs its own secret:
+
+1. In the Stripe Dashboard: **Developers → Webhooks → Add endpoint**, pointed at `https://yourdomain.com/api/reservations/webhook`, listening for the `checkout.session.completed` event.
+2. Stripe gives you a **signing secret** (starts with `whsec_...`). Add it as `STRIPE_WEBHOOK_SECRET` in the same place you added `STRIPE_SECRET_KEY` (Vercel dashboard → Environment Variables, or your local `.env` for `vercel dev` testing). **Never paste this into a chat, commit it to git, or put it in any file in this repo.**
+3. To test locally with `vercel dev`, use the [Stripe CLI](https://docs.stripe.com/stripe-cli) (`stripe listen --forward-to localhost:3000/api/reservations/webhook`) to forward webhook events to your machine — it will print a `whsec_...` value to use locally.
 
 ## Contact form → real email (Gmail SMTP)
 

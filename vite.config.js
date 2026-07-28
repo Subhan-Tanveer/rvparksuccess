@@ -13,6 +13,7 @@ export default defineConfig({
         results: resolve(__dirname, 'results.html'),
         contact: resolve(__dirname, 'contact.html'),
         sample: resolve(__dirname, 'sample.html'),
+        reservations: resolve(__dirname, 'reservations.html'),
       },
     },
   },
