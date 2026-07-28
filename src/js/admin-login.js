@@ -13,10 +13,10 @@ form.addEventListener('submit', async (e) => {
   submitBtn.disabled = true;
 
   try {
-    const res = await fetch('/api/admin/super-login', {
+    const res = await fetch('/api/admin/auth', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ password: document.getElementById('password').value }),
+      body: JSON.stringify({ action: 'super-login', password: document.getElementById('password').value }),
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Login failed');

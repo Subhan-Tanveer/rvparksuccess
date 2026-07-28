@@ -13,10 +13,11 @@ form.addEventListener('submit', async (e) => {
   submitBtn.disabled = true;
 
   try {
-    const res = await fetch('/api/admin/park-login', {
+    const res = await fetch('/api/admin/auth', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
+        action: 'park-login',
         username: document.getElementById('username').value,
         password: document.getElementById('password').value,
       }),

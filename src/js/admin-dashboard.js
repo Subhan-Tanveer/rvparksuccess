@@ -71,7 +71,7 @@ createForm.addEventListener('submit', async (e) => {
 });
 
 document.getElementById('logoutBtn').addEventListener('click', async () => {
-  await fetch('/api/admin/logout', { method: 'POST' });
+  await fetch('/api/admin/auth', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'logout' }) });
   window.location.href = 'admin-login.html';
 });
 
