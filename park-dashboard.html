@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Staff Dashboard — RVPark Success</title>
+<meta name="robots" content="noindex, nofollow" />
+<link rel="icon" type="image/png" href="/favicon.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/src/css/tokens.css">
+<link rel="stylesheet" href="/src/css/components.css">
+<style>
+  .admin-topbar { display: flex; align-items: center; justify-content: space-between; padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--border-glass); flex-wrap: wrap; gap: var(--sp-2); }
+  .admin-wrap { max-width: 1100px; margin: 0 auto; padding: var(--sp-6) var(--sp-4); }
+  .admin-section { padding: var(--sp-5) var(--sp-4); border-radius: var(--radius-lg); margin-bottom: var(--sp-5); }
+  .admin-table { width: 100%; border-collapse: collapse; margin-top: var(--sp-3); }
+  .admin-table th { text-align: left; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--cream-dim); padding: 8px 10px; border-bottom: 1px solid var(--border-glass); }
+  .admin-table td { padding: 10px; border-bottom: 1px solid var(--border-glass); font-size: 0.9375rem; vertical-align: middle; }
+  .admin-table code { font-family: var(--font-mono); font-size: 0.8125rem; color: var(--amber-light); }
+  .admin-empty { text-align: center; padding: var(--sp-4); color: var(--cream-dim); font-size: 0.9375rem; }
+  .admin-alert { padding: var(--sp-2) var(--sp-3); border-radius: var(--radius-md); font-size: 0.875rem; margin-top: var(--sp-3); display: none; }
+  .admin-alert.is-visible { display: block; }
+  .admin-alert.is-success { background: rgba(46,155,84,0.12); border: 1px solid var(--border-amber); color: var(--amber-light); }
+  .admin-alert.is-error { background: rgba(217,60,46,0.1); border: 1px solid rgba(217,60,46,0.4); color: #f0a89a; }
+  .status-chip { font-size: 0.6875rem; padding: 3px 9px; border-radius: var(--radius-pill); text-transform: uppercase; letter-spacing: 0.04em; }
+  .status-chip.is-confirmed { background: rgba(46,155,84,0.15); color: var(--amber-light); }
+  .status-chip.is-pending { background: rgba(217,127,46,0.15); color: #e0a86a; }
+  .field-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: var(--sp-3); }
+  @media (max-width: 720px) { .field-row-3 { grid-template-columns: 1fr; } }
+  .booking-sites-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--sp-2); margin-top: var(--sp-3); }
+  .booking-site-btn { text-align: left; padding: var(--sp-3); border-radius: var(--radius-md); border: 1px solid var(--border-glass); background: var(--surface-glass); cursor: pointer; transition: border-color 0.2s ease, background 0.2s ease; }
+  .booking-site-btn:hover { border-color: var(--border-amber); background: var(--surface-glass-strong); }
+  .booking-site-btn.is-selected { border-color: var(--amber); background: rgba(46,155,84,0.12); }
+  .booking-site-btn .name { font-weight: 600; }
+  .booking-site-btn .meta { font-size: 0.8125rem; color: var(--cream-dim); margin-top: 2px; }
+  .booking-site-btn .rate { font-family: var(--font-mono); color: var(--amber-light); margin-top: 6px; font-weight: 700; }
+</style>
+</head>
+<body>
+
+<div class="cursor-dot"></div>
+<div class="cursor-ring"></div>
+
+<div class="admin-topbar">
+  <a href="index.html" class="nav-brand"><span class="mark mark-logo"><img src="/images/logo/rvparksuccess-icon.png" alt="RVPark Success logo"></span><span class="name" id="parkNameHeading">Staff Dashboard</span></a>
+  <button type="button" class="btn btn-ghost btn-sm" id="logoutBtn">Log Out</button>
+</div>
+
+<div class="admin-wrap" id="gate" style="display:none;">
+
+  <!-- New Booking: phone / walk-in reservations, same data as the public site -->
+  <div class="admin-section glass" data-reveal>
+    <div class="section-head" style="margin-bottom: var(--sp-3);">
+      <p class="eyebrow">Phone or Walk-In</p>
+      <h2 style="font-size: 1.375rem;">New Booking</h2>
+    </div>
+    <div class="field-row-2">
+      <div class="field-float"><input id="bkCheckIn" type="date" required><label for="bkCheckIn">Check-In</label></div>
+      <div class="field-float"><input id="bkCheckOut" type="date" required><label for="bkCheckOut">Check-Out</label></div>
+    </div>
+    <button type="button" class="btn btn-ghost" id="checkAvailBtn"><span>Check Availability</span></button>
+    <div class="booking-sites-grid" id="bookingSitesGrid"></div>
+
+    <form id="bookingForm" style="display:none; margin-top: var(--sp-4); border-top: 1px solid var(--border-glass); padding-top: var(--sp-4);">
+      <p class="eyebrow" id="selectedSiteLabel" style="margin-bottom: var(--sp-2);"></p>
+      <div class="field-row-2">
+        <div class="field-float"><input id="gName" required><label for="gName">Guest Name</label></div>
+        <div class="field-float"><input id="gPhone" type="tel"><label for="gPhone">Guest Phone</label></div>
+      </div>
+      <div class="field-float"><input id="gEmail" type="email"><label for="gEmail">Guest Email (optional)</label></div>
+      <div class="field-float">
+        <select id="paymentMethod">
+          <option value="cash">Cash — confirm now</option>
+          <option value="card-in-person">Card in person — confirm now</option>
+          <option value="pay-later-link">Pay later — hold the site 24h</option>
+        </select>
+        <label for="paymentMethod">Payment Method</label>
+      </div>
+      <div class="field-float"><input id="gNotes"><label for="gNotes">Notes (optional)</label></div>
+      <button type="submit" class="btn btn-primary magnetic" id="confirmBookingBtn"><span>Confirm Booking</span></button>
+      <div class="admin-alert" id="bookingAlert"></div>
+    </form>
+  </div>
+
+  <!-- Site management -->
+  <div class="admin-section glass" data-reveal>
+    <div class="section-head" style="margin-bottom: var(--sp-3);">
+      <p class="eyebrow">Your Inventory</p>
+      <h2 style="font-size: 1.375rem;">Sites &amp; Rates</h2>
+    </div>
+    <form id="addSiteForm">
+      <div class="field-row-3">
+        <div class="field-float"><input id="sName" required><label for="sName">Site Name</label></div>
+        <div class="field-float"><input id="sType" required placeholder=" "><label for="sType">Type (e.g. RV — Full Hookup)</label></div>
+        <div class="field-float"><input id="sCapacity" type="number" min="1" required><label for="sCapacity">Sleeps Up To</label></div>
+      </div>
+      <div class="field-float" style="max-width: 240px;"><input id="sRate" type="number" min="1" step="0.01" required><label for="sRate">Nightly Rate ($)</label></div>
+      <button type="submit" class="btn btn-ghost" id="addSiteBtn"><span>Add Site</span></button>
+      <div class="admin-alert" id="siteAlert"></div>
+    </form>
+    <table class="admin-table">
+      <thead><tr><th>Name</th><th>Type</th><th>Sleeps</th><th>Rate</th><th></th></tr></thead>
+      <tbody id="sitesTableBody"></tbody>
+    </table>
+    <div class="admin-empty" id="sitesEmpty" style="display:none;">No sites yet — add your first one above.</div>
+  </div>
+
+  <!-- Recent reservations -->
+  <div class="admin-section glass" data-reveal>
+    <div class="section-head" style="margin-bottom: 0;">
+      <p class="eyebrow">Recent Activity</p>
+      <h2 style="font-size: 1.375rem;">Reservations</h2>
+    </div>
+    <table class="admin-table">
+      <thead><tr><th>Guest</th><th>Dates</th><th>Source</th><th>Status</th><th>Total</th></tr></thead>
+      <tbody id="reservationsTableBody"></tbody>
+    </table>
+    <div class="admin-empty" id="reservationsEmpty" style="display:none;">No reservations yet.</div>
+  </div>
+</div>
+
+<script type="module" src="/src/js/park-dashboard.js"></script>
+</body>
+</html>

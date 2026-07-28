@@ -16,6 +16,7 @@
 // above them (getAvailableSites, createPendingReservation, etc.) are the
 // stable interface the API routes call, so the swap is contained to this
 // one file.
+import bcrypt from 'bcryptjs';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
@@ -23,14 +24,19 @@ import { fileURLToPath } from 'url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DB_PATH = join(__dirname, '..', '..', 'data', 'reservations-db.json');
 
+// Demo login for every seeded park — staff username = the park's id,
+// password = "demo1234" for all three. Real parks get their own
+// credentials via createPark() (called from the super-admin dashboard).
+const DEMO_PASSWORD_HASH = bcrypt.hashSync('demo1234', 10);
+
 const SEED = {
   // Park names/locations reuse the fictional parks already referenced in
   // the homepage marquee ticker, so the demo data feels consistent across
   // the whole site rather than introducing yet more placeholder names.
   parks: [
-    { id: 'best-rv-park', name: 'Best RV Park', location: 'Anytown, USA', state: 'USA', timezone: 'America/Chicago' },
-    { id: 'cedar-bend', name: 'Cedar Bend Campground', location: 'Lakeview, TX', state: 'TX', timezone: 'America/Chicago' },
-    { id: 'blue-ridge', name: 'Blue Ridge RV Resort', location: 'Asheville, NC', state: 'NC', timezone: 'America/New_York' },
+    { id: 'best-rv-park', name: 'Best RV Park', location: 'Anytown, USA', state: 'USA', timezone: 'America/Chicago', staffUsername: 'best-rv-park', passwordHash: DEMO_PASSWORD_HASH },
+    { id: 'cedar-bend', name: 'Cedar Bend Campground', location: 'Lakeview, TX', state: 'TX', timezone: 'America/Chicago', staffUsername: 'cedar-bend', passwordHash: DEMO_PASSWORD_HASH },
+    { id: 'blue-ridge', name: 'Blue Ridge RV Resort', location: 'Asheville, NC', state: 'NC', timezone: 'America/New_York', staffUsername: 'blue-ridge', passwordHash: DEMO_PASSWORD_HASH },
   ],
   sites: [
     { id: 'site-1', parkId: 'best-rv-park', name: 'Site 1', type: 'RV — Full Hookup', capacity: 6, nightlyRateCents: 5200 },
@@ -191,4 +197,141 @@ export function confirmReservationBySessionId(stripeSessionId) {
 
 export function getReservation(reservationId) {
   return loadDb().reservations.find((r) => r.id === reservationId) || null;
+}
+
+/* ---------------------------------------------------------------- */
+/* Park accounts (super-admin creates these; park staff log in with them) */
+/* ---------------------------------------------------------------- */
+
+function slugify(str) {
+  return str.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+}
+
+export function createPark({ name, location, state = '', timezone = 'America/Chicago', staffUsername, staffPassword }) {
+  if (!name || !location || !staffUsername || !staffPassword) throw new Error('Missing required park details');
+  if (staffPassword.length < 8) throw new Error('Staff password must be at least 8 characters');
+
+  const db = loadDb();
+  const username = slugify(staffUsername);
+  if (db.parks.some((p) => p.staffUsername === username)) throw new Error('That staff username is already taken');
+
+  let id = slugify(name);
+  if (db.parks.some((p) => p.id === id)) id = `${id}-${Date.now().toString(36)}`;
+
+  const park = {
+    id, name, location, state, timezone,
+    staffUsername: username,
+    passwordHash: bcrypt.hashSync(staffPassword, 10),
+    createdAt: new Date().toISOString(),
+  };
+  db.parks.push(park);
+  saveDb(db);
+  return park;
+}
+
+export function verifyParkLogin(staffUsername, password) {
+  const db = loadDb();
+  const park = db.parks.find((p) => p.staffUsername === slugify(staffUsername));
+  if (!park || !bcrypt.compareSync(password || '', park.passwordHash)) return null;
+  return park;
+}
+
+// Safe for the super-admin dashboard to display — strips the password hash.
+export function listParksForAdmin() {
+  const db = loadDb();
+  return db.parks.map(({ passwordHash, ...rest }) => ({
+    ...rest,
+    siteCount: db.sites.filter((s) => s.parkId === rest.id).length,
+  }));
+}
+
+/* ---------------------------------------------------------------- */
+/* Site management (park staff manage their own park's inventory)    */
+/* ---------------------------------------------------------------- */
+
+export function getSitesForPark(parkId) {
+  return loadDb().sites.filter((s) => s.parkId === parkId);
+}
+
+export function addSite(parkId, { name, type, capacity, nightlyRateCents }) {
+  if (!name || !type || !capacity || !nightlyRateCents) throw new Error('Missing required site details');
+  const db = loadDb();
+  if (!db.parks.some((p) => p.id === parkId)) throw new Error('Unknown park');
+
+  const site = {
+    id: `site-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    parkId, name, type,
+    capacity: Number(capacity),
+    nightlyRateCents: Number(nightlyRateCents),
+  };
+  db.sites.push(site);
+  saveDb(db);
+  return site;
+}
+
+export function updateSite(siteId, parkId, updates) {
+  const db = loadDb();
+  const site = db.sites.find((s) => s.id === siteId && s.parkId === parkId);
+  if (!site) throw new Error('Unknown site');
+  if (updates.name !== undefined) site.name = updates.name;
+  if (updates.type !== undefined) site.type = updates.type;
+  if (updates.capacity !== undefined) site.capacity = Number(updates.capacity);
+  if (updates.nightlyRateCents !== undefined) site.nightlyRateCents = Number(updates.nightlyRateCents);
+  saveDb(db);
+  return site;
+}
+
+export function deleteSite(siteId, parkId) {
+  const db = loadDb();
+  const idx = db.sites.findIndex((s) => s.id === siteId && s.parkId === parkId);
+  if (idx === -1) throw new Error('Unknown site');
+  db.sites.splice(idx, 1);
+  saveDb(db);
+}
+
+/* ---------------------------------------------------------------- */
+/* Staff-entered bookings (phone / walk-in) — same underlying data as */
+/* guest self-service bookings, so availability never has to "sync". */
+/* ---------------------------------------------------------------- */
+
+export function createStaffReservation({ parkId, siteId, checkIn, checkOut, guestName, guestEmail, guestPhone, paymentMethod, notes }) {
+  const db = loadDb();
+  const site = db.sites.find((s) => s.id === siteId && s.parkId === parkId);
+  if (!site) throw new Error('Unknown site');
+  if (!guestName) throw new Error('Guest name is required');
+
+  const nights = nightsBetween(checkIn, checkOut);
+  if (nights < 1) throw new Error('Invalid date range');
+
+  const stillAvailable = getAvailableSites(parkId, checkIn, checkOut).some((s) => s.id === siteId);
+  if (!stillAvailable) throw new Error('Site is no longer available for those dates');
+
+  const isPayLater = paymentMethod === 'pay-later-link';
+  const reservation = {
+    id: `res-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    parkId, siteId, checkIn, checkOut, nights,
+    guestName, guestEmail: guestEmail || '', guestPhone: guestPhone || '',
+    subtotalCents: site.nightlyRateCents * nights,
+    feeCents: BOOKING_FEE_CENTS,
+    totalCents: site.nightlyRateCents * nights + BOOKING_FEE_CENTS,
+    // Cash/card-in-person bookings are confirmed immediately since the
+    // park already collected payment; pay-later holds the site the same
+    // way an online guest's pending checkout does, just for longer.
+    status: isPayLater ? 'pending' : 'confirmed',
+    holdExpiresAt: isPayLater ? new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() : null,
+    stripeSessionId: null,
+    source: 'staff',
+    paymentMethod, // 'cash' | 'card-in-person' | 'pay-later-link'
+    notes: notes || '',
+    createdAt: new Date().toISOString(),
+  };
+  db.reservations.push(reservation);
+  saveDb(db);
+  return reservation;
+}
+
+export function getReservationsForPark(parkId) {
+  return loadDb().reservations
+    .filter((r) => r.parkId === parkId)
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 }

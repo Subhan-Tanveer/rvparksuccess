@@ -53,7 +53,6 @@ Prices are hardcoded in two places that must be kept in sync — `src/js/service
 **This is a proof of concept, not a production booking platform yet.** The one thing to understand before showing this to a real park owner or taking a real booking:
 
 - **The data layer is a JSON file, not a real database.** `api/_lib/reservations-store.js` reads/writes `data/reservations-db.json` on disk. That works correctly for local testing (`vercel dev` on your own machine, where the filesystem is real and persists), but **will not reliably prevent double-bookings once deployed to Vercel** — production serverless functions run in ephemeral, isolated instances with a read-only filesystem, so two guests could both see the same site as available at the same time. Before this handles real money and real reservations, swap the read/write functions in that file for calls to a real database (Vercel Postgres, Supabase, etc.) — the rest of the code (the API routes, the booking page) calls a stable set of functions from that one file and won't need to change.
-- **Multi-park / multi-tenant isn't built yet.** Right now there's one seeded park (`best-rv-park`) with 9 sites across 3 site types. Extending this to give every RVPark Success client their own configurable site list, rates, and blackout dates is the next real chunk of work once the core booking flow is proven out.
 - **Who holds the guest's money is still an open decision.** Right now, Stripe Checkout collects payment into *your* Stripe account (the same `STRIPE_SECRET_KEY` used for the marketing subscriptions). For a real multi-park platform, the standard approach is **Stripe Connect** — each park connects its own Stripe account, the guest pays the park directly, and RVPark Success's booking-fee cut is deducted automatically. That's a bigger Stripe setup step (and a business decision about money flow) that hasn't been wired up yet.
 - **GoHighLevel (GHL) isn't connected yet.** The plan discussed with Marie was for confirmed reservations to flow into GHL (as a contact + a record of the booking) so existing marketing automations — review requests, upsell follow-ups — pick guests up automatically. That sync doesn't exist yet; it's a follow-on step once you confirm which GHL sub-account this should write to.
 
@@ -70,6 +69,22 @@ In addition to the `STRIPE_SECRET_KEY` setup above, the webhook needs its own se
 1. In the Stripe Dashboard: **Developers → Webhooks → Add endpoint**, pointed at `https://yourdomain.com/api/reservations/webhook`, listening for the `checkout.session.completed` event.
 2. Stripe gives you a **signing secret** (starts with `whsec_...`). Add it as `STRIPE_WEBHOOK_SECRET` in the same place you added `STRIPE_SECRET_KEY` (Vercel dashboard → Environment Variables, or your local `.env` for `vercel dev` testing). **Never paste this into a chat, commit it to git, or put it in any file in this repo.**
 3. To test locally with `vercel dev`, use the [Stripe CLI](https://docs.stripe.com/stripe-cli) (`stripe listen --forward-to localhost:3000/api/reservations/webhook`) to forward webhook events to your machine — it will print a `whsec_...` value to use locally.
+
+### Multi-park support + staff/admin dashboards
+
+There are now two admin roles, each with their own login:
+
+- **Platform admin (`admin-login.html` → `admin-dashboard.html`)** — this is you. Log in and create a new client park, choosing its name, location, and the login username/password its staff will use. This is not linked from the public site navigation on purpose — bookmark the URL yourself.
+- **Park staff (`park-login.html` → `park-dashboard.html`)** — the credentials you set when creating that park. From there staff can add/edit/remove their own sites and rates, and — this is the piece we discussed — enter a phone or walk-in booking directly. A staff-entered booking writes to the *exact same* data a guest's online booking does, so a site is instantly unavailable everywhere the moment either one is entered; there's no separate calendar to keep in sync. `find-a-park.html`/`reservations.html` (the public side) and `park-dashboard.html` (the staff side) are reading and writing the same underlying reservations.
+
+The 3 demo parks seeded in `api/_lib/reservations-store.js` already have a staff login for testing: username is the park's id (`best-rv-park`, `cedar-bend`, or `blue-ridge`), password is `demo1234` for all three.
+
+**Setup — two new environment variables, same rules as the Stripe ones (set in Vercel, never in a file in this repo):**
+
+1. `ADMIN_SESSION_SECRET` — any long random string; it signs the login session cookies. Generate one yourself (e.g. `openssl rand -hex 32`) rather than using something guessable.
+2. `SUPER_ADMIN_PASSWORD` — the password for *your* platform-admin login (`admin-login.html`). Pick your own; there's no username, just this one password.
+
+**Same database caveat as the rest of this system applies here too** — park accounts, sites, and staff-entered bookings all live in the same JSON-file store documented above, so none of this is safe to rely on in production until that's replaced with a real database. It's real, working logic — it's the storage underneath it that still needs to change before this handles a real client's real business.
 
 ## Contact form → real email (Gmail SMTP)
 

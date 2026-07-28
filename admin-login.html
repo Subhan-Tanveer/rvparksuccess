@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Platform Admin — RVPark Success</title>
+<meta name="robots" content="noindex, nofollow" />
+<link rel="icon" type="image/png" href="/favicon.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/src/css/tokens.css">
+<link rel="stylesheet" href="/src/css/components.css">
+<style>
+  body { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: var(--sp-4); }
+  .login-card { width: 100%; max-width: 380px; padding: var(--sp-6) var(--sp-5); border-radius: var(--radius-lg); text-align: center; }
+  .login-card h1 { font-size: 1.5rem; }
+  .login-card .lede { font-size: 0.875rem; margin-top: var(--sp-2); }
+  .login-error { display: none; margin-top: var(--sp-3); padding: var(--sp-2) var(--sp-3); border-radius: var(--radius-md); background: rgba(217,60,46,0.1); border: 1px solid rgba(217,60,46,0.4); color: #f0a89a; font-size: 0.875rem; }
+  .login-error.is-visible { display: block; }
+</style>
+</head>
+<body>
+
+<div class="cursor-dot"></div>
+<div class="cursor-ring"></div>
+
+<div class="login-card glass-strong" data-reveal>
+  <a href="index.html" class="nav-brand" style="justify-content:center; margin-bottom: var(--sp-4);"><span class="mark mark-logo"><img src="/images/logo/rvparksuccess-icon.png" alt="RVPark Success logo"></span></a>
+  <p class="eyebrow">Internal Tool</p>
+  <h1>Platform Admin</h1>
+  <p class="lede">Create and manage RVPark Success client parks.</p>
+  <form id="loginForm" style="margin-top: var(--sp-4); text-align:left;">
+    <div class="field-float"><input id="password" name="password" type="password" required autocomplete="current-password"><label for="password">Admin Password</label></div>
+    <button type="submit" class="btn btn-primary magnetic" style="width:100%; justify-content:center;"><span>Log In</span></button>
+  </form>
+  <div class="login-error" id="loginError"></div>
+</div>
+
+<script type="module" src="/src/js/admin-login.js"></script>
+</body>
+</html>
