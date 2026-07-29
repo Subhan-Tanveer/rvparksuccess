@@ -34,9 +34,9 @@ const SEED = {
   // the homepage marquee ticker, so the demo data feels consistent across
   // the whole site rather than introducing yet more placeholder names.
   parks: [
-    { id: 'best-rv-park', name: 'Best RV Park', location: 'Anytown, USA', state: 'USA', timezone: 'America/Chicago', staffUsername: 'best-rv-park', passwordHash: DEMO_PASSWORD_HASH, createdAt: '2026-01-01T00:00:00.000Z' },
-    { id: 'cedar-bend', name: 'Cedar Bend Campground', location: 'Lakeview, TX', state: 'TX', timezone: 'America/Chicago', staffUsername: 'cedar-bend', passwordHash: DEMO_PASSWORD_HASH, createdAt: '2026-01-01T00:00:00.000Z' },
-    { id: 'blue-ridge', name: 'Blue Ridge RV Resort', location: 'Asheville, NC', state: 'NC', timezone: 'America/New_York', staffUsername: 'blue-ridge', passwordHash: DEMO_PASSWORD_HASH, createdAt: '2026-01-01T00:00:00.000Z' },
+    { id: 'best-rv-park', name: 'Best RV Park', location: 'Anytown, USA', state: 'USA', timezone: 'America/Chicago', taxRatePercent: 7, staffUsername: 'best-rv-park', passwordHash: DEMO_PASSWORD_HASH, createdAt: '2026-01-01T00:00:00.000Z' },
+    { id: 'cedar-bend', name: 'Cedar Bend Campground', location: 'Lakeview, TX', state: 'TX', timezone: 'America/Chicago', taxRatePercent: 6, staffUsername: 'cedar-bend', passwordHash: DEMO_PASSWORD_HASH, createdAt: '2026-01-01T00:00:00.000Z' },
+    { id: 'blue-ridge', name: 'Blue Ridge RV Resort', location: 'Asheville, NC', state: 'NC', timezone: 'America/New_York', taxRatePercent: 6.75, staffUsername: 'blue-ridge', passwordHash: DEMO_PASSWORD_HASH, createdAt: '2026-01-01T00:00:00.000Z' },
   ],
   sites: [
     { id: 'site-1', parkId: 'best-rv-park', name: 'Site 1', type: 'RV — Full Hookup', capacity: 6, nightlyRateCents: 5200 },
@@ -66,10 +66,49 @@ const SEED = {
   ],
   reservations: [],
   guests: [],
+  waitlist: [],
 };
 
 const BOOKING_FEE_CENTS = 150; // the platform fee charged per reservation, per the $1-2/booking model
 const PENDING_HOLD_MINUTES = 20; // how long a site is held while a guest is mid-checkout
+
+// Single source of truth for turning a stay's subtotal into what the guest
+// actually owes. Centralized here (rather than duplicated across
+// getAvailableSites/createPendingReservation/createStaffReservation) so tax,
+// promo discounts, and deposit splitting stay consistent everywhere pricing
+// is shown or charged — one bug fix here fixes it in every surface at once.
+// Lodging tax applies to the room subtotal only, not the platform booking
+// fee (standard treatment; the fee isn't part of the taxable rent) — and to
+// what the guest actually pays for the room, i.e. AFTER any promo discount.
+// Taxing the pre-discount amount would charge sales tax on rent the guest
+// never paid, which is wrong wherever lodging tax is a percentage of the
+// amount collected.
+function priceStay(park, subtotalCents, promoCode = null) {
+  let discountCents = 0;
+  let appliedPromoCode = null;
+  if (promoCode) {
+    const promo = (park.promoCodes || []).find((p) => p.code.toLowerCase() === promoCode.trim().toLowerCase());
+    if (promo) {
+      appliedPromoCode = promo.code;
+      discountCents = promo.type === 'percent'
+        ? Math.round(subtotalCents * (promo.value / 100))
+        : Math.min(promo.value, subtotalCents);
+    }
+  }
+
+  const discountedSubtotalCents = Math.max(0, subtotalCents - discountCents);
+  const taxRatePercent = park.taxRatePercent || 0;
+  const taxCents = Math.round(discountedSubtotalCents * (taxRatePercent / 100));
+
+  const feeCents = BOOKING_FEE_CENTS;
+  const totalCents = discountedSubtotalCents + taxCents + feeCents;
+
+  const depositPercent = park.depositPercent || 0;
+  const depositCents = depositPercent > 0 ? Math.round(totalCents * (depositPercent / 100)) : totalCents;
+  const balanceCents = totalCents - depositCents;
+
+  return { subtotalCents, discountCents, appliedPromoCode, taxCents, taxRatePercent, feeCents, totalCents, depositCents, balanceCents };
+}
 
 function loadDb() {
   try {
@@ -100,6 +139,31 @@ function nightsBetween(checkIn, checkOut) {
   return Math.round(ms / (1000 * 60 * 60 * 24));
 }
 
+// A seasonal rate applies to a specific night if that night's date falls
+// within [startDate, endDate) — half-open the same way check-in/check-out
+// ranges are, so a season ending "2026-12-31" doesn't leak into Jan 1.
+// First matching season wins; falls back to the site's base rate.
+function nightlyRateForDate(site, dateStr) {
+  const date = new Date(dateStr);
+  const season = (site.seasonalRates || []).find((s) => date >= new Date(s.startDate) && date < new Date(s.endDate));
+  return season ? season.nightlyRateCents : site.nightlyRateCents;
+}
+
+// Sums the actual per-night rate (base or seasonal) across the whole stay,
+// rather than assuming every night costs the same — the naive
+// `nightlyRateCents * nights` shortcut breaks the moment a stay crosses
+// into (or out of) a holiday/seasonal rate window.
+function computeSubtotalCents(site, checkIn, checkOut) {
+  let total = 0;
+  const cursor = new Date(checkIn);
+  const end = new Date(checkOut);
+  while (cursor < end) {
+    total += nightlyRateForDate(site, cursor.toISOString().slice(0, 10));
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  return total;
+}
+
 function rangesOverlap(aStart, aEnd, bStart, bEnd) {
   // Checkout day doesn't count as occupied — a guest leaving on the 10th
   // doesn't block a new guest checking in on the 10th.
@@ -107,7 +171,9 @@ function rangesOverlap(aStart, aEnd, bStart, bEnd) {
 }
 
 function isReservationActive(r) {
-  if (r.status === 'confirmed') return true;
+  // 'confirmed-deposit' still holds the site — only the balance is unpaid,
+  // not the reservation itself.
+  if (r.status === 'confirmed' || r.status === 'confirmed-deposit') return true;
   if (r.status === 'pending') return new Date(r.holdExpiresAt) > new Date();
   return false;
 }
@@ -134,26 +200,66 @@ export function listParks(locationQuery = '') {
     });
 }
 
-export function getAvailableSites(parkId, checkIn, checkOut) {
+export function getAvailableSites(parkId, checkIn, checkOut, promoCode = null) {
   if (!checkIn || !checkOut || new Date(checkOut) <= new Date(checkIn)) return [];
   const db = loadDb();
+  const park = db.parks.find((p) => p.id === parkId);
+  if (!park) return [];
   const nights = nightsBetween(checkIn, checkOut);
   const sites = db.sites.filter((s) => s.parkId === parkId);
   const activeReservations = db.reservations.filter((r) => r.parkId === parkId && isReservationActive(r));
 
   return sites
     .filter((site) => !activeReservations.some((r) => r.siteId === site.id && rangesOverlap(checkIn, checkOut, r.checkIn, r.checkOut)))
-    .map((site) => ({ ...site, nights, subtotalCents: site.nightlyRateCents * nights, feeCents: BOOKING_FEE_CENTS, totalCents: site.nightlyRateCents * nights + BOOKING_FEE_CENTS }));
+    .map((site) => {
+      const subtotalCents = computeSubtotalCents(site, checkIn, checkOut);
+      return { ...site, nights, ...priceStay(park, subtotalCents, promoCode) };
+    });
 }
 
 export function getSite(siteId) {
   return loadDb().sites.find((s) => s.id === siteId) || null;
 }
 
-export function createPendingReservation({ parkId, siteId, checkIn, checkOut, guestName, guestEmail, guestPhone }) {
+/* ---------------------------------------------------------------- */
+/* Waitlist — a guest joins when a park has nothing open for their   */
+/* dates; staff work the list manually (there's no auto-rebooking).  */
+/* ---------------------------------------------------------------- */
+
+export function joinWaitlist({ parkId, checkIn, checkOut, name, email, phone, notes }) {
+  if (!name || !email) throw new Error('Name and email are required');
   const db = loadDb();
+  if (!db.parks.some((p) => p.id === parkId)) throw new Error('Unknown park');
+
+  const entry = {
+    id: `wait-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    parkId, checkIn, checkOut, name, email, phone: phone || '', notes: notes || '',
+    createdAt: new Date().toISOString(),
+  };
+  db.waitlist.push(entry);
+  saveDb(db);
+  return entry;
+}
+
+export function getWaitlistForPark(parkId) {
+  return loadDb().waitlist
+    .filter((w) => w.parkId === parkId)
+    .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt)); // oldest request first — first come, first served
+}
+
+export function removeWaitlistEntry(entryId, parkId) {
+  const db = loadDb();
+  const idx = db.waitlist.findIndex((w) => w.id === entryId && w.parkId === parkId);
+  if (idx === -1) throw new Error('Unknown waitlist entry');
+  db.waitlist.splice(idx, 1);
+  saveDb(db);
+}
+
+export function createPendingReservation({ parkId, siteId, checkIn, checkOut, guestName, guestEmail, guestPhone, promoCode = null }) {
+  const db = loadDb();
+  const park = db.parks.find((p) => p.id === parkId);
   const site = db.sites.find((s) => s.id === siteId && s.parkId === parkId);
-  if (!site) throw new Error('Unknown site');
+  if (!park || !site) throw new Error('Unknown park or site');
 
   const nights = nightsBetween(checkIn, checkOut);
   if (nights < 1) throw new Error('Invalid date range');
@@ -161,13 +267,14 @@ export function createPendingReservation({ parkId, siteId, checkIn, checkOut, gu
   const stillAvailable = getAvailableSites(parkId, checkIn, checkOut).some((s) => s.id === siteId);
   if (!stillAvailable) throw new Error('Site is no longer available for those dates');
 
+  const subtotalCents = computeSubtotalCents(site, checkIn, checkOut);
+  const pricing = priceStay(park, subtotalCents, promoCode);
+
   const reservation = {
     id: `res-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     parkId, siteId, checkIn, checkOut, nights,
     guestName, guestEmail, guestPhone,
-    subtotalCents: site.nightlyRateCents * nights,
-    feeCents: BOOKING_FEE_CENTS,
-    totalCents: site.nightlyRateCents * nights + BOOKING_FEE_CENTS,
+    ...pricing,
     status: 'pending',
     holdExpiresAt: new Date(Date.now() + PENDING_HOLD_MINUTES * 60 * 1000).toISOString(),
     stripeSessionId: null,
@@ -191,7 +298,10 @@ export function confirmReservationBySessionId(stripeSessionId) {
   const db = loadDb();
   const r = db.reservations.find((x) => x.stripeSessionId === stripeSessionId);
   if (!r) return null;
-  r.status = 'confirmed';
+  // A deposit-only checkout still leaves a balance due — that gets its own
+  // status so guest/staff dashboards can show "balance due" instead of
+  // implying the stay is fully paid for.
+  r.status = r.balanceCents > 0 ? 'confirmed-deposit' : 'confirmed';
   saveDb(db);
   return r;
 }
@@ -268,6 +378,64 @@ export function signupParkOwner({ parkName, location, ownerName, email, phone, p
   return park;
 }
 
+// Owner-editable park settings — tax rate today, deposit % and promo codes
+// once those features land. Scoped by parkId from the session, same as
+// site management, so a staff member can only ever edit their own park.
+export function updateParkSettings(parkId, { taxRatePercent, depositPercent } = {}) {
+  const db = loadDb();
+  const park = db.parks.find((p) => p.id === parkId);
+  if (!park) throw new Error('Unknown park');
+
+  if (taxRatePercent !== undefined) {
+    const rate = Number(taxRatePercent);
+    if (isNaN(rate) || rate < 0 || rate > 30) throw new Error('Tax rate must be between 0 and 30%');
+    park.taxRatePercent = rate;
+  }
+  if (depositPercent !== undefined) {
+    const rate = Number(depositPercent);
+    if (isNaN(rate) || rate < 0 || rate > 100) throw new Error('Deposit percent must be between 0 and 100');
+    park.depositPercent = rate;
+  }
+  saveDb(db);
+  return park;
+}
+
+// Promo codes — park-level, applied against the room subtotal at checkout
+// (see priceStay()). Codes are stored uppercased so lookups are
+// case-insensitive without guests having to match capitalization exactly.
+// `value` units depend on `type`: 'percent' is a plain number (10 = 10%);
+// 'flat' is CENTS, same convention as every other *Cents field — the
+// caller (park-dashboard.js) converts the dollar input before sending it.
+export function addPromoCode(parkId, { code, type, value }) {
+  if (!code || !type || !value) throw new Error('Code, type, and value are required');
+  if (type !== 'percent' && type !== 'flat') throw new Error('Type must be percent or flat');
+  const numericValue = Number(value);
+  if (isNaN(numericValue) || numericValue <= 0) throw new Error('Value must be a positive number');
+  if (type === 'percent' && numericValue > 100) throw new Error('Percent discount cannot exceed 100');
+
+  const db = loadDb();
+  const park = db.parks.find((p) => p.id === parkId);
+  if (!park) throw new Error('Unknown park');
+
+  const normalizedCode = code.trim().toUpperCase();
+  if (!park.promoCodes) park.promoCodes = [];
+  if (park.promoCodes.some((p) => p.code === normalizedCode)) throw new Error('That code already exists');
+
+  const promo = { id: `promo-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, code: normalizedCode, type, value: numericValue };
+  park.promoCodes.push(promo);
+  saveDb(db);
+  return park;
+}
+
+export function removePromoCode(parkId, promoId) {
+  const db = loadDb();
+  const park = db.parks.find((p) => p.id === parkId);
+  if (!park) throw new Error('Unknown park');
+  park.promoCodes = (park.promoCodes || []).filter((p) => p.id !== promoId);
+  saveDb(db);
+  return park;
+}
+
 // Safe for the super-admin dashboard to display — strips the password hash.
 export function listParksForAdmin() {
   const db = loadDb();
@@ -321,6 +489,39 @@ export function deleteSite(siteId, parkId) {
   saveDb(db);
 }
 
+// Seasonal/holiday rate overrides — a date range that replaces a site's
+// base nightly rate for any night that falls inside it (see
+// nightlyRateForDate above). Scoped by parkId the same way site edits are,
+// so staff can only add seasons to their own park's sites.
+export function addSeasonalRate(siteId, parkId, { label, startDate, endDate, nightlyRateCents }) {
+  if (!startDate || !endDate || !nightlyRateCents) throw new Error('Start date, end date, and rate are required');
+  if (new Date(endDate) <= new Date(startDate)) throw new Error('End date must be after start date');
+
+  const db = loadDb();
+  const site = db.sites.find((s) => s.id === siteId && s.parkId === parkId);
+  if (!site) throw new Error('Unknown site');
+
+  if (!site.seasonalRates) site.seasonalRates = [];
+  const season = {
+    id: `season-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    label: label || 'Seasonal Rate',
+    startDate, endDate,
+    nightlyRateCents: Number(nightlyRateCents),
+  };
+  site.seasonalRates.push(season);
+  saveDb(db);
+  return site;
+}
+
+export function removeSeasonalRate(siteId, parkId, seasonId) {
+  const db = loadDb();
+  const site = db.sites.find((s) => s.id === siteId && s.parkId === parkId);
+  if (!site) throw new Error('Unknown site');
+  site.seasonalRates = (site.seasonalRates || []).filter((s) => s.id !== seasonId);
+  saveDb(db);
+  return site;
+}
+
 /* ---------------------------------------------------------------- */
 /* Staff-entered bookings (phone / walk-in) — same underlying data as */
 /* guest self-service bookings, so availability never has to "sync". */
@@ -328,8 +529,9 @@ export function deleteSite(siteId, parkId) {
 
 export function createStaffReservation({ parkId, siteId, checkIn, checkOut, guestName, guestEmail, guestPhone, paymentMethod, notes }) {
   const db = loadDb();
+  const park = db.parks.find((p) => p.id === parkId);
   const site = db.sites.find((s) => s.id === siteId && s.parkId === parkId);
-  if (!site) throw new Error('Unknown site');
+  if (!park || !site) throw new Error('Unknown park or site');
   if (!guestName) throw new Error('Guest name is required');
 
   const nights = nightsBetween(checkIn, checkOut);
@@ -338,14 +540,18 @@ export function createStaffReservation({ parkId, siteId, checkIn, checkOut, gues
   const stillAvailable = getAvailableSites(parkId, checkIn, checkOut).some((s) => s.id === siteId);
   if (!stillAvailable) throw new Error('Site is no longer available for those dates');
 
+  const subtotalCents = computeSubtotalCents(site, checkIn, checkOut);
+  // Staff bookings always price the full stay — front desk collects the
+  // whole amount (or holds it via pay-later-link at full price), so the
+  // online deposit split doesn't apply here.
+  const pricing = priceStay({ ...park, depositPercent: 0 }, subtotalCents);
+
   const isPayLater = paymentMethod === 'pay-later-link';
   const reservation = {
     id: `res-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     parkId, siteId, checkIn, checkOut, nights,
     guestName, guestEmail: guestEmail || '', guestPhone: guestPhone || '',
-    subtotalCents: site.nightlyRateCents * nights,
-    feeCents: BOOKING_FEE_CENTS,
-    totalCents: site.nightlyRateCents * nights + BOOKING_FEE_CENTS,
+    ...pricing,
     // Cash/card-in-person bookings are confirmed immediately since the
     // park already collected payment; pay-later holds the site the same
     // way an online guest's pending checkout does, just for longer.
@@ -366,6 +572,74 @@ export function getReservationsForPark(parkId) {
   return loadDb().reservations
     .filter((r) => r.parkId === parkId)
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+}
+
+function overlapNights(aStart, aEnd, bStart, bEnd) {
+  const start = Math.max(new Date(aStart), new Date(bStart));
+  const end = Math.min(new Date(aEnd), new Date(bEnd));
+  return Math.max(0, Math.round((end - start) / (1000 * 60 * 60 * 24)));
+}
+
+// Owner dashboard summary: money actually collected so far, the balance
+// still owed on deposit-only bookings, average daily rate, and occupancy
+// over the next `windowDays` (upcoming, not historical — what an owner
+// checking their dashboard today actually wants to know is how full the
+// weeks ahead are).
+export function getParkStats(parkId, { windowDays = 30 } = {}) {
+  const db = loadDb();
+  const siteCount = db.sites.filter((s) => s.parkId === parkId).length;
+  const reservations = db.reservations.filter((r) => r.parkId === parkId && (r.status === 'confirmed' || r.status === 'confirmed-deposit'));
+
+  const totalRevenueCents = reservations.reduce((sum, r) => sum + (r.status === 'confirmed-deposit' ? r.depositCents : r.totalCents), 0);
+  const outstandingBalanceCents = reservations.reduce((sum, r) => sum + (r.status === 'confirmed-deposit' ? r.balanceCents : 0), 0);
+
+  const totalNights = reservations.reduce((sum, r) => sum + r.nights, 0);
+  const totalSubtotalCents = reservations.reduce((sum, r) => sum + r.subtotalCents, 0);
+  const adrCents = totalNights > 0 ? Math.round(totalSubtotalCents / totalNights) : 0;
+
+  const windowStart = new Date();
+  const windowEnd = new Date(windowStart.getTime() + windowDays * 24 * 60 * 60 * 1000);
+  const bookedSiteNights = reservations.reduce((sum, r) => sum + overlapNights(r.checkIn, r.checkOut, windowStart, windowEnd), 0);
+  const totalSiteNights = siteCount * windowDays;
+  const occupancyPercent = totalSiteNights > 0 ? Math.round((bookedSiteNights / totalSiteNights) * 1000) / 10 : 0;
+
+  return {
+    totalRevenueCents, outstandingBalanceCents, adrCents, occupancyPercent,
+    totalReservations: reservations.length, windowDays,
+  };
+}
+
+// What the park is actually owed vs. what RVPark Success keeps, from money
+// that's already been collected. NOTE: this is a calculation only — there
+// is no live money movement here. All Stripe charges currently land in one
+// platform Stripe account; paying each park their share requires either
+// Stripe Connect (so each park has its own connected account and gets
+// paid automatically) or a manual transfer based on this number. Wiring
+// real Connect payouts needs a live Stripe Connect platform account and
+// each park's onboarding — that can't be set up or tested without those
+// real credentials, so this stays a dashboard figure until that exists.
+export function getPayoutSummary(parkId) {
+  const db = loadDb();
+  const reservations = db.reservations.filter((r) => r.parkId === parkId && (r.status === 'confirmed' || r.status === 'confirmed-deposit'));
+
+  let grossCollectedCents = 0;
+  let platformFeeCollectedCents = 0;
+
+  for (const r of reservations) {
+    const collectedCents = r.status === 'confirmed-deposit' ? r.depositCents : r.totalCents;
+    // The deposit is a proportional slice of subtotal+tax+fee (see
+    // create-checkout.js's chargeRatio), so the fee portion actually
+    // collected scales down the same way for a deposit-only booking.
+    const chargeRatio = r.totalCents > 0 ? collectedCents / r.totalCents : 1;
+    grossCollectedCents += collectedCents;
+    platformFeeCollectedCents += Math.round(r.feeCents * chargeRatio);
+  }
+
+  return {
+    grossCollectedCents,
+    platformFeeCollectedCents,
+    netOwedToParkCents: grossCollectedCents - platformFeeCollectedCents,
+  };
 }
 
 /* ---------------------------------------------------------------- */
@@ -414,4 +688,23 @@ export function getBookingsForGuest(email) {
     .filter((r) => normalizeEmail(r.guestEmail) === normalizedEmail)
     .map((r) => ({ ...r, parkName: db.parks.find((p) => p.id === r.parkId)?.name || r.parkId }))
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+}
+
+// Self-service cancellation — scoped to the guest's own email so a guest
+// can never cancel someone else's booking even if they guessed a
+// reservation id. Setting status to 'canceled' is enough to free the site:
+// isReservationActive() already treats any non-confirmed/non-pending
+// status as inactive, so the availability check just works.
+export function cancelReservationForGuest(reservationId, guestEmail) {
+  const db = loadDb();
+  const r = db.reservations.find((x) => x.id === reservationId);
+  if (!r) throw new Error('Reservation not found');
+  if (normalizeEmail(r.guestEmail) !== normalizeEmail(guestEmail)) throw new Error('Reservation not found');
+  if (r.status === 'canceled') throw new Error('Already canceled');
+  if (new Date(r.checkIn) <= new Date()) throw new Error("Can't cancel a stay that's already started");
+
+  r.status = 'canceled';
+  r.canceledAt = new Date().toISOString();
+  saveDb(db);
+  return r;
 }

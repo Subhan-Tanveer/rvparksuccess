@@ -8,6 +8,13 @@ function formatUsd(cents) {
   return '$' + (cents / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+function statusChip(status) {
+  if (status === 'confirmed') return { cls: 'is-confirmed', label: 'confirmed' };
+  if (status === 'confirmed-deposit') return { cls: 'is-deposit', label: 'deposit paid' };
+  if (status === 'canceled') return { cls: 'is-canceled', label: 'canceled' };
+  return { cls: 'is-pending', label: 'pending' };
+}
+
 async function loadDashboard() {
   const wentIdle = await enforceGuestIdleTimeout();
   if (wentIdle) {
@@ -38,14 +45,39 @@ function renderBookings(bookings) {
     return;
   }
   emptyEl.style.display = 'none';
-  tbody.innerHTML = bookings.map((b) => `
+  tbody.innerHTML = bookings.map((b) => {
+    const canCancel = b.status !== 'canceled' && new Date(b.checkIn) > new Date();
+    return `
     <tr>
       <td>${b.parkName}</td>
       <td>${b.checkIn} → ${b.checkOut}</td>
-      <td><span class="status-chip ${b.status === 'confirmed' ? 'is-confirmed' : 'is-pending'}">${b.status}</span></td>
+      <td>${(() => { const c = statusChip(b.status); return `<span class="status-chip ${c.cls}">${c.label}</span>`; })()}</td>
       <td>${formatUsd(b.totalCents)}</td>
-    </tr>`).join('');
+      <td>${b.status === 'confirmed-deposit' ? formatUsd(b.balanceCents) : '—'}</td>
+      <td>${canCancel ? `<button type="button" class="btn btn-ghost btn-sm" data-cancel="${b.id}">Cancel</button>` : ''}</td>
+    </tr>`;
+  }).join('');
 }
+
+document.getElementById('bookingsTableBody').addEventListener('click', async (e) => {
+  const btn = e.target.closest('[data-cancel]');
+  if (!btn) return;
+  if (!confirm('Cancel this reservation? This frees the site for other guests and cannot be undone.')) return;
+  btn.disabled = true;
+  try {
+    const res = await fetch('/api/guest', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'cancel', reservationId: btn.dataset.cancel }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Could not cancel');
+    loadDashboard();
+  } catch (err) {
+    alert(err.message);
+    btn.disabled = false;
+  }
+});
 
 document.getElementById('logoutBtn').addEventListener('click', async () => {
   await fetch('/api/guest', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'logout' }) });

@@ -71,9 +71,53 @@ async function searchAvailability() {
   }
 }
 
+let lastSites = [];
+
 function renderResults(sites, checkIn, checkOut) {
+  lastSites = sites || [];
   if (!sites || !sites.length) {
-    resultsEl.innerHTML = '<div class="res-empty">No sites available for those dates. Try a different range.</div>';
+    resultsEl.innerHTML = `
+      <div class="res-empty">No sites available for those dates. Try a different range, or join the waitlist below.</div>
+      <div class="res-search glass dot-grid" style="max-width:480px; margin: var(--sp-4) auto 0;">
+        <p class="eyebrow" style="margin-bottom: var(--sp-2);">Join the Waitlist</p>
+        <form id="waitlistForm">
+          <div class="field-float"><input id="wlName" required><label for="wlName">Full Name</label></div>
+          <div class="field-float"><input id="wlEmail" type="email" required><label for="wlEmail">Email</label></div>
+          <div class="field-float"><input id="wlPhone" type="tel"><label for="wlPhone">Phone (optional)</label></div>
+          <button type="submit" class="btn btn-primary magnetic" style="width:100%; justify-content:center;" id="wlSubmitBtn"><span>Join Waitlist</span></button>
+          <p class="form-note" id="wlNote" style="display:none; text-align:center;"></p>
+        </form>
+      </div>`;
+    document.getElementById('waitlistForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('wlSubmitBtn');
+      const note = document.getElementById('wlNote');
+      btn.disabled = true;
+      try {
+        const res = await fetch('/api/reservations/availability', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            parkId: PARK_ID, checkIn, checkOut,
+            name: document.getElementById('wlName').value,
+            email: document.getElementById('wlEmail').value,
+            phone: document.getElementById('wlPhone').value,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Could not join waitlist');
+        note.textContent = "You're on the list — we'll reach out if a site opens up for those dates.";
+        note.style.color = 'var(--amber-light)';
+        note.style.display = 'block';
+        document.getElementById('waitlistForm').reset();
+      } catch (err) {
+        note.textContent = err.message;
+        note.style.color = '#f0a89a';
+        note.style.display = 'block';
+      } finally {
+        btn.disabled = false;
+      }
+    });
     return;
   }
   resultsEl.innerHTML = `
@@ -89,7 +133,8 @@ function renderResults(sites, checkIn, checkOut) {
         <div class="res-site-price">
           <div class="rate">${formatUsd(s.nightlyRateCents)}/night × ${s.nights} night${s.nights === 1 ? '' : 's'}</div>
           <div class="total">${formatUsd(s.totalCents)}</div>
-          <div class="total-label">Total incl. booking fee</div>
+          <div class="total-label">Total incl. ${s.taxCents > 0 ? `${s.taxRatePercent}% tax + ` : ''}booking fee</div>
+          ${s.balanceCents > 0 ? `<div class="total-label" style="margin-top:2px;">Pay ${formatUsd(s.depositCents)} now · ${formatUsd(s.balanceCents)} due at check-in</div>` : ''}
         </div>
         <button type="button" class="btn btn-primary magnetic" style="width:100%; margin-top: var(--sp-3);" data-book-site="${s.id}"><span>Book This Site</span></button>
       </div>`).join('')}
@@ -124,15 +169,59 @@ const checkoutBtn = document.getElementById('resCheckoutBtn');
 const checkoutSub = document.getElementById('resCheckoutSub');
 
 let selectedSiteId = null;
+let appliedPromoCode = null;
+
+function renderModalSummary(site) {
+  const balanceLine = site.balanceCents > 0
+    ? `<br><b>${formatUsd(site.depositCents)}</b> due now, <b>${formatUsd(site.balanceCents)}</b> due at check-in`
+    : '';
+  const discountLine = site.discountCents > 0
+    ? `<br><span style="color: var(--amber-light);">${site.appliedPromoCode} applied: -${formatUsd(site.discountCents)}</span>`
+    : '';
+  modalSummary.innerHTML = `<b>${checkInEl.value}</b> to <b>${checkOutEl.value}</b><br>${formatUsd(site.totalCents)} total, incl. booking fee${discountLine}${balanceLine}`;
+}
 
 resultsEl.addEventListener('click', (e) => {
   const btn = e.target.closest('[data-book-site]');
   if (!btn) return;
   selectedSiteId = btn.dataset.bookSite;
+  appliedPromoCode = null;
   const card = btn.closest('.res-site-card');
+  const site = lastSites.find((s) => s.id === selectedSiteId);
   modalSiteName.textContent = card.querySelector('h3').textContent;
-  modalSummary.innerHTML = `<b>${checkInEl.value}</b> to <b>${checkOutEl.value}</b><br>${card.querySelector('.res-site-price .total').textContent} total, incl. booking fee`;
+  document.getElementById('promoCodeInput').value = '';
+  document.getElementById('promoNote').style.display = 'none';
+  if (site) renderModalSummary(site);
   modalBackdrop.classList.add('is-open');
+});
+
+document.getElementById('applyPromoBtn').addEventListener('click', async () => {
+  const code = document.getElementById('promoCodeInput').value.trim();
+  const promoNote = document.getElementById('promoNote');
+  if (!code || !selectedSiteId) return;
+
+  try {
+    const params = new URLSearchParams({ park: PARK_ID, checkIn: checkInEl.value, checkOut: checkOutEl.value, promo: code });
+    const res = await fetch(`/api/reservations/availability?${params}`);
+    const data = await res.json();
+    const site = data.sites?.find((s) => s.id === selectedSiteId);
+    if (!site) throw new Error('Could not re-check pricing for that site');
+
+    if (site.discountCents > 0) {
+      appliedPromoCode = code;
+      promoNote.textContent = `"${site.appliedPromoCode}" applied — you saved ${formatUsd(site.discountCents)}.`;
+      promoNote.style.color = 'var(--amber-light)';
+    } else {
+      appliedPromoCode = null;
+      promoNote.textContent = 'That code is invalid or expired.';
+      promoNote.style.color = '#f0a89a';
+    }
+    promoNote.style.display = 'block';
+    renderModalSummary(site);
+  } catch (err) {
+    promoNote.textContent = 'Could not apply promo code right now.';
+    promoNote.style.display = 'block';
+  }
 });
 
 function closeModal() { modalBackdrop.classList.remove('is-open'); }
@@ -160,6 +249,7 @@ guestForm.addEventListener('submit', async (e) => {
         guestName: document.getElementById('guestName').value,
         guestEmail: document.getElementById('guestEmail').value,
         guestPhone: document.getElementById('guestPhone').value,
+        promoCode: appliedPromoCode,
       }),
     });
     const data = await res.json();

@@ -155,6 +155,11 @@
       <button class="res-modal-close" id="resModalClose" aria-label="Close">&times;</button>
     </div>
     <div class="res-modal-summary" id="resModalSummary"></div>
+    <div style="display:flex; gap: var(--sp-2); align-items:flex-end; margin-bottom: var(--sp-3);">
+      <div class="field-float" style="margin-bottom:0; flex:1;"><input id="promoCodeInput" style="text-transform:uppercase;"><label for="promoCodeInput">Promo Code (optional)</label></div>
+      <button type="button" class="btn btn-ghost btn-sm" id="applyPromoBtn" style="height:54px;">Apply</button>
+    </div>
+    <p class="form-note" id="promoNote" style="display:none; margin-bottom: var(--sp-3);"></p>
     <form id="guestForm">
       <div class="field-float"><input id="guestName" name="guestName" required><label for="guestName">Full Name</label></div>
       <div class="field-float"><input id="guestEmail" name="guestEmail" type="email" required><label for="guestEmail">Email</label></div>

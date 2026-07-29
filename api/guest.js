@@ -5,7 +5,7 @@
 // POST { action: 'signup' | 'login' | 'logout', ... }
 // GET  → the logged-in guest's profile + booking history across all parks
 import { createGuestSessionCookie, clearGuestSessionCookie, getGuestSession } from './_lib/auth.js';
-import { createGuestAccount, verifyGuestLogin, getGuestByEmail, getBookingsForGuest } from './_lib/reservations-store.js';
+import { createGuestAccount, verifyGuestLogin, getGuestByEmail, getBookingsForGuest, cancelReservationForGuest } from './_lib/reservations-store.js';
 
 export default async function handler(req, res) {
   if (req.method === 'GET') {
@@ -41,6 +41,18 @@ export default async function handler(req, res) {
 
       res.setHeader('Set-Cookie', createGuestSessionCookie({ guestEmail: guest.email }));
       return res.status(200).json({ ok: true, name: guest.name });
+    }
+
+    if (action === 'cancel') {
+      const session = getGuestSession(req);
+      if (!session) return res.status(401).json({ error: 'Not signed in' });
+      const { reservationId } = req.body;
+      try {
+        const reservation = cancelReservationForGuest(reservationId, session.guestEmail);
+        return res.status(200).json({ ok: true, reservation });
+      } catch (err) {
+        return res.status(400).json({ error: err.message });
+      }
     }
 
     if (action === 'logout') {

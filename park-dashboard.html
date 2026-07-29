@@ -27,6 +27,8 @@
   .status-chip { font-size: 0.6875rem; padding: 3px 9px; border-radius: var(--radius-pill); text-transform: uppercase; letter-spacing: 0.04em; }
   .status-chip.is-confirmed { background: rgba(46,155,84,0.15); color: var(--amber-light); }
   .status-chip.is-pending { background: rgba(217,127,46,0.15); color: #e0a86a; }
+  .status-chip.is-deposit { background: rgba(96,165,250,0.15); color: #7db7ff; }
+  .status-chip.is-canceled { background: rgba(217,60,46,0.12); color: #f0a89a; }
   .field-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: var(--sp-3); }
   @media (max-width: 720px) { .field-row-3 { grid-template-columns: 1fr; } }
   .booking-sites-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--sp-2); margin-top: var(--sp-3); }
@@ -36,6 +38,11 @@
   .booking-site-btn .name { font-weight: 600; }
   .booking-site-btn .meta { font-size: 0.8125rem; color: var(--cream-dim); margin-top: 2px; }
   .booking-site-btn .rate { font-family: var(--font-mono); color: var(--amber-light); margin-top: 6px; font-weight: 700; }
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: var(--sp-3); margin-bottom: var(--sp-5); }
+  .stat-card { padding: var(--sp-4); border-radius: var(--radius-lg); }
+  .stat-card .label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--cream-dim); }
+  .stat-card .value { font-family: var(--font-mono); font-size: 1.75rem; font-weight: 700; color: var(--amber-light); margin-top: 4px; }
+  .stat-card .sub { font-size: 0.8125rem; color: var(--cream-dim); margin-top: 2px; }
 </style>
 </head>
 <body>
@@ -49,6 +56,27 @@
 </div>
 
 <div class="admin-wrap" id="gate" style="display:none;">
+
+  <!-- At-a-glance stats -->
+  <div class="stats-grid" data-reveal>
+    <div class="stat-card glass">
+      <div class="label">Revenue Collected</div>
+      <div class="value" id="statRevenue">$0</div>
+      <div class="sub" id="statOutstanding"></div>
+    </div>
+    <div class="stat-card glass">
+      <div class="label">Occupancy (Next 30d)</div>
+      <div class="value" id="statOccupancy">0%</div>
+    </div>
+    <div class="stat-card glass">
+      <div class="label">Avg. Daily Rate</div>
+      <div class="value" id="statAdr">$0</div>
+    </div>
+    <div class="stat-card glass">
+      <div class="label">Total Bookings</div>
+      <div class="value" id="statBookings">0</div>
+    </div>
+  </div>
 
   <!-- New Booking: phone / walk-in reservations, same data as the public site -->
   <div class="admin-section glass" data-reveal>
@@ -117,11 +145,92 @@
     </div>
     <div class="table-scroll">
     <table class="admin-table">
-      <thead><tr><th>Guest</th><th>Dates</th><th>Source</th><th>Status</th><th>Total</th></tr></thead>
+      <thead><tr><th>Guest</th><th>Dates</th><th>Source</th><th>Status</th><th>Total</th><th>Balance Due</th></tr></thead>
       <tbody id="reservationsTableBody"></tbody>
     </table>
     </div>
     <div class="admin-empty" id="reservationsEmpty" style="display:none;">No reservations yet.</div>
+  </div>
+
+  <!-- Payouts -->
+  <div class="admin-section glass" data-reveal>
+    <div class="section-head" style="margin-bottom: var(--sp-3);">
+      <p class="eyebrow">Money</p>
+      <h2 style="font-size: 1.375rem;">Payouts</h2>
+    </div>
+    <div class="stats-grid" style="margin-bottom: var(--sp-3);">
+      <div class="stat-card glass">
+        <div class="label">Owed to You</div>
+        <div class="value" id="payoutNet">$0</div>
+      </div>
+      <div class="stat-card glass">
+        <div class="label">Platform Fee Retained</div>
+        <div class="value" id="payoutFee">$0</div>
+      </div>
+    </div>
+    <p class="form-note">This is a running calculation, not an automated deposit — every booking is currently charged into one shared Stripe account. Getting paid out automatically to your own bank account requires connecting a Stripe account for your park; until that's set up, RVPark Success sends payouts manually based on this number.</p>
+  </div>
+
+  <!-- Waitlist -->
+  <div class="admin-section glass" data-reveal>
+    <div class="section-head" style="margin-bottom: var(--sp-3);">
+      <p class="eyebrow">Sold Out Dates</p>
+      <h2 style="font-size: 1.375rem;">Waitlist</h2>
+    </div>
+    <div class="table-scroll">
+    <table class="admin-table">
+      <thead><tr><th>Guest</th><th>Contact</th><th>Wanted Dates</th><th></th></tr></thead>
+      <tbody id="waitlistTableBody"></tbody>
+    </table>
+    </div>
+    <div class="admin-empty" id="waitlistEmpty" style="display:none;">Nobody's waiting right now.</div>
+  </div>
+
+  <!-- Promo codes -->
+  <div class="admin-section glass" data-reveal>
+    <div class="section-head" style="margin-bottom: var(--sp-3);">
+      <p class="eyebrow">Marketing</p>
+      <h2 style="font-size: 1.375rem;">Promo Codes</h2>
+    </div>
+    <form id="promoForm">
+      <div class="field-row-3">
+        <div class="field-float"><input id="pmCode" required placeholder=" " style="text-transform:uppercase;"><label for="pmCode">Code (e.g. SUMMER10)</label></div>
+        <div class="field-float">
+          <select id="pmType">
+            <option value="percent">Percent off</option>
+            <option value="flat">Flat $ off</option>
+          </select>
+          <label for="pmType">Discount Type</label>
+        </div>
+        <div class="field-float"><input id="pmValue" type="number" min="0" step="0.01" required><label for="pmValue">Value</label></div>
+      </div>
+      <button type="submit" class="btn btn-ghost" id="addPromoBtn"><span>Add Promo Code</span></button>
+      <div class="admin-alert" id="promoAlert"></div>
+    </form>
+    <div class="table-scroll">
+    <table class="admin-table">
+      <thead><tr><th>Code</th><th>Discount</th><th></th></tr></thead>
+      <tbody id="promoTableBody"></tbody>
+    </table>
+    </div>
+    <div class="admin-empty" id="promoEmpty" style="display:none;">No promo codes yet.</div>
+  </div>
+
+  <!-- Park settings -->
+  <div class="admin-section glass" data-reveal>
+    <div class="section-head" style="margin-bottom: var(--sp-3);">
+      <p class="eyebrow">Billing</p>
+      <h2 style="font-size: 1.375rem;">Park Settings</h2>
+    </div>
+    <form id="settingsForm">
+      <div class="field-row-2">
+        <div class="field-float"><input id="stTaxRate" type="number" min="0" max="30" step="0.01" required><label for="stTaxRate">Lodging Tax Rate (%)</label></div>
+        <div class="field-float"><input id="stDepositPercent" type="number" min="0" max="100" step="1" required><label for="stDepositPercent">Deposit Required (%)</label></div>
+      </div>
+      <p class="form-note">Tax applies to the room subtotal, not the platform fee. Deposit is the % of the total collected online at booking — leave at 0 to charge the full amount up front; the guest pays the rest at check-in.</p>
+      <button type="submit" class="btn btn-ghost" id="saveSettingsBtn"><span>Save Settings</span></button>
+      <div class="admin-alert" id="settingsAlert"></div>
+    </form>
   </div>
 </div>
 
