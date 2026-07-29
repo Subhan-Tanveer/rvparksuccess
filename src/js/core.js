@@ -77,9 +77,10 @@ function initNav() {
   const menuBtn = document.querySelector('.nav-menu-btn');
   const menu = document.querySelector('.mobile-menu');
   const closeBtn = document.querySelector('.mobile-menu-close');
+  const pillWrap = document.querySelector('.nav-pill-wrap');
   if (menuBtn && menu) {
-    const open = () => { menu.classList.add('is-open'); document.body.style.overflow = 'hidden'; };
-    const close = () => { menu.classList.remove('is-open'); document.body.style.overflow = ''; };
+    const open = () => { menu.classList.add('is-open'); pillWrap?.classList.add('is-hidden'); document.body.style.overflow = 'hidden'; };
+    const close = () => { menu.classList.remove('is-open'); pillWrap?.classList.remove('is-hidden'); document.body.style.overflow = ''; };
     menuBtn.addEventListener('click', open);
     closeBtn?.addEventListener('click', close);
     menu.querySelectorAll('a').forEach((a) => a.addEventListener('click', close));

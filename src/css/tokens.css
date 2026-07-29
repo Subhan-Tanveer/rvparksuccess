@@ -91,6 +91,11 @@ button { font-family: inherit; cursor: pointer; background: none; border: none; 
 .wrap { max-width: var(--wrap-max); margin: 0 auto; padding: 0 var(--sp-4); }
 @media (max-width: 720px) { .wrap { padding: 0 var(--sp-3); } }
 
+/* -- horizontal scroll wrapper for wide tables on narrow screens (avoids
+   clipping columns under html/body's overflow-x: hidden above) -- */
+.table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.table-scroll table { min-width: 480px; }
+
 .mono { font-family: var(--font-mono); }
 .eyebrow { font-family: var(--font-mono); font-size: 0.75rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: var(--amber); }
 .lede { font-size: 1.125rem; line-height: 1.65; color: var(--cream-dim); }

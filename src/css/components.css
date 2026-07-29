@@ -76,8 +76,12 @@ body { visibility: hidden; animation: pt-reveal-body 2.05s steps(1) forwards; }
 @media (max-width: 900px), (hover: none) { .cursor-dot, .cursor-ring { display: none; } }
 
 /* -- nav: minimal floating pill -- */
-.nav-pill-wrap { position: fixed; top: var(--sp-3); left: 0; right: 0; z-index: 100; display: flex; justify-content: space-between; padding: 0 var(--sp-4); pointer-events: none; }
+.nav-pill-wrap { position: fixed; top: var(--sp-3); left: 0; right: 0; z-index: 100; display: flex; justify-content: space-between; padding: 0 var(--sp-4); pointer-events: none; transition: opacity 0.25s ease; }
 @media (max-width: 720px) { .nav-pill-wrap { padding: 0 var(--sp-3); } }
+/* Belt-and-suspenders: the open mobile menu is already a higher z-index opaque
+   overlay, but explicitly hiding the pill nav too means there's no chance of
+   it flashing through mid-transition on slower/older mobile browsers. */
+.nav-pill-wrap.is-hidden { opacity: 0; visibility: hidden; pointer-events: none; }
 .nav-pill { pointer-events: auto; display: flex; align-items: center; gap: var(--sp-3); padding: 8px 8px 8px 18px; border-radius: var(--radius-pill); background: rgba(8, 12, 8, 0.65); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); border: 1px solid var(--border-glass); box-shadow: 0 10px 30px -12px rgba(0,0,0,0.6); }
 .nav-brand { display: flex; align-items: center; gap: 9px; font-family: var(--font-display); font-size: 1rem; font-weight: 700; color: var(--cream); white-space: nowrap; }
 .nav-brand .mark { width: 26px; height: 26px; border-radius: 7px; background: linear-gradient(135deg, var(--amber-light), var(--amber)); display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-weight: 700; color: var(--black); font-size: 0.75rem; flex-shrink: 0; }
@@ -103,12 +107,16 @@ body { visibility: hidden; animation: pt-reveal-body 2.05s steps(1) forwards; }
 .profile-dropdown a, .profile-dropdown .profile-logout-btn { display: block; width: 100%; text-align: left; padding: 8px 4px; border-radius: 6px; font-size: 0.8125rem; font-weight: 600; color: var(--cream-dim); background: none; border: none; cursor: pointer; transition: color 0.2s ease, background 0.2s ease; }
 .profile-dropdown a:hover, .profile-dropdown .profile-logout-btn:hover { color: var(--black); background: var(--amber); }
 
-.mobile-menu { position: fixed; inset: 0; z-index: 250; background: var(--black); display: flex; flex-direction: column; padding: var(--sp-4); transform: translateY(-100%); transition: transform 0.5s var(--ease-out); }
+.mobile-menu { position: fixed; inset: 0; z-index: 250; background: var(--black); display: flex; flex-direction: column; padding: var(--sp-4); padding-bottom: var(--sp-6); overflow-y: auto; -webkit-overflow-scrolling: touch; transform: translateY(-100%); transition: transform 0.5s var(--ease-out); }
 .mobile-menu.is-open { transform: translateY(0); }
-.mobile-menu-top { display: flex; align-items: center; justify-content: space-between; }
-.mobile-menu-close { width: 42px; height: 42px; border-radius: 10px; border: 1px solid var(--border-glass); background: var(--surface-glass); color: var(--cream); font-size: 1.25rem; }
-.mobile-menu-links { display: flex; flex-direction: column; gap: var(--sp-3); margin-top: var(--sp-10); }
+.mobile-menu-top { display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+.mobile-menu-close { width: 42px; height: 42px; border-radius: 10px; border: 1px solid var(--border-glass); background: var(--surface-glass); color: var(--cream); font-size: 1.25rem; flex-shrink: 0; }
+.mobile-menu-links { display: flex; flex-direction: column; gap: var(--sp-3); margin-top: var(--sp-8); }
 .mobile-menu-links a { font-family: var(--font-display); font-size: 2.25rem; font-weight: 700; color: var(--cream); }
+@media (max-height: 700px) {
+  .mobile-menu-links { margin-top: var(--sp-4); gap: var(--sp-2); }
+  .mobile-menu-links a { font-size: 1.625rem; }
+}
 .mobile-menu-links a.is-active { color: var(--amber); }
 
 /* -- footer -- */

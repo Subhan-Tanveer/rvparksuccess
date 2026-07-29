@@ -100,10 +100,12 @@
       <button type="submit" class="btn btn-ghost" id="addSiteBtn"><span>Add Site</span></button>
       <div class="admin-alert" id="siteAlert"></div>
     </form>
+    <div class="table-scroll">
     <table class="admin-table">
       <thead><tr><th>Name</th><th>Type</th><th>Sleeps</th><th>Rate</th><th></th></tr></thead>
       <tbody id="sitesTableBody"></tbody>
     </table>
+    </div>
     <div class="admin-empty" id="sitesEmpty" style="display:none;">No sites yet — add your first one above.</div>
   </div>
 
@@ -113,10 +115,12 @@
       <p class="eyebrow">Recent Activity</p>
       <h2 style="font-size: 1.375rem;">Reservations</h2>
     </div>
+    <div class="table-scroll">
     <table class="admin-table">
       <thead><tr><th>Guest</th><th>Dates</th><th>Source</th><th>Status</th><th>Total</th></tr></thead>
       <tbody id="reservationsTableBody"></tbody>
     </table>
+    </div>
     <div class="admin-empty" id="reservationsEmpty" style="display:none;">No reservations yet.</div>
   </div>
 </div>
