@@ -52,6 +52,7 @@
   .scenario-arrow { font-family: var(--font-mono); font-size: 1.75rem; color: var(--amber); flex-shrink: 0; }
   @media (max-width: 560px) { .scenario-arrow { transform: rotate(90deg); } }
   .scenario-diff { display: flex; justify-content: center; gap: var(--sp-5); margin-top: var(--sp-5); padding: var(--sp-4); border-radius: var(--radius-md); background: rgba(46, 155, 84, 0.1); border: 1px solid var(--border-amber); }
+  @media (max-width: 720px) { .scenario-diff { flex-direction: column; gap: var(--sp-3); } }
   .scenario-diff-item .num { display: block; font-family: var(--font-mono); font-weight: 800; font-size: clamp(1.75rem, 3.4vw, 2.5rem); color: var(--amber-light); text-shadow: 0 0 30px rgba(46, 155, 84, 0.5); }
   .scenario-diff-label { display: block; font-size: 0.75rem; color: var(--cream-dim); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 4px; text-align: center; }
   .scenario-goal { font-size: 0.875rem; color: var(--cream-dim); text-align: center; margin-top: var(--sp-4); line-height: 1.5; font-style: italic; }

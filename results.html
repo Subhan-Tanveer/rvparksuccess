@@ -22,6 +22,7 @@
   .case-media { border-radius: var(--radius-lg); overflow: hidden; aspect-ratio: 4/3; border: 1px solid var(--border-glass); }
   .case-media img { width: 100%; height: 100%; object-fit: cover; }
   .case-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-2); margin-top: var(--sp-4); }
+  @media (max-width: 720px) { .case-stats { grid-template-columns: 1fr; } }
   .case-stats .item { text-align: center; padding: var(--sp-2); }
   .case-stats .num { font-family: var(--font-mono); font-size: 1.75rem; font-weight: 700; color: var(--amber-light); }
   .case-stats .label { font-size: 0.75rem; color: var(--cream-dim); margin-top: 4px; }
