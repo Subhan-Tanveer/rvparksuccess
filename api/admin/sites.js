@@ -12,7 +12,7 @@ export default async function handler(req, res) {
   if (req.method === 'POST' && req.body?.resource === 'season') {
     const { siteId, label, startDate, endDate, nightlyRateCents } = req.body;
     try {
-      const site = addSeasonalRate(siteId, session.parkId, { label, startDate, endDate, nightlyRateCents });
+      const site = await addSeasonalRate(siteId, session.parkId, { label, startDate, endDate, nightlyRateCents });
       return res.status(201).json({ site });
     } catch (err) {
       return res.status(400).json({ error: err.message });
@@ -22,7 +22,7 @@ export default async function handler(req, res) {
   if (req.method === 'DELETE' && req.body?.resource === 'season') {
     const { siteId, seasonId } = req.body;
     try {
-      const site = removeSeasonalRate(siteId, session.parkId, seasonId);
+      const site = await removeSeasonalRate(siteId, session.parkId, seasonId);
       return res.status(200).json({ site });
     } catch (err) {
       return res.status(400).json({ error: err.message });
@@ -32,7 +32,7 @@ export default async function handler(req, res) {
   if (req.method === 'POST') {
     const { name, type, capacity, nightlyRateCents } = req.body || {};
     try {
-      const site = addSite(session.parkId, { name, type, capacity, nightlyRateCents });
+      const site = await addSite(session.parkId, { name, type, capacity, nightlyRateCents });
       return res.status(201).json({ site });
     } catch (err) {
       return res.status(400).json({ error: err.message });
@@ -42,7 +42,7 @@ export default async function handler(req, res) {
   if (req.method === 'PUT') {
     const { id, name, type, capacity, nightlyRateCents } = req.body || {};
     try {
-      const site = updateSite(id, session.parkId, { name, type, capacity, nightlyRateCents });
+      const site = await updateSite(id, session.parkId, { name, type, capacity, nightlyRateCents });
       return res.status(200).json({ site });
     } catch (err) {
       return res.status(400).json({ error: err.message });
@@ -52,7 +52,7 @@ export default async function handler(req, res) {
   if (req.method === 'DELETE') {
     const { id } = req.body || {};
     try {
-      deleteSite(id, session.parkId);
+      await deleteSite(id, session.parkId);
       return res.status(200).json({ ok: true });
     } catch (err) {
       return res.status(400).json({ error: err.message });

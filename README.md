@@ -20,8 +20,8 @@ npm run preview  # preview the production build
 | How It Works (horizontal pinned scroll) | `how-it-works.html` |
 | Results | `results.html` |
 | Contact / Book a Free Audit | `contact.html` |
-| Live Demo (fictional "Best RV Park") | `sample.html` |
-| Reservations booking demo | `reservations.html` |
+| Live Demo (reservations system walkthrough) | `sample.html` |
+| Book a site | `reservations.html` |
 
 ## ⚠️ Everything here is a template — not verified content
 
@@ -46,15 +46,21 @@ npm run preview  # preview the production build
 
 Prices are hardcoded in two places that must be kept in sync — `src/js/services-data.js` (drives what's displayed on the page) and the `SERVICES` object in `api/create-checkout-session.js` (drives what Stripe actually charges). Update both if pricing changes.
 
-## Reservations system (proof-of-concept — read before relying on it)
+## Reservations system
 
-`reservations.html` is a working demo of the "bundle a real reservations system into the monthly marketing package" idea — a guest can search real availability, pick a site, and pay through Stripe, for the fictional "Best RV Park" seeded in `api/_lib/reservations-store.js`.
+`reservations.html` is a real, working booking system — a guest searches live availability, picks a site, and pays through Stripe. There's no seeded/demo data; every park comes from a real owner signup, and every booking is a real reservation.
 
-**This is a proof of concept, not a production booking platform yet.** The one thing to understand before showing this to a real park owner or taking a real booking:
-
-- **The data layer is a JSON file, not a real database.** `api/_lib/reservations-store.js` reads/writes `data/reservations-db.json` on disk. That works correctly for local testing (`vercel dev` on your own machine, where the filesystem is real and persists), but **will not reliably prevent double-bookings once deployed to Vercel** — production serverless functions run in ephemeral, isolated instances with a read-only filesystem, so two guests could both see the same site as available at the same time. Before this handles real money and real reservations, swap the read/write functions in that file for calls to a real database (Vercel Postgres, Supabase, etc.) — the rest of the code (the API routes, the booking page) calls a stable set of functions from that one file and won't need to change.
+- **Backed by a real Postgres database.** `api/_lib/reservations-store.js` runs SQL against Postgres (Neon, connected via the Vercel project's Storage tab) using `DATABASE_URL`/`POSTGRES_URL` from the environment. The schema (parks, sites, seasonal_rates, promo_codes, reservations, guests, waitlist) is created automatically on first use — nothing to run by hand. Locally, `vercel env pull .env.development.local` (or `vercel dev`) makes the same database available for testing.
+- **Double-booking is actually prevented**, not just discouraged. `createPendingReservation`/`createStaffReservation` wrap the availability check and the insert in one transaction, serialized per site with a Postgres advisory lock (`pg_advisory_xact_lock`) — two guests booking the same site at the same instant genuinely can't both succeed; one gets "Site is no longer available for those dates."
 - **Stripe Connect payouts are wired up, but need to be turned on in the Stripe Dashboard first.** Each park owner can click "Connect Bank Account" on their dashboard (`park-dashboard.html`) to onboard via Stripe Express — once `payouts_enabled` comes back true, every future booking for that park automatically splits at checkout (destination charge): the park gets everything except RVPark Success's booking fee, no manual transfer needed. This requires **Connect to be enabled on the platform Stripe account first** (Stripe Dashboard → Connect → Get started) — if it isn't, the "Connect Bank Account" button will show whatever error Stripe returns, which tells you what to finish setting up. Parks that haven't connected (or haven't finished onboarding) still work exactly as before: money collects into the platform account and the "Owed to You" figure on their dashboard is paid out manually.
 - **GoHighLevel (GHL) isn't connected yet.** The plan discussed with Marie was for confirmed reservations to flow into GHL (as a contact + a record of the booking) so existing marketing automations — review requests, upsell follow-ups — pick guests up automatically. That sync doesn't exist yet; it's a follow-on step once you confirm which GHL sub-account this should write to.
+
+### Database setup (one-time, done by you)
+
+1. In the Vercel project dashboard → **Storage** tab → **Create Database** → pick **Neon** (Serverless Postgres) → Free plan.
+2. Connect it to this project, with **Production**, **Preview**, and **Development** environments checked.
+3. That's it — Vercel auto-injects the connection env vars; the schema creates itself the first time any API route runs a query.
+4. To test locally: `npx vercel link` (pick this project), then `npx vercel env pull .env.development.local`, then `npx vercel dev`.
 
 ### How the booking flow works today
 
@@ -77,14 +83,12 @@ There are now two admin roles, each with their own login:
 - **Platform admin (`admin-login.html` → `admin-dashboard.html`)** — this is you. Log in and create a new client park, choosing its name, location, and the login username/password its staff will use. This is not linked from the public site navigation on purpose — bookmark the URL yourself.
 - **Park staff (`park-login.html` → `park-dashboard.html`)** — the credentials you set when creating that park. From there staff can add/edit/remove their own sites and rates, and — this is the piece we discussed — enter a phone or walk-in booking directly. A staff-entered booking writes to the *exact same* data a guest's online booking does, so a site is instantly unavailable everywhere the moment either one is entered; there's no separate calendar to keep in sync. `find-a-park.html`/`reservations.html` (the public side) and `park-dashboard.html` (the staff side) are reading and writing the same underlying reservations.
 
-The 3 demo parks seeded in `api/_lib/reservations-store.js` already have a staff login for testing: username is the park's id (`best-rv-park`, `cedar-bend`, or `blue-ridge`), password is `demo1234` for all three.
+There's no seeded/demo park account — an owner gets one by signing up at `park-login.html` (Sign Up tab), or a super-admin can provision one manually from `admin-dashboard.html`.
 
-**Setup — two new environment variables, same rules as the Stripe ones (set in Vercel, never in a file in this repo):**
+**Setup — two environment variables, same rules as the Stripe ones (set in Vercel, never in a file in this repo):**
 
 1. `ADMIN_SESSION_SECRET` — any long random string; it signs the login session cookies. Generate one yourself (e.g. `openssl rand -hex 32`) rather than using something guessable.
 2. `SUPER_ADMIN_PASSWORD` — the password for *your* platform-admin login (`admin-login.html`). Pick your own; there's no username, just this one password.
-
-**Same database caveat as the rest of this system applies here too** — park accounts, sites, and staff-entered bookings all live in the same JSON-file store documented above, so none of this is safe to rely on in production until that's replaced with a real database. It's real, working logic — it's the storage underneath it that still needs to change before this handles a real client's real business.
 
 ### Guest accounts (`guest-login.html` → `guest-dashboard.html`)
 
@@ -95,8 +99,6 @@ Website visitors can create their own account (separate from the park-staff/admi
 - Logged-in guests get their name/email/phone pre-filled automatically when booking on `reservations.html`.
 - Once logged in, "My Account" in the nav is replaced by a profile icon (their initials) in the top-right corner, with a dropdown for "My Bookings" and "Log Out" — built in `src/js/guest-nav.js`, wired into every page via `initCore()`.
 - **24-hour idle timeout**: `src/js/guest-session.js` tracks the guest's last activity in `localStorage` (mouse/keyboard/scroll, throttled to once a minute). If they've been inactive for more than 24 hours, the next page load logs them out (clears the session cookie server-side) and, on the dashboard, redirects to `guest-login.html?reason=idle` with a message explaining why. This is enforced client-side on top of the cookie itself — the JWT session cookie still expires after 7 days regardless, so idle timeout is the *shorter* of the two limits in practice.
-- Same JSON-file storage caveat as everything else above — guest accounts live in the same `data/reservations-db.json` store, so they won't persist in production until that's migrated to a real database.
-
 ## Contact form → real email (Gmail SMTP)
 
 `contact.html`'s "Book a Free Audit" form sends real email via `api/send-audit-request.js` (Nodemailer over Gmail SMTP) — one notification to `marie@rvparksales.com`, one confirmation to whoever submitted the form. Falls back to a `mailto:` link if the API call fails (e.g. running under plain `npm run dev`, or Gmail rejects the send).

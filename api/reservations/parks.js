@@ -11,6 +11,6 @@ export default async function handler(req, res) {
   }
 
   const { location } = req.query;
-  const parks = listParks(location || '');
+  const parks = await listParks(location || '');
   res.status(200).json({ parks });
 }

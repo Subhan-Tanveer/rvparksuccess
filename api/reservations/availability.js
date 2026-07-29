@@ -12,7 +12,7 @@ export default async function handler(req, res) {
   if (req.method === 'POST') {
     const { parkId, checkIn, checkOut, name, email, phone, notes } = req.body || {};
     try {
-      const entry = joinWaitlist({ parkId, checkIn, checkOut, name, email, phone, notes });
+      const entry = await joinWaitlist({ parkId, checkIn, checkOut, name, email, phone, notes });
       return res.status(201).json({ entry });
     } catch (err) {
       return res.status(400).json({ error: err.message });
@@ -29,13 +29,13 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'park, checkIn, and checkOut are required' });
   }
 
-  const park = getPark(parkId);
+  const park = await getPark(parkId);
   if (!park) return res.status(404).json({ error: 'Unknown park' });
 
   if (new Date(checkOut) <= new Date(checkIn)) {
     return res.status(400).json({ error: 'checkOut must be after checkIn' });
   }
 
-  const sites = getAvailableSites(parkId, checkIn, checkOut, promo || null);
+  const sites = await getAvailableSites(parkId, checkIn, checkOut, promo || null);
   res.status(200).json({ park, checkIn, checkOut, sites });
 }

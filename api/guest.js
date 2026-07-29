@@ -11,12 +11,12 @@ export default async function handler(req, res) {
   if (req.method === 'GET') {
     const session = getGuestSession(req);
     if (!session) return res.status(401).json({ error: 'Not signed in' });
-    const guest = getGuestByEmail(session.guestEmail);
+    const guest = await getGuestByEmail(session.guestEmail);
     if (!guest) return res.status(401).json({ error: 'Not signed in' });
 
     return res.status(200).json({
       guest: { name: guest.name, email: guest.email, phone: guest.phone },
-      bookings: getBookingsForGuest(guest.email),
+      bookings: await getBookingsForGuest(guest.email),
     });
   }
 
@@ -26,7 +26,7 @@ export default async function handler(req, res) {
     if (action === 'signup') {
       const { name, email, password, phone } = req.body;
       try {
-        const guest = createGuestAccount({ name, email, password, phone });
+        const guest = await createGuestAccount({ name, email, password, phone });
         res.setHeader('Set-Cookie', createGuestSessionCookie({ guestEmail: guest.email }));
         return res.status(200).json({ ok: true, name: guest.name });
       } catch (err) {
@@ -36,7 +36,7 @@ export default async function handler(req, res) {
 
     if (action === 'login') {
       const { email, password } = req.body;
-      const guest = verifyGuestLogin(email, password);
+      const guest = await verifyGuestLogin(email, password);
       if (!guest) return res.status(401).json({ error: 'Incorrect email or password' });
 
       res.setHeader('Set-Cookie', createGuestSessionCookie({ guestEmail: guest.email }));
@@ -48,7 +48,7 @@ export default async function handler(req, res) {
       if (!session) return res.status(401).json({ error: 'Not signed in' });
       const { reservationId } = req.body;
       try {
-        const reservation = cancelReservationForGuest(reservationId, session.guestEmail);
+        const reservation = await cancelReservationForGuest(reservationId, session.guestEmail);
         return res.status(200).json({ ok: true, reservation });
       } catch (err) {
         return res.status(400).json({ error: err.message });

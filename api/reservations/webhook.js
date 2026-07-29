@@ -46,7 +46,7 @@ export default async function handler(req, res) {
 
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object;
-    const confirmed = confirmReservationBySessionId(session.id);
+    const confirmed = await confirmReservationBySessionId(session.id);
     if (!confirmed) console.warn('Webhook confirmed a session with no matching reservation:', session.id);
   }
 

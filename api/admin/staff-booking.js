@@ -16,7 +16,7 @@ export default async function handler(req, res) {
 
   const { siteId, checkIn, checkOut, guestName, guestEmail, guestPhone, paymentMethod, notes } = req.body || {};
   try {
-    const reservation = createStaffReservation({
+    const reservation = await createStaffReservation({
       parkId: session.parkId, siteId, checkIn, checkOut,
       guestName, guestEmail, guestPhone, paymentMethod, notes,
     });

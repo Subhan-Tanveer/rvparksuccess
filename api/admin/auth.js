@@ -26,7 +26,7 @@ export default async function handler(req, res) {
 
   if (action === 'park-login') {
     const { username, password } = req.body;
-    const park = verifyParkLogin(username, password);
+    const park = await verifyParkLogin(username, password);
     if (!park) return res.status(401).json({ error: 'Incorrect username or password' });
 
     res.setHeader('Set-Cookie', createSessionCookie({ role: 'park-staff', parkId: park.id }));
@@ -36,7 +36,7 @@ export default async function handler(req, res) {
   if (action === 'owner-signup') {
     const { parkName, location, ownerName, email, phone, password } = req.body;
     try {
-      const park = signupParkOwner({ parkName, location, ownerName, email, phone, password });
+      const park = await signupParkOwner({ parkName, location, ownerName, email, phone, password });
       res.setHeader('Set-Cookie', createSessionCookie({ role: 'park-staff', parkId: park.id }));
       return res.status(200).json({ ok: true, parkName: park.name });
     } catch (err) {

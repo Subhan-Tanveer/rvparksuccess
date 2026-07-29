@@ -9,13 +9,13 @@ export default async function handler(req, res) {
   if (!session) return; // requireSession already sent the 401
 
   if (req.method === 'GET') {
-    return res.status(200).json({ parks: listParksForAdmin() });
+    return res.status(200).json({ parks: await listParksForAdmin() });
   }
 
   if (req.method === 'POST') {
     const { name, location, state, timezone, staffUsername, staffPassword } = req.body || {};
     try {
-      const park = createPark({ name, location, state, timezone, staffUsername, staffPassword });
+      const park = await createPark({ name, location, state, timezone, staffUsername, staffPassword });
       const { passwordHash, ...safePark } = park;
       return res.status(201).json({ park: safePark });
     } catch (err) {

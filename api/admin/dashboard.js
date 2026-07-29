@@ -18,7 +18,7 @@ export default async function handler(req, res) {
 
   if (req.method === 'POST' && req.body?.resource === 'stripe-connect') {
     try {
-      const park = getPark(session.parkId);
+      const park = await getPark(session.parkId);
       if (!park) return res.status(404).json({ error: 'Park not found' });
 
       // Reuse the existing connected account if onboarding was already
@@ -35,7 +35,7 @@ export default async function handler(req, res) {
           business_profile: { name: park.name, product_description: 'RV park / campground reservations' },
         });
         accountId = account.id;
-        setParkStripeAccount(session.parkId, accountId);
+        await setParkStripeAccount(session.parkId, accountId);
       }
 
       const origin = req.headers.origin || `https://${req.headers.host}`;
@@ -60,7 +60,7 @@ export default async function handler(req, res) {
   if (req.method === 'POST' && req.body?.resource === 'promo') {
     const { code, type, value } = req.body;
     try {
-      const park = addPromoCode(session.parkId, { code, type, value });
+      const park = await addPromoCode(session.parkId, { code, type, value });
       const { passwordHash, ...safePark } = park;
       return res.status(201).json({ park: safePark });
     } catch (err) {
@@ -70,7 +70,7 @@ export default async function handler(req, res) {
 
   if (req.method === 'DELETE' && req.body?.resource === 'promo') {
     try {
-      const park = removePromoCode(session.parkId, req.body.promoId);
+      const park = await removePromoCode(session.parkId, req.body.promoId);
       const { passwordHash, ...safePark } = park;
       return res.status(200).json({ park: safePark });
     } catch (err) {
@@ -80,7 +80,7 @@ export default async function handler(req, res) {
 
   if (req.method === 'DELETE' && req.body?.resource === 'waitlist') {
     try {
-      removeWaitlistEntry(req.body.entryId, session.parkId);
+      await removeWaitlistEntry(req.body.entryId, session.parkId);
       return res.status(200).json({ ok: true });
     } catch (err) {
       return res.status(400).json({ error: err.message });
@@ -89,7 +89,7 @@ export default async function handler(req, res) {
 
   if (req.method === 'POST') {
     try {
-      const park = updateParkSettings(session.parkId, req.body || {});
+      const park = await updateParkSettings(session.parkId, req.body || {});
       const { passwordHash, ...safePark } = park;
       return res.status(200).json({ park: safePark });
     } catch (err) {
@@ -102,7 +102,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const park = getPark(session.parkId);
+  const park = await getPark(session.parkId);
   if (!park) return res.status(404).json({ error: 'Park not found' });
   const { passwordHash, ...safePark } = park;
 
@@ -122,13 +122,13 @@ export default async function handler(req, res) {
     }
   }
 
-  res.status(200).json({
-    park: safePark,
-    sites: getSitesForPark(session.parkId),
-    reservations: getReservationsForPark(session.parkId),
-    stats: getParkStats(session.parkId),
-    waitlist: getWaitlistForPark(session.parkId),
-    payout: getPayoutSummary(session.parkId),
-    stripeStatus,
-  });
+  const [sites, reservations, stats, waitlist, payout] = await Promise.all([
+    getSitesForPark(session.parkId),
+    getReservationsForPark(session.parkId),
+    getParkStats(session.parkId),
+    getWaitlistForPark(session.parkId),
+    getPayoutSummary(session.parkId),
+  ]);
+
+  res.status(200).json({ park: safePark, sites, reservations, stats, waitlist, payout, stripeStatus });
 }

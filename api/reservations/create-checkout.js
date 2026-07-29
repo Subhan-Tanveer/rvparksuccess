@@ -19,15 +19,14 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Missing required booking details' });
   }
 
-  const park = getPark(parkId);
-  const site = getSite(siteId);
+  const [park, site] = await Promise.all([getPark(parkId), getSite(siteId)]);
   if (!park || !site || site.parkId !== parkId) {
     return res.status(404).json({ error: 'Unknown park or site' });
   }
 
   let reservation;
   try {
-    reservation = createPendingReservation({ parkId, siteId, checkIn, checkOut, guestName, guestEmail, guestPhone, promoCode });
+    reservation = await createPendingReservation({ parkId, siteId, checkIn, checkOut, guestName, guestEmail, guestPhone, promoCode });
   } catch (err) {
     return res.status(409).json({ error: err.message });
   }
@@ -100,7 +99,7 @@ export default async function handler(req, res) {
       cancel_url: `${origin}/reservations.html?park=${parkId}&checkout=canceled`,
     });
 
-    attachStripeSession(reservation.id, session.id);
+    await attachStripeSession(reservation.id, session.id);
     res.status(200).json({ url: session.url, reservationId: reservation.id });
   } catch (err) {
     console.error('Reservation checkout session error:', err.message);
