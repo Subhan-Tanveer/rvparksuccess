@@ -16,6 +16,7 @@
   .sample-hero::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at 30% 20%, rgba(46,155,84,0.22), transparent 60%); }
   .sample-hero > .wrap { position: relative; z-index: 2; width: 100%; padding-bottom: var(--sp-8); text-align: center; }
   .sample-hero h1 { font-size: clamp(2.25rem, 5vw, 3.75rem); margin-top: var(--sp-2); }
+  @media (max-width: 720px) { .sample-hero h1 { margin-top: var(--sp-12); } }
   .sample-hero .lede { max-width: 620px; margin: var(--sp-2) auto 0; }
   .fictional-tag { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: var(--radius-pill); background: rgba(46,155,84,0.14); border: 1px solid var(--border-amber); font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 0.04em; color: var(--amber-light); margin-top: var(--sp-4); }
 
