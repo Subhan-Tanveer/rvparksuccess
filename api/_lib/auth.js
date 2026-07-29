@@ -1,15 +1,22 @@
-// Session handling for the two admin roles:
+// Session handling for the three roles:
 //   - 'super-admin': you — can create new parks and set their staff logins
 //   - 'park-staff': a specific park's staff — scoped to that one park's data
+//   - 'guest': a self-service guest account — scoped to their own bookings
+//     (via the guestEmail claim), not tied to any one park
 //
 // Sessions are signed JWTs stored in an httpOnly cookie (never readable by
 // page JavaScript, so an XSS bug can't steal a login the way it could with
 // a token kept in localStorage). Requires ADMIN_SESSION_SECRET to be set —
 // see the README for setup. NEVER put that secret's value in any file in
 // this repo; it's read from process.env only.
+//
+// Guest sessions use a separate cookie name from admin/staff sessions so a
+// park-staff member and a guest account can be logged in at the same time
+// in the same browser without clobbering each other.
 import jwt from 'jsonwebtoken';
 
 const COOKIE_NAME = 'rvps_admin_session';
+const GUEST_COOKIE_NAME = 'rvps_guest_session';
 const SESSION_DAYS = 7;
 
 function getSecret() {
@@ -28,6 +35,16 @@ export function clearSessionCookie() {
   return `${COOKIE_NAME}=; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=0`;
 }
 
+export function createGuestSessionCookie({ guestEmail }) {
+  const token = jwt.sign({ role: 'guest', guestEmail }, getSecret(), { expiresIn: `${SESSION_DAYS}d` });
+  const maxAge = SESSION_DAYS * 24 * 60 * 60;
+  return `${GUEST_COOKIE_NAME}=${token}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=${maxAge}`;
+}
+
+export function clearGuestSessionCookie() {
+  return `${GUEST_COOKIE_NAME}=; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=0`;
+}
+
 function readCookie(req, name) {
   const header = req.headers.cookie;
   if (!header) return null;
@@ -42,6 +59,16 @@ export function getSession(req) {
     return jwt.verify(token, getSecret());
   } catch {
     return null; // expired or tampered — treat as logged out
+  }
+}
+
+export function getGuestSession(req) {
+  const token = readCookie(req, GUEST_COOKIE_NAME);
+  if (!token) return null;
+  try {
+    return jwt.verify(token, getSecret());
+  } catch {
+    return null;
   }
 }
 

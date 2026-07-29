@@ -98,6 +98,17 @@ function renderResults(sites, checkIn, checkOut) {
 searchBtn.addEventListener('click', searchAvailability);
 searchAvailability();
 
+/* -- pre-fill guest details for a logged-in guest account -- */
+fetch('/api/guest').then((res) => (res.ok ? res.json() : null)).then((data) => {
+  if (!data) return;
+  document.getElementById('guestName').value = data.guest.name;
+  document.getElementById('guestEmail').value = data.guest.email;
+  document.getElementById('guestPhone').value = data.guest.phone || '';
+  document.querySelectorAll('#guestForm .field-float').forEach((field) => {
+    if (field.querySelector('input')?.value) field.classList.add('has-value');
+  });
+}).catch(() => {});
+
 /* -- guest details modal + checkout -- */
 const modalBackdrop = document.getElementById('resModalBackdrop');
 const modalClose = document.getElementById('resModalClose');

@@ -86,6 +86,15 @@ The 3 demo parks seeded in `api/_lib/reservations-store.js` already have a staff
 
 **Same database caveat as the rest of this system applies here too** — park accounts, sites, and staff-entered bookings all live in the same JSON-file store documented above, so none of this is safe to rely on in production until that's replaced with a real database. It's real, working logic — it's the storage underneath it that still needs to change before this handles a real client's real business.
 
+### Guest accounts (`guest-login.html` → `guest-dashboard.html`)
+
+Website visitors can create their own account (separate from the park-staff/admin logins above) to track their bookings across any park. "My Account" is linked in the nav and footer of every public page.
+
+- Sign up / log in at `guest-login.html`, both on one page as tabs. Handled by one consolidated route, `api/guest.js` (POST `action: 'signup' | 'login' | 'logout'`, GET returns the logged-in guest's profile + booking history) — kept to a single file because the Vercel Hobby plan caps a deployment at 12 serverless functions, and this project is now at exactly that limit. If a future feature needs another API route, something else has to be merged first.
+- The guest session uses its own cookie (`rvps_guest_session`, separate from the admin/staff `rvps_admin_session` cookie), so a park-staff member and a guest account can both be logged in at once in the same browser.
+- Logged-in guests get their name/email/phone pre-filled automatically when booking on `reservations.html`.
+- Same JSON-file storage caveat as everything else above — guest accounts live in the same `data/reservations-db.json` store, so they won't persist in production until that's migrated to a real database.
+
 ## Contact form → real email (Gmail SMTP)
 
 `contact.html`'s "Book a Free Audit" form sends real email via `api/send-audit-request.js` (Nodemailer over Gmail SMTP) — one notification to `marie@rvparksales.com`, one confirmation to whoever submitted the form. Falls back to a `mailto:` link if the API call fails (e.g. running under plain `npm run dev`, or Gmail rejects the send).

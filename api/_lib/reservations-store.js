@@ -34,9 +34,9 @@ const SEED = {
   // the homepage marquee ticker, so the demo data feels consistent across
   // the whole site rather than introducing yet more placeholder names.
   parks: [
-    { id: 'best-rv-park', name: 'Best RV Park', location: 'Anytown, USA', state: 'USA', timezone: 'America/Chicago', staffUsername: 'best-rv-park', passwordHash: DEMO_PASSWORD_HASH },
-    { id: 'cedar-bend', name: 'Cedar Bend Campground', location: 'Lakeview, TX', state: 'TX', timezone: 'America/Chicago', staffUsername: 'cedar-bend', passwordHash: DEMO_PASSWORD_HASH },
-    { id: 'blue-ridge', name: 'Blue Ridge RV Resort', location: 'Asheville, NC', state: 'NC', timezone: 'America/New_York', staffUsername: 'blue-ridge', passwordHash: DEMO_PASSWORD_HASH },
+    { id: 'best-rv-park', name: 'Best RV Park', location: 'Anytown, USA', state: 'USA', timezone: 'America/Chicago', staffUsername: 'best-rv-park', passwordHash: DEMO_PASSWORD_HASH, createdAt: '2026-01-01T00:00:00.000Z' },
+    { id: 'cedar-bend', name: 'Cedar Bend Campground', location: 'Lakeview, TX', state: 'TX', timezone: 'America/Chicago', staffUsername: 'cedar-bend', passwordHash: DEMO_PASSWORD_HASH, createdAt: '2026-01-01T00:00:00.000Z' },
+    { id: 'blue-ridge', name: 'Blue Ridge RV Resort', location: 'Asheville, NC', state: 'NC', timezone: 'America/New_York', staffUsername: 'blue-ridge', passwordHash: DEMO_PASSWORD_HASH, createdAt: '2026-01-01T00:00:00.000Z' },
   ],
   sites: [
     { id: 'site-1', parkId: 'best-rv-park', name: 'Site 1', type: 'RV — Full Hookup', capacity: 6, nightlyRateCents: 5200 },
@@ -65,6 +65,7 @@ const SEED = {
     { id: 'br-site-7', parkId: 'blue-ridge', name: 'Cabin Overlook', type: 'Cabin', capacity: 6, nightlyRateCents: 15000 },
   ],
   reservations: [],
+  guests: [],
 };
 
 const BOOKING_FEE_CENTS = 150; // the platform fee charged per reservation, per the $1-2/booking model
@@ -333,5 +334,53 @@ export function createStaffReservation({ parkId, siteId, checkIn, checkOut, gues
 export function getReservationsForPark(parkId) {
   return loadDb().reservations
     .filter((r) => r.parkId === parkId)
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+}
+
+/* ---------------------------------------------------------------- */
+/* Guest accounts (self-service — guests sign up on the website to   */
+/* track their own bookings across any park; not tied to one park).  */
+/* ---------------------------------------------------------------- */
+
+function normalizeEmail(email) {
+  return (email || '').trim().toLowerCase();
+}
+
+export function createGuestAccount({ name, email, password, phone }) {
+  if (!name || !email || !password) throw new Error('Name, email, and password are required');
+  if (password.length < 8) throw new Error('Password must be at least 8 characters');
+
+  const db = loadDb();
+  const normalizedEmail = normalizeEmail(email);
+  if (db.guests.some((g) => g.email === normalizedEmail)) throw new Error('An account with that email already exists');
+
+  const guest = {
+    id: `guest-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    name, email: normalizedEmail, phone: phone || '',
+    passwordHash: bcrypt.hashSync(password, 10),
+    createdAt: new Date().toISOString(),
+  };
+  db.guests.push(guest);
+  saveDb(db);
+  return guest;
+}
+
+export function verifyGuestLogin(email, password) {
+  const db = loadDb();
+  const guest = db.guests.find((g) => g.email === normalizeEmail(email));
+  if (!guest || !bcrypt.compareSync(password || '', guest.passwordHash)) return null;
+  return guest;
+}
+
+export function getGuestByEmail(email) {
+  return loadDb().guests.find((g) => g.email === normalizeEmail(email)) || null;
+}
+
+export function getBookingsForGuest(email) {
+  const db = loadDb();
+  const normalizedEmail = normalizeEmail(email);
+  return db.reservations
+    .filter((r) => normalizeEmail(r.guestEmail) === normalizedEmail)
+    .map((r) => ({ ...r, parkName: db.parks.find((p) => p.id === r.parkId)?.name || r.parkId }))
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 }

@@ -19,6 +19,8 @@ export default defineConfig({
         adminDashboard: resolve(__dirname, 'admin-dashboard.html'),
         parkLogin: resolve(__dirname, 'park-login.html'),
         parkDashboard: resolve(__dirname, 'park-dashboard.html'),
+        guestLogin: resolve(__dirname, 'guest-login.html'),
+        guestDashboard: resolve(__dirname, 'guest-dashboard.html'),
       },
     },
   },
