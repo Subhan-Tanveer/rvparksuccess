@@ -77,7 +77,7 @@ body { visibility: hidden; animation: pt-reveal-body 2.05s steps(1) forwards; }
 
 /* -- nav: minimal floating pill -- */
 .nav-pill-wrap { position: fixed; top: var(--sp-3); left: 0; right: 0; z-index: 100; display: flex; justify-content: space-between; padding: 0 var(--sp-4); pointer-events: none; transition: opacity 0.25s ease; }
-@media (max-width: 720px) { .nav-pill-wrap { padding: 0 var(--sp-3); } }
+@media (max-width: 720px) { .nav-pill-wrap { padding: 0 var(--sp-4) 0 var(--sp-4); justify-content: center; gap: var(--sp-4); } }
 /* Belt-and-suspenders: the open mobile menu is already a higher z-index opaque
    overlay, but explicitly hiding the pill nav too means there's no chance of
    it flashing through mid-transition on slower/older mobile browsers. */
