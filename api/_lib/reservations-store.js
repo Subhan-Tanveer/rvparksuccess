@@ -24,46 +24,14 @@ import { fileURLToPath } from 'url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DB_PATH = join(__dirname, '..', '..', 'data', 'reservations-db.json');
 
-// Demo login for every seeded park — staff username = the park's id,
-// password = "demo1234" for all three. Real parks get their own
-// credentials via createPark() (called from the super-admin dashboard).
-const DEMO_PASSWORD_HASH = bcrypt.hashSync('demo1234', 10);
-
+// Starts empty on purpose — no fictional parks/sites. Real parks are
+// created by an owner signing up (signupParkOwner, below) or a
+// super-admin provisioning one (createPark). Everything the site shows
+// (find-a-park results, availability, bookings) now reflects only real
+// accounts and real bookings.
 const SEED = {
-  // Park names/locations reuse the fictional parks already referenced in
-  // the homepage marquee ticker, so the demo data feels consistent across
-  // the whole site rather than introducing yet more placeholder names.
-  parks: [
-    { id: 'best-rv-park', name: 'Best RV Park', location: 'Anytown, USA', state: 'USA', timezone: 'America/Chicago', taxRatePercent: 7, staffUsername: 'best-rv-park', passwordHash: DEMO_PASSWORD_HASH, createdAt: '2026-01-01T00:00:00.000Z' },
-    { id: 'cedar-bend', name: 'Cedar Bend Campground', location: 'Lakeview, TX', state: 'TX', timezone: 'America/Chicago', taxRatePercent: 6, staffUsername: 'cedar-bend', passwordHash: DEMO_PASSWORD_HASH, createdAt: '2026-01-01T00:00:00.000Z' },
-    { id: 'blue-ridge', name: 'Blue Ridge RV Resort', location: 'Asheville, NC', state: 'NC', timezone: 'America/New_York', taxRatePercent: 6.75, staffUsername: 'blue-ridge', passwordHash: DEMO_PASSWORD_HASH, createdAt: '2026-01-01T00:00:00.000Z' },
-  ],
-  sites: [
-    { id: 'site-1', parkId: 'best-rv-park', name: 'Site 1', type: 'RV — Full Hookup', capacity: 6, nightlyRateCents: 5200 },
-    { id: 'site-2', parkId: 'best-rv-park', name: 'Site 2', type: 'RV — Full Hookup', capacity: 6, nightlyRateCents: 5200 },
-    { id: 'site-3', parkId: 'best-rv-park', name: 'Site 3', type: 'RV — Full Hookup', capacity: 6, nightlyRateCents: 5200 },
-    { id: 'site-4', parkId: 'best-rv-park', name: 'Site 4', type: 'RV — Full Hookup', capacity: 6, nightlyRateCents: 5200 },
-    { id: 'site-5', parkId: 'best-rv-park', name: 'Site 5', type: 'RV — Full Hookup', capacity: 6, nightlyRateCents: 5200 },
-    { id: 'site-6', parkId: 'best-rv-park', name: 'Site 6', type: 'Pull-Through Premium', capacity: 8, nightlyRateCents: 6500 },
-    { id: 'site-7', parkId: 'best-rv-park', name: 'Site 7', type: 'Pull-Through Premium', capacity: 8, nightlyRateCents: 6500 },
-    { id: 'site-8', parkId: 'best-rv-park', name: 'Site 8', type: 'Tent / Primitive', capacity: 4, nightlyRateCents: 3500 },
-    { id: 'site-9', parkId: 'best-rv-park', name: 'Site 9', type: 'Tent / Primitive', capacity: 4, nightlyRateCents: 3500 },
-
-    { id: 'cb-site-1', parkId: 'cedar-bend', name: 'Site A1', type: 'RV — Full Hookup', capacity: 6, nightlyRateCents: 4500 },
-    { id: 'cb-site-2', parkId: 'cedar-bend', name: 'Site A2', type: 'RV — Full Hookup', capacity: 6, nightlyRateCents: 4500 },
-    { id: 'cb-site-3', parkId: 'cedar-bend', name: 'Site A3', type: 'RV — Full Hookup', capacity: 6, nightlyRateCents: 4500 },
-    { id: 'cb-site-4', parkId: 'cedar-bend', name: 'Lakeside 1', type: 'RV — Lakeside', capacity: 6, nightlyRateCents: 5800 },
-    { id: 'cb-site-5', parkId: 'cedar-bend', name: 'Cabin 1', type: 'Cabin', capacity: 4, nightlyRateCents: 9500 },
-    { id: 'cb-site-6', parkId: 'cedar-bend', name: 'Tent Site 1', type: 'Tent / Primitive', capacity: 4, nightlyRateCents: 3000 },
-
-    { id: 'br-site-1', parkId: 'blue-ridge', name: 'Ridge 1', type: 'RV — Full Hookup', capacity: 8, nightlyRateCents: 7200 },
-    { id: 'br-site-2', parkId: 'blue-ridge', name: 'Ridge 2', type: 'RV — Full Hookup', capacity: 8, nightlyRateCents: 7200 },
-    { id: 'br-site-3', parkId: 'blue-ridge', name: 'Ridge 3', type: 'RV — Full Hookup', capacity: 8, nightlyRateCents: 7200 },
-    { id: 'br-site-4', parkId: 'blue-ridge', name: 'Mountain View Deluxe', type: 'RV — Premium', capacity: 8, nightlyRateCents: 9800 },
-    { id: 'br-site-5', parkId: 'blue-ridge', name: 'Glamping Tent 1', type: 'Glamping', capacity: 4, nightlyRateCents: 11500 },
-    { id: 'br-site-6', parkId: 'blue-ridge', name: 'Glamping Tent 2', type: 'Glamping', capacity: 4, nightlyRateCents: 11500 },
-    { id: 'br-site-7', parkId: 'blue-ridge', name: 'Cabin Overlook', type: 'Cabin', capacity: 6, nightlyRateCents: 15000 },
-  ],
+  parks: [],
+  sites: [],
   reservations: [],
   guests: [],
   waitlist: [],

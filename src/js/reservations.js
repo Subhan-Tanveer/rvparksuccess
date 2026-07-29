@@ -4,7 +4,7 @@ import { enforceGuestIdleTimeout, markGuestLoggedIn } from './guest-session.js';
 
 initCore();
 
-const PARK_ID = new URLSearchParams(location.search).get('park') || 'best-rv-park';
+const PARK_ID = new URLSearchParams(location.search).get('park');
 
 function formatUsd(cents) {
   return '$' + (cents / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -43,6 +43,11 @@ async function searchAvailability() {
   const checkIn = checkInEl.value;
   const checkOut = checkOutEl.value;
   if (!checkIn || !checkOut) return;
+
+  if (!PARK_ID) {
+    resultsEl.innerHTML = '<div class="res-empty">No park selected — start from <a href="find-a-park.html">Find a Park</a> and pick one to book.</div>';
+    return;
+  }
 
   searchBtn.disabled = true;
   const originalLabel = searchBtn.innerHTML;
