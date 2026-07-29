@@ -63,6 +63,30 @@ export default async function handler(req, res) {
     quantity: 1,
   });
 
+  // If the park has finished Stripe Connect onboarding, route this charge
+  // as a destination charge: the full amount hits the platform account,
+  // Stripe automatically transfers everything except the platform's
+  // booking-fee cut to the park's own connected account. No separate
+  // transfer call needed — it happens atomically with the charge. Parks
+  // that haven't connected (or haven't finished onboarding) fall back to
+  // the platform-only charge, same as before Connect existed — their
+  // payout still shows correctly in the dashboard, just paid out manually.
+  let paymentIntentData;
+  if (park.stripeAccountId) {
+    try {
+      const account = await stripe.accounts.retrieve(park.stripeAccountId);
+      if (account.payouts_enabled) {
+        const applicationFeeCents = Math.round(reservation.feeCents * chargeRatio);
+        paymentIntentData = {
+          application_fee_amount: applicationFeeCents,
+          transfer_data: { destination: park.stripeAccountId },
+        };
+      }
+    } catch (err) {
+      console.error('Stripe Connect account check failed, falling back to platform-only charge:', err.message);
+    }
+  }
+
   try {
     const origin = req.headers.origin || `https://${req.headers.host}`;
     const session = await stripe.checkout.sessions.create({
@@ -70,6 +94,7 @@ export default async function handler(req, res) {
       payment_method_types: ['card'],
       customer_email: guestEmail,
       line_items: lineItems,
+      ...(paymentIntentData ? { payment_intent_data: paymentIntentData } : {}),
       metadata: { reservationId: reservation.id, parkId, siteId },
       success_url: `${origin}/reservations.html?park=${parkId}&checkout=success`,
       cancel_url: `${origin}/reservations.html?park=${parkId}&checkout=canceled`,

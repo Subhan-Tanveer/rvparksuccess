@@ -168,7 +168,21 @@
         <div class="value" id="payoutFee">$0</div>
       </div>
     </div>
-    <p class="form-note">This is a running calculation, not an automated deposit — every booking is currently charged into one shared Stripe account. Getting paid out automatically to your own bank account requires connecting a Stripe account for your park; until that's set up, RVPark Success sends payouts manually based on this number.</p>
+    <div id="stripeConnectBox" style="padding: var(--sp-3); border-radius: var(--radius-md); background: var(--surface-glass); border: 1px solid var(--border-glass);">
+      <div id="stripeNotConnected">
+        <p style="font-size:0.9375rem; margin-bottom: var(--sp-2);">Connect a bank account to get paid automatically on every booking — no more manual payouts.</p>
+        <button type="button" class="btn btn-primary" id="stripeConnectBtn"><span>Connect Bank Account</span></button>
+        <div class="admin-alert" id="stripeConnectAlert"></div>
+      </div>
+      <div id="stripeConnecting" style="display:none;">
+        <p style="font-size:0.9375rem; color: var(--cream-dim);">Onboarding started but not finished — Stripe still needs a few details (bank account, identity verification) before payouts can begin.</p>
+        <button type="button" class="btn btn-ghost" id="stripeContinueBtn"><span>Continue Setup</span></button>
+      </div>
+      <div id="stripeReady" style="display:none;">
+        <p style="font-size:0.9375rem; color: var(--amber-light);">✓ Bank account connected — future bookings pay out to you automatically. RVPark Success keeps only the booking fee.</p>
+      </div>
+    </div>
+    <p class="form-note" style="margin-top: var(--sp-3);">"Owed to You" above reflects money already collected. Bookings made before you connected your account (or with a park that hasn't connected) are still paid out manually based on this number.</p>
   </div>
 
   <!-- Waitlist -->

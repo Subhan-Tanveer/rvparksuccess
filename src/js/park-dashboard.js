@@ -42,6 +42,7 @@ async function loadDashboard() {
   renderWaitlist(data.waitlist || []);
   document.getElementById('payoutNet').textContent = formatUsd(data.payout.netOwedToParkCents);
   document.getElementById('payoutFee').textContent = formatUsd(data.payout.platformFeeCollectedCents);
+  renderStripeStatus(data.stripeStatus);
 
   const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
   const twoNightsLater = new Date(tomorrow); twoNightsLater.setDate(twoNightsLater.getDate() + 2);
@@ -433,5 +434,44 @@ document.getElementById('logoutBtn').addEventListener('click', async () => {
   await fetch('/api/admin/auth', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'logout' }) });
   window.location.href = 'park-login.html';
 });
+
+/* -- Stripe Connect (automated payouts) -- */
+function renderStripeStatus(status) {
+  const notConnected = document.getElementById('stripeNotConnected');
+  const connecting = document.getElementById('stripeConnecting');
+  const ready = document.getElementById('stripeReady');
+  notConnected.style.display = 'none';
+  connecting.style.display = 'none';
+  ready.style.display = 'none';
+
+  if (status.payoutsEnabled) ready.style.display = 'block';
+  else if (status.connected) connecting.style.display = 'block';
+  else notConnected.style.display = 'block';
+}
+
+async function startStripeOnboarding(btn) {
+  const alertEl = document.getElementById('stripeConnectAlert');
+  alertEl?.classList.remove('is-visible', 'is-success', 'is-error');
+  btn.disabled = true;
+  try {
+    const res = await fetch('/api/admin/dashboard', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ resource: 'stripe-connect' }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Could not start Stripe onboarding');
+    window.location.href = data.url;
+  } catch (err) {
+    if (alertEl) {
+      alertEl.textContent = err.message;
+      alertEl.classList.add('is-visible', 'is-error');
+    }
+    btn.disabled = false;
+  }
+}
+
+document.getElementById('stripeConnectBtn').addEventListener('click', (e) => startStripeOnboarding(e.currentTarget));
+document.getElementById('stripeContinueBtn').addEventListener('click', (e) => startStripeOnboarding(e.currentTarget));
 
 loadDashboard();

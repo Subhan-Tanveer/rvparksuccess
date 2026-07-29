@@ -400,6 +400,20 @@ export function updateParkSettings(parkId, { taxRatePercent, depositPercent } = 
   return park;
 }
 
+// Stores the park's Stripe Connect account id once they start onboarding.
+// The actual Stripe API calls (creating the account, generating the
+// onboarding link, checking payouts_enabled) live in api/admin/dashboard.js
+// and api/reservations/create-checkout.js — this file stays Stripe-agnostic
+// like the rest of the data layer, just persisting the id Stripe hands back.
+export function setParkStripeAccount(parkId, stripeAccountId) {
+  const db = loadDb();
+  const park = db.parks.find((p) => p.id === parkId);
+  if (!park) throw new Error('Unknown park');
+  park.stripeAccountId = stripeAccountId;
+  saveDb(db);
+  return park;
+}
+
 // Promo codes — park-level, applied against the room subtotal at checkout
 // (see priceStay()). Codes are stored uppercased so lookups are
 // case-insensitive without guests having to match capitalization exactly.
