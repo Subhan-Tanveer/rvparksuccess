@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>My Bookings — RVPark Success</title>
+<meta name="robots" content="noindex, nofollow" />
+<link rel="icon" type="image/png" href="/favicon.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/src/css/tokens.css">
+<link rel="stylesheet" href="/src/css/components.css">
+<style>
+  .admin-shell { max-width: 900px; margin: 0 auto; padding: var(--sp-6) var(--sp-4) var(--sp-10); display: none; }
+  .admin-header { display: flex; justify-content: space-between; align-items: center; gap: var(--sp-3); flex-wrap: wrap; margin-bottom: var(--sp-6); }
+  .admin-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+  .admin-table th { text-align: left; padding: var(--sp-2) var(--sp-3); color: var(--color-text-dim); font-weight: 600; border-bottom: 1px solid rgba(255,255,255,0.1); }
+  .admin-table td { padding: var(--sp-3); border-bottom: 1px solid rgba(255,255,255,0.06); }
+  .admin-empty { padding: var(--sp-5); text-align: center; color: var(--color-text-dim); display: none; }
+  .status-chip { padding: 2px 10px; border-radius: 999px; font-size: 0.75rem; font-weight: 600; }
+  .status-chip.is-confirmed { background: rgba(46,160,67,0.15); color: #4fd166; }
+  .status-chip.is-pending { background: rgba(210,153,34,0.15); color: #e0a72a; }
+</style>
+</head>
+<body>
+
+<div class="cursor-dot"></div>
+<div class="cursor-ring"></div>
+
+<div class="admin-shell" id="gate">
+  <div class="admin-header">
+    <div>
+      <p class="eyebrow">My Account</p>
+      <h1 id="customerNameHeading" style="font-size:1.5rem;">My Bookings</h1>
+    </div>
+    <div style="display:flex; gap: var(--sp-3);">
+      <a href="find-a-park.html" class="btn btn-ghost">Find a Park</a>
+      <button type="button" class="btn btn-ghost" id="logoutBtn">Log Out</button>
+    </div>
+  </div>
+
+  <div class="admin-card glass-strong">
+    <h2 style="font-size:1.125rem; margin-bottom: var(--sp-4);">Your Reservations</h2>
+    <div class="table-scroll">
+    <table class="admin-table">
+      <thead><tr><th>Park</th><th>Dates</th><th>Status</th><th>Total</th></tr></thead>
+      <tbody id="bookingsTableBody"></tbody>
+    </table>
+    </div>
+    <div class="admin-empty" id="bookingsEmpty">No bookings yet — <a href="find-a-park.html">find a park</a> to book your first stay.</div>
+  </div>
+</div>
+
+<script type="module" src="/src/js/customer-dashboard.js"></script>
+</body>
+</html>
