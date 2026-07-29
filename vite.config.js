@@ -7,7 +7,6 @@ export default defineConfig({
   build: {
     rollupOptions: {
       input: {
-        login: resolve(__dirname, 'login.html'),
         main: resolve(__dirname, 'index.html'),
         packages: resolve(__dirname, 'packages.html'),
         howItWorks: resolve(__dirname, 'how-it-works.html'),
@@ -16,13 +15,12 @@ export default defineConfig({
         sample: resolve(__dirname, 'sample.html'),
         reservations: resolve(__dirname, 'reservations.html'),
         findAPark: resolve(__dirname, 'find-a-park.html'),
-        customerDashboard: resolve(__dirname, 'customer-dashboard.html'),
+        guestLogin: resolve(__dirname, 'guest-login.html'),
+        guestDashboard: resolve(__dirname, 'guest-dashboard.html'),
         adminLogin: resolve(__dirname, 'admin-login.html'),
         adminDashboard: resolve(__dirname, 'admin-dashboard.html'),
         parkLogin: resolve(__dirname, 'park-login.html'),
         parkDashboard: resolve(__dirname, 'park-dashboard.html'),
-        parkOwnerLogin: resolve(__dirname, 'park-owner-login.html'),
-        parkOwnerDashboard: resolve(__dirname, 'park-owner-dashboard.html'),
       },
     },
   },

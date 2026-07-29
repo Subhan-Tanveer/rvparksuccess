@@ -237,6 +237,37 @@ export function verifyParkLogin(staffUsername, password) {
   return park;
 }
 
+// Self-service signup for RVPark owners — unlike createPark() (which a
+// super-admin uses to provision a park on someone else's behalf), this is
+// what runs when an owner signs themselves up from the public site. The
+// owner's email doubles as their staff login username so they don't have
+// to invent a separate one.
+export function signupParkOwner({ parkName, location, ownerName, email, phone, password }) {
+  if (!parkName || !location || !ownerName || !email || !password) throw new Error('All fields are required');
+  if (password.length < 8) throw new Error('Password must be at least 8 characters');
+
+  const db = loadDb();
+  // verifyParkLogin() slugifies whatever username it's given before
+  // comparing, so the stored staffUsername must be pre-slugified too —
+  // otherwise "jane@example.com" would never match "jane-example-com".
+  const username = slugify(email);
+  if (db.parks.some((p) => p.staffUsername === username)) throw new Error('An account with that email already exists');
+
+  let id = slugify(parkName);
+  if (db.parks.some((p) => p.id === id)) id = `${id}-${Date.now().toString(36)}`;
+
+  const park = {
+    id, name: parkName, location, state: '', timezone: 'America/Chicago',
+    ownerName, ownerEmail: normalizeEmail(email), ownerPhone: phone || '',
+    staffUsername: username,
+    passwordHash: bcrypt.hashSync(password, 10),
+    createdAt: new Date().toISOString(),
+  };
+  db.parks.push(park);
+  saveDb(db);
+  return park;
+}
+
 // Safe for the super-admin dashboard to display — strips the password hash.
 export function listParksForAdmin() {
   const db = loadDb();

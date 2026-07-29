@@ -4,7 +4,7 @@
 // 12 serverless functions per deployment — these three were small enough
 // to share one file without hurting readability.
 import { createSessionCookie, clearSessionCookie } from '../_lib/auth.js';
-import { verifyParkLogin } from '../_lib/reservations-store.js';
+import { verifyParkLogin, signupParkOwner } from '../_lib/reservations-store.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -31,6 +31,17 @@ export default async function handler(req, res) {
 
     res.setHeader('Set-Cookie', createSessionCookie({ role: 'park-staff', parkId: park.id }));
     return res.status(200).json({ ok: true, parkName: park.name });
+  }
+
+  if (action === 'owner-signup') {
+    const { parkName, location, ownerName, email, phone, password } = req.body;
+    try {
+      const park = signupParkOwner({ parkName, location, ownerName, email, phone, password });
+      res.setHeader('Set-Cookie', createSessionCookie({ role: 'park-staff', parkId: park.id }));
+      return res.status(200).json({ ok: true, parkName: park.name });
+    } catch (err) {
+      return res.status(400).json({ error: err.message });
+    }
   }
 
   if (action === 'logout') {
