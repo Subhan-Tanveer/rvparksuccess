@@ -2,6 +2,8 @@ import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import Lenis from 'lenis';
 import { placeholderDataUri } from './placeholder.js';
+import { initGuestActivityTracking } from './guest-session.js';
+import { initGuestNav } from './guest-nav.js';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -421,6 +423,8 @@ export function initCore() {
   initParallax();
   initParticles();
   initFloatingLabels();
+  initGuestActivityTracking();
+  initGuestNav();
   return { lenis };
 }
 

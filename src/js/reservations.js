@@ -1,5 +1,6 @@
 import '../css/tokens.css';
 import { initCore } from './core.js';
+import { enforceGuestIdleTimeout, markGuestLoggedIn } from './guest-session.js';
 
 initCore();
 
@@ -99,15 +100,19 @@ searchBtn.addEventListener('click', searchAvailability);
 searchAvailability();
 
 /* -- pre-fill guest details for a logged-in guest account -- */
-fetch('/api/guest').then((res) => (res.ok ? res.json() : null)).then((data) => {
-  if (!data) return;
-  document.getElementById('guestName').value = data.guest.name;
-  document.getElementById('guestEmail').value = data.guest.email;
-  document.getElementById('guestPhone').value = data.guest.phone || '';
-  document.querySelectorAll('#guestForm .field-float').forEach((field) => {
-    if (field.querySelector('input')?.value) field.classList.add('has-value');
-  });
-}).catch(() => {});
+enforceGuestIdleTimeout().then((wentIdle) => {
+  if (wentIdle) return; // idle-expired — leave the checkout form blank, same as any anonymous guest
+  fetch('/api/guest').then((res) => (res.ok ? res.json() : null)).then((data) => {
+    if (!data) return;
+    markGuestLoggedIn();
+    document.getElementById('guestName').value = data.guest.name;
+    document.getElementById('guestEmail').value = data.guest.email;
+    document.getElementById('guestPhone').value = data.guest.phone || '';
+    document.querySelectorAll('#guestForm .field-float').forEach((field) => {
+      if (field.querySelector('input')?.value) field.classList.add('has-value');
+    });
+  }).catch(() => {});
+});
 
 /* -- guest details modal + checkout -- */
 const modalBackdrop = document.getElementById('resModalBackdrop');

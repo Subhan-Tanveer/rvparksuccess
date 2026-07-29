@@ -1,5 +1,6 @@
 import '../css/tokens.css';
 import { initCore } from './core.js';
+import { markGuestLoggedIn } from './guest-session.js';
 
 initCore();
 
@@ -7,18 +8,23 @@ const tabs = document.querySelectorAll('.auth-tab');
 const panels = document.querySelectorAll('.auth-panel');
 const errorEl = document.getElementById('loginError');
 
+if (new URLSearchParams(location.search).get('reason') === 'idle') {
+  errorEl.textContent = "You were logged out after 24 hours of inactivity — log back in to see your bookings.";
+  errorEl.classList.add('is-visible', 'is-info');
+}
+
 tabs.forEach((tab) => {
   tab.addEventListener('click', () => {
     tabs.forEach((t) => t.classList.remove('is-active'));
     panels.forEach((p) => p.classList.remove('is-active'));
     tab.classList.add('is-active');
     document.querySelector(`.auth-panel[data-panel="${tab.dataset.tab}"]`).classList.add('is-active');
-    errorEl.classList.remove('is-visible');
+    errorEl.classList.remove('is-visible', 'is-info');
   });
 });
 
 async function submitAuth(action, body, form) {
-  errorEl.classList.remove('is-visible');
+  errorEl.classList.remove('is-visible', 'is-info');
   const submitBtn = form.querySelector('button[type="submit"]');
   submitBtn.disabled = true;
   try {
@@ -29,6 +35,7 @@ async function submitAuth(action, body, form) {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Something went wrong');
+    markGuestLoggedIn();
     window.location.href = 'guest-dashboard.html';
   } catch (err) {
     errorEl.textContent = err.message;
