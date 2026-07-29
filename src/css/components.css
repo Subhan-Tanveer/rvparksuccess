@@ -136,6 +136,7 @@ body { visibility: hidden; animation: pt-reveal-body 2.05s steps(1) forwards; }
 /* -- glass stat pill (spring float-in via JS) -- */
 .stat-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--sp-3); }
 @media (max-width: 900px) { .stat-row { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 720px) { .stat-row { grid-template-columns: 1fr; gap: var(--sp-2); } }
 .stat-pill { padding: var(--sp-3); border-radius: var(--radius-md); text-align: left; }
 .stat-pill .num { font-family: var(--font-mono); font-size: clamp(1.5rem, 2.6vw, 2.25rem); color: var(--amber-light); display: block; font-weight: 700; }
 .stat-pill .label { font-size: 0.8125rem; color: var(--cream-dim); margin-top: 4px; display: block; }

@@ -21,6 +21,7 @@
   .hero-word { font-family: var(--font-display); font-weight: 700; letter-spacing: -0.02em; font-size: clamp(2.75rem, 8.5vw, 7.5rem); line-height: 0.95; color: var(--cream); text-transform: uppercase; }
   .hero-word .char { white-space: pre; }
   .hero-bottom { position: absolute; left: 0; right: 0; bottom: var(--sp-5); z-index: 2; display: flex; flex-direction: column; gap: var(--sp-4); }
+  @media (max-width: 720px) { .hero-bottom { bottom: auto; top: var(--sp-12); } }
   .hero-ctas { display: flex; gap: var(--sp-2); flex-wrap: wrap; justify-content: center; }
   @media (max-width: 720px) { .hero-word { font-size: clamp(2.25rem, 10vw, 4rem); } }
   .hero-headline-wrap { text-align: center; padding: 0 var(--sp-3); }
