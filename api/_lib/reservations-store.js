@@ -17,8 +17,15 @@
 // the same instant on the same site now genuinely can't both succeed.
 import bcrypt from 'bcryptjs';
 import pg from 'pg';
+import dns from 'dns';
 
 const { Pool, types } = pg;
+
+// Some networks' DNS servers intermittently refuse lookups for Neon's
+// hostnames (observed repeatedly in local dev on at least one ISP router)
+// even though the hostname is valid — routing through public resolvers
+// avoids that flakiness. Harmless in production too.
+dns.setServers(['1.1.1.1', '8.8.8.8']);
 
 // Postgres' `date` type (OID 1082) parses to a JS Date by default, which
 // silently shifts by timezone when later formatted — the rest of this app

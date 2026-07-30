@@ -5,3 +5,6 @@ dist
 .vercel
 .DS_Store
 data/reservations-db.json
+
+.vercel
+.env*.local
