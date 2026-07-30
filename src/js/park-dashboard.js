@@ -1,5 +1,6 @@
 import '../css/tokens.css';
 import { initCore } from './core.js';
+import { confirmDialog, formDialog, alertDialog, withLoading } from './ui-dialogs.js';
 
 initCore();
 
@@ -98,67 +99,87 @@ document.getElementById('sitesTableBody').addEventListener('click', async (e) =>
 
   if (addSeasonBtn) {
     const site = currentSites.find((s) => s.id === addSeasonBtn.dataset.addSeason);
-    const label = prompt('Season name (e.g. "Summer Peak", "Holiday Weekend"):', 'Peak Season');
-    if (label === null) return;
-    const startDate = prompt('Start date (YYYY-MM-DD):');
-    if (!startDate) return;
-    const endDate = prompt('End date (YYYY-MM-DD, exclusive):');
-    if (!endDate) return;
-    const rateInput = prompt(`Nightly rate for ${label} (current base: ${formatUsd(site.nightlyRateCents)}):`, (site.nightlyRateCents / 100).toFixed(2));
-    if (rateInput === null) return;
-    const dollars = parseFloat(rateInput);
-    if (isNaN(dollars) || dollars <= 0) return alert('Enter a valid rate.');
-
-    const res = await fetch('/api/admin/sites', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ resource: 'season', siteId: site.id, label, startDate, endDate, nightlyRateCents: Math.round(dollars * 100) }),
+    const values = await formDialog({
+      title: `Add Seasonal Rate — ${site.name}`,
+      submitLabel: 'Add Season',
+      fields: [
+        { id: 'label', label: 'Season Name (e.g. "Summer Peak")', value: 'Peak Season' },
+        { id: 'startDate', label: 'Start Date', type: 'date' },
+        { id: 'endDate', label: 'End Date (exclusive)', type: 'date' },
+        { id: 'rate', label: 'Nightly Rate ($)', type: 'number', step: '0.01', min: 0.01, value: (site.nightlyRateCents / 100).toFixed(2) },
+      ],
     });
-    if (res.ok) loadDashboard();
-    else alert((await res.json()).error || 'Could not add seasonal rate');
+    if (!values) return;
+
+    await withLoading(addSeasonBtn, async () => {
+      const res = await fetch('/api/admin/sites', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ resource: 'season', siteId: site.id, label: values.label, startDate: values.startDate, endDate: values.endDate, nightlyRateCents: Math.round(values.rate * 100) }),
+      });
+      if (res.ok) loadDashboard();
+      else siteAlertShow((await res.json()).error || 'Could not add seasonal rate');
+    });
     return;
   }
 
   if (removeSeasonBtn) {
     const [siteId, seasonId] = removeSeasonBtn.dataset.removeSeason.split(':');
-    if (!confirm('Remove this seasonal rate?')) return;
-    const res = await fetch('/api/admin/sites', {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ resource: 'season', siteId, seasonId }),
+    const ok = await confirmDialog({ title: 'Remove Seasonal Rate', message: 'Remove this seasonal rate?', confirmLabel: 'Remove', danger: true });
+    if (!ok) return;
+    await withLoading(removeSeasonBtn, async () => {
+      const res = await fetch('/api/admin/sites', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ resource: 'season', siteId, seasonId }),
+      });
+      if (res.ok) loadDashboard();
+      else siteAlertShow((await res.json()).error || 'Could not remove seasonal rate');
     });
-    if (res.ok) loadDashboard();
-    else alert((await res.json()).error || 'Could not remove seasonal rate');
     return;
   }
 
   if (editBtn) {
     const site = currentSites.find((s) => s.id === editBtn.dataset.editSite);
-    const input = prompt(`New nightly rate for ${site.name} (current: ${formatUsd(site.nightlyRateCents)}):`, (site.nightlyRateCents / 100).toFixed(2));
-    if (input === null) return;
-    const dollars = parseFloat(input);
-    if (isNaN(dollars) || dollars <= 0) return alert('Enter a valid rate.');
-    const res = await fetch('/api/admin/sites', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: site.id, nightlyRateCents: Math.round(dollars * 100) }),
+    const values = await formDialog({
+      title: `Edit Rate — ${site.name}`,
+      submitLabel: 'Save Rate',
+      fields: [{ id: 'rate', label: 'Nightly Rate ($)', type: 'number', step: '0.01', min: 0.01, value: (site.nightlyRateCents / 100).toFixed(2) }],
     });
-    if (res.ok) loadDashboard();
-    else alert((await res.json()).error || 'Could not update site');
+    if (!values) return;
+
+    await withLoading(editBtn, async () => {
+      const res = await fetch('/api/admin/sites', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: site.id, nightlyRateCents: Math.round(values.rate * 100) }),
+      });
+      if (res.ok) loadDashboard();
+      else siteAlertShow((await res.json()).error || 'Could not update site');
+    });
   }
 
   if (deleteBtn) {
     const site = currentSites.find((s) => s.id === deleteBtn.dataset.deleteSite);
-    if (!confirm(`Delete ${site.name}? This can't be undone.`)) return;
-    const res = await fetch('/api/admin/sites', {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: site.id }),
+    const ok = await confirmDialog({ title: 'Delete Site', message: `Delete ${site.name}? This can't be undone.`, confirmLabel: 'Delete', danger: true });
+    if (!ok) return;
+    await withLoading(deleteBtn, async () => {
+      const res = await fetch('/api/admin/sites', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: site.id }),
+      });
+      if (res.ok) loadDashboard();
+      else siteAlertShow((await res.json()).error || 'Could not delete site');
     });
-    if (res.ok) loadDashboard();
-    else alert((await res.json()).error || 'Could not delete site');
   }
 });
+
+function siteAlertShow(message) {
+  siteAlert.textContent = message;
+  siteAlert.classList.remove('is-success');
+  siteAlert.classList.add('is-visible', 'is-error');
+}
 
 /* -- add site -- */
 const addSiteForm = document.getElementById('addSiteForm');
@@ -168,31 +189,30 @@ const siteAlert = document.getElementById('siteAlert');
 addSiteForm.addEventListener('submit', async (e) => {
   e.preventDefault();
   siteAlert.classList.remove('is-visible', 'is-success', 'is-error');
-  addSiteBtn.disabled = true;
 
-  try {
-    const res = await fetch('/api/admin/sites', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        name: document.getElementById('sName').value,
-        type: document.getElementById('sType').value,
-        capacity: document.getElementById('sCapacity').value,
-        nightlyRateCents: Math.round(parseFloat(document.getElementById('sRate').value) * 100),
-      }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Could not add site');
-    siteAlert.textContent = `${data.site.name} added.`;
-    siteAlert.classList.add('is-visible', 'is-success');
-    addSiteForm.reset();
-    loadDashboard();
-  } catch (err) {
-    siteAlert.textContent = err.message;
-    siteAlert.classList.add('is-visible', 'is-error');
-  } finally {
-    addSiteBtn.disabled = false;
-  }
+  await withLoading(addSiteBtn, async () => {
+    try {
+      const res = await fetch('/api/admin/sites', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: document.getElementById('sName').value,
+          type: document.getElementById('sType').value,
+          capacity: document.getElementById('sCapacity').value,
+          nightlyRateCents: Math.round(parseFloat(document.getElementById('sRate').value) * 100),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not add site');
+      siteAlert.textContent = `${data.site.name} added.`;
+      siteAlert.classList.add('is-visible', 'is-success');
+      addSiteForm.reset();
+      loadDashboard();
+    } catch (err) {
+      siteAlert.textContent = err.message;
+      siteAlert.classList.add('is-visible', 'is-error');
+    }
+  });
 });
 
 /* -- new booking: check availability -- */
@@ -240,39 +260,38 @@ bookingForm.addEventListener('submit', async (e) => {
   e.preventDefault();
   if (!selectedSiteId) return;
   bookingAlert.classList.remove('is-visible', 'is-success', 'is-error');
-  confirmBookingBtn.disabled = true;
 
-  try {
-    const res = await fetch('/api/admin/staff-booking', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        siteId: selectedSiteId,
-        checkIn: document.getElementById('bkCheckIn').value,
-        checkOut: document.getElementById('bkCheckOut').value,
-        guestName: document.getElementById('gName').value,
-        guestEmail: document.getElementById('gEmail').value,
-        guestPhone: document.getElementById('gPhone').value,
-        paymentMethod: document.getElementById('paymentMethod').value,
-        notes: document.getElementById('gNotes').value,
-      }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Could not create booking');
+  await withLoading(confirmBookingBtn, async () => {
+    try {
+      const res = await fetch('/api/admin/staff-booking', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          siteId: selectedSiteId,
+          checkIn: document.getElementById('bkCheckIn').value,
+          checkOut: document.getElementById('bkCheckOut').value,
+          guestName: document.getElementById('gName').value,
+          guestEmail: document.getElementById('gEmail').value,
+          guestPhone: document.getElementById('gPhone').value,
+          paymentMethod: document.getElementById('paymentMethod').value,
+          notes: document.getElementById('gNotes').value,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not create booking');
 
-    bookingAlert.textContent = `Booked — ${data.reservation.status === 'confirmed' ? 'confirmed' : 'held for 24 hours pending payment'}.`;
-    bookingAlert.classList.add('is-visible', 'is-success');
-    bookingForm.reset();
-    bookingForm.style.display = 'none';
-    document.getElementById('bookingSitesGrid').innerHTML = '';
-    selectedSiteId = null;
-    loadDashboard();
-  } catch (err) {
-    bookingAlert.textContent = err.message;
-    bookingAlert.classList.add('is-visible', 'is-error');
-  } finally {
-    confirmBookingBtn.disabled = false;
-  }
+      bookingAlert.textContent = `Booked — ${data.reservation.status === 'confirmed' ? 'confirmed' : 'held for 24 hours pending payment'}.`;
+      bookingAlert.classList.add('is-visible', 'is-success');
+      bookingForm.reset();
+      bookingForm.style.display = 'none';
+      document.getElementById('bookingSitesGrid').innerHTML = '';
+      selectedSiteId = null;
+      loadDashboard();
+    } catch (err) {
+      bookingAlert.textContent = err.message;
+      bookingAlert.classList.add('is-visible', 'is-error');
+    }
+  });
 });
 
 /* -- reservations table -- */
@@ -318,14 +337,21 @@ function renderWaitlist(entries) {
 document.getElementById('waitlistTableBody').addEventListener('click', async (e) => {
   const btn = e.target.closest('[data-remove-waitlist]');
   if (!btn) return;
-  if (!confirm("Remove this guest from the waitlist? (Do this after you've contacted them.)")) return;
-  const res = await fetch('/api/admin/dashboard', {
-    method: 'DELETE',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ resource: 'waitlist', entryId: btn.dataset.removeWaitlist }),
+  const ok = await confirmDialog({
+    title: 'Remove from Waitlist',
+    message: "Remove this guest from the waitlist? Do this after you've contacted them.",
+    confirmLabel: 'Remove', danger: true,
   });
-  if (res.ok) loadDashboard();
-  else alert((await res.json()).error || 'Could not remove waitlist entry');
+  if (!ok) return;
+  await withLoading(btn, async () => {
+    const res = await fetch('/api/admin/dashboard', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ resource: 'waitlist', entryId: btn.dataset.removeWaitlist }),
+    });
+    if (res.ok) loadDashboard();
+    else await alertDialog({ title: 'Error', message: (await res.json()).error || 'Could not remove waitlist entry' });
+  });
 });
 
 /* -- promo codes -- */
@@ -349,14 +375,17 @@ function renderPromoCodes(promoCodes) {
 document.getElementById('promoTableBody').addEventListener('click', async (e) => {
   const btn = e.target.closest('[data-remove-promo]');
   if (!btn) return;
-  if (!confirm('Remove this promo code?')) return;
-  const res = await fetch('/api/admin/dashboard', {
-    method: 'DELETE',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ resource: 'promo', promoId: btn.dataset.removePromo }),
+  const ok = await confirmDialog({ title: 'Remove Promo Code', message: 'Remove this promo code?', confirmLabel: 'Remove', danger: true });
+  if (!ok) return;
+  await withLoading(btn, async () => {
+    const res = await fetch('/api/admin/dashboard', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ resource: 'promo', promoId: btn.dataset.removePromo }),
+    });
+    if (res.ok) { currentPark = (await res.json()).park; renderPromoCodes(currentPark.promoCodes || []); }
+    else await alertDialog({ title: 'Error', message: (await res.json()).error || 'Could not remove promo code' });
   });
-  if (res.ok) { currentPark = (await res.json()).park; renderPromoCodes(currentPark.promoCodes || []); }
-  else alert((await res.json()).error || 'Could not remove promo code');
 });
 
 const promoForm = document.getElementById('promoForm');
@@ -366,36 +395,35 @@ const promoAlert = document.getElementById('promoAlert');
 promoForm.addEventListener('submit', async (e) => {
   e.preventDefault();
   promoAlert.classList.remove('is-visible', 'is-success', 'is-error');
-  addPromoBtn.disabled = true;
 
-  try {
-    const res = await fetch('/api/admin/dashboard', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        resource: 'promo',
-        code: document.getElementById('pmCode').value,
-        type: document.getElementById('pmType').value,
-        // Percent is stored as the raw number (10 = 10%); flat is stored in
-        // cents like every other *Cents field, so convert the dollar input.
-        value: document.getElementById('pmType').value === 'flat'
-          ? Math.round(parseFloat(document.getElementById('pmValue').value) * 100)
-          : parseFloat(document.getElementById('pmValue').value),
-      }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Could not add promo code');
-    currentPark = data.park;
-    renderPromoCodes(currentPark.promoCodes || []);
-    promoForm.reset();
-    promoAlert.textContent = 'Promo code added.';
-    promoAlert.classList.add('is-visible', 'is-success');
-  } catch (err) {
-    promoAlert.textContent = err.message;
-    promoAlert.classList.add('is-visible', 'is-error');
-  } finally {
-    addPromoBtn.disabled = false;
-  }
+  await withLoading(addPromoBtn, async () => {
+    try {
+      const res = await fetch('/api/admin/dashboard', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          resource: 'promo',
+          code: document.getElementById('pmCode').value,
+          type: document.getElementById('pmType').value,
+          // Percent is stored as the raw number (10 = 10%); flat is stored in
+          // cents like every other *Cents field, so convert the dollar input.
+          value: document.getElementById('pmType').value === 'flat'
+            ? Math.round(parseFloat(document.getElementById('pmValue').value) * 100)
+            : parseFloat(document.getElementById('pmValue').value),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not add promo code');
+      currentPark = data.park;
+      renderPromoCodes(currentPark.promoCodes || []);
+      promoForm.reset();
+      promoAlert.textContent = 'Promo code added.';
+      promoAlert.classList.add('is-visible', 'is-success');
+    } catch (err) {
+      promoAlert.textContent = err.message;
+      promoAlert.classList.add('is-visible', 'is-error');
+    }
+  });
 });
 
 /* -- park settings -- */
@@ -406,28 +434,27 @@ const settingsAlert = document.getElementById('settingsAlert');
 settingsForm.addEventListener('submit', async (e) => {
   e.preventDefault();
   settingsAlert.classList.remove('is-visible', 'is-success', 'is-error');
-  saveSettingsBtn.disabled = true;
 
-  try {
-    const res = await fetch('/api/admin/dashboard', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        taxRatePercent: parseFloat(document.getElementById('stTaxRate').value),
-        depositPercent: parseFloat(document.getElementById('stDepositPercent').value),
-      }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Could not save settings');
-    currentPark = data.park;
-    settingsAlert.textContent = 'Settings saved.';
-    settingsAlert.classList.add('is-visible', 'is-success');
-  } catch (err) {
-    settingsAlert.textContent = err.message;
-    settingsAlert.classList.add('is-visible', 'is-error');
-  } finally {
-    saveSettingsBtn.disabled = false;
-  }
+  await withLoading(saveSettingsBtn, async () => {
+    try {
+      const res = await fetch('/api/admin/dashboard', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          taxRatePercent: parseFloat(document.getElementById('stTaxRate').value),
+          depositPercent: parseFloat(document.getElementById('stDepositPercent').value),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not save settings');
+      currentPark = data.park;
+      settingsAlert.textContent = 'Settings saved.';
+      settingsAlert.classList.add('is-visible', 'is-success');
+    } catch (err) {
+      settingsAlert.textContent = err.message;
+      settingsAlert.classList.add('is-visible', 'is-error');
+    }
+  });
 });
 
 document.getElementById('logoutBtn').addEventListener('click', async () => {
@@ -452,23 +479,23 @@ function renderStripeStatus(status) {
 async function startStripeOnboarding(btn) {
   const alertEl = document.getElementById('stripeConnectAlert');
   alertEl?.classList.remove('is-visible', 'is-success', 'is-error');
-  btn.disabled = true;
-  try {
-    const res = await fetch('/api/admin/dashboard', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ resource: 'stripe-connect' }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Could not start Stripe onboarding');
-    window.location.href = data.url;
-  } catch (err) {
-    if (alertEl) {
-      alertEl.textContent = err.message;
-      alertEl.classList.add('is-visible', 'is-error');
+  await withLoading(btn, async () => {
+    try {
+      const res = await fetch('/api/admin/dashboard', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ resource: 'stripe-connect' }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not start Stripe onboarding');
+      window.location.href = data.url;
+    } catch (err) {
+      if (alertEl) {
+        alertEl.textContent = err.message;
+        alertEl.classList.add('is-visible', 'is-error');
+      }
     }
-    btn.disabled = false;
-  }
+  });
 }
 
 document.getElementById('stripeConnectBtn').addEventListener('click', (e) => startStripeOnboarding(e.currentTarget));

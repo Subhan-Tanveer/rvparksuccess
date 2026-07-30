@@ -25,7 +25,23 @@ const { Pool, types } = pg;
 // hostnames (observed repeatedly in local dev on at least one ISP router)
 // even though the hostname is valid — routing through public resolvers
 // avoids that flakiness. Harmless in production too.
+//
+// dns.setServers() alone isn't enough: it only affects dns.resolve*(), but
+// `pg` connects via net.connect(), which calls dns.lookup() — a *different*
+// code path that always defers to the OS resolver regardless of
+// setServers(). Patching dns.lookup() itself to go through resolve4()
+// first (falling back to the normal OS lookup for anything that fails,
+// e.g. genuinely local hostnames) is what actually reaches pg's connection.
 dns.setServers(['1.1.1.1', '8.8.8.8']);
+const osLookup = dns.lookup;
+dns.lookup = function patchedLookup(hostname, options, callback) {
+  if (typeof options === 'function') { callback = options; options = {}; }
+  dns.resolve4(hostname, (err, addresses) => {
+    if (err || !addresses?.length) return osLookup.call(dns, hostname, options, callback);
+    if (options && options.all) return callback(null, addresses.map((address) => ({ address, family: 4 })));
+    callback(null, addresses[0], 4);
+  });
+};
 
 // Postgres' `date` type (OID 1082) parses to a JS Date by default, which
 // silently shifts by timezone when later formatted — the rest of this app

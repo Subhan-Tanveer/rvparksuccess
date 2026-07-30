@@ -1,6 +1,7 @@
 import '../css/tokens.css';
 import { initCore } from './core.js';
 import { enforceGuestIdleTimeout, markGuestLoggedIn, clearGuestSession, initGuestActivityTracking } from './guest-session.js';
+import { confirmDialog, alertDialog, withLoading } from './ui-dialogs.js';
 
 initCore();
 
@@ -62,21 +63,27 @@ function renderBookings(bookings) {
 document.getElementById('bookingsTableBody').addEventListener('click', async (e) => {
   const btn = e.target.closest('[data-cancel]');
   if (!btn) return;
-  if (!confirm('Cancel this reservation? This frees the site for other guests and cannot be undone.')) return;
-  btn.disabled = true;
-  try {
-    const res = await fetch('/api/guest', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'cancel', reservationId: btn.dataset.cancel }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Could not cancel');
-    loadDashboard();
-  } catch (err) {
-    alert(err.message);
-    btn.disabled = false;
-  }
+  const ok = await confirmDialog({
+    title: 'Cancel Reservation',
+    message: 'Cancel this reservation? This frees the site for other guests and cannot be undone.',
+    confirmLabel: 'Cancel Booking', cancelLabel: 'Keep It', danger: true,
+  });
+  if (!ok) return;
+
+  await withLoading(btn, async () => {
+    try {
+      const res = await fetch('/api/guest', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'cancel', reservationId: btn.dataset.cancel }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not cancel');
+      loadDashboard();
+    } catch (err) {
+      await alertDialog({ title: 'Error', message: err.message });
+    }
+  });
 });
 
 document.getElementById('logoutBtn').addEventListener('click', async () => {
