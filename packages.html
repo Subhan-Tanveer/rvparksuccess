@@ -29,6 +29,10 @@
   .pay-modal-breakdown .item .val.is-setup { color: var(--amber-light); }
   .pay-modal-breakdown .item .val.is-monthly { color: var(--cream); }
   .pay-modal-breakdown .item .lbl { font-size: 0.75rem; color: var(--cream-dim); text-transform: uppercase; letter-spacing: 0.04em; }
+
+  .pkg-banner { max-width: 720px; margin: var(--sp-4) auto 0; padding: var(--sp-3) var(--sp-4); border-radius: var(--radius-md); font-size: 0.9375rem; display: none; }
+  .pkg-banner.is-visible { display: block; }
+  .pkg-banner.is-canceled { background: rgba(217,127,46,0.1); border: 1px solid rgba(217,127,46,0.4); color: var(--cream-dim); }
 </style>
 </head>
 <body>
@@ -71,7 +75,7 @@
       <a href="results.html">Results</a>
       <a href="sample.html">Live Demo</a>
       <a href="find-a-park.html">Find a Park</a>
-      <a href="guest-login.html" class="nav-account-link" data-account-slot="desktop">My Account</a>
+      <a href="login.html" class="nav-account-link" data-account-slot="desktop">Log In</a>
       <a href="contact.html">Contact</a>
     </div>
     <button class="nav-menu-btn" aria-label="Open menu" style="pointer-events:auto;"><span>Menu</span><span class="burger-mini"><span></span><span></span></span></button>
@@ -90,7 +94,7 @@
     <a href="results.html">Results</a>
     <a href="sample.html">Live Demo</a>
     <a href="find-a-park.html">Find a Park</a>
-    <a href="guest-login.html" class="nav-account-link" data-account-slot="mobile">My Account</a>
+    <a href="login.html" class="nav-account-link" data-account-slot="mobile">Log In</a>
     <a href="contact.html">Contact</a>
   </div>
 </div>
@@ -107,6 +111,7 @@
     <h1 data-split-in="words">Three levels. One goal — more occupancy.</h1>
     <p class="lede">From a brand-new website to a full AI-driven guest-finding system — pick the level that matches where your park is today.</p>
   </div>
+  <div class="pkg-banner" id="pkgBanner"></div>
 </header>
 
 <section class="section dot-grid" style="padding-top: 0;">
@@ -171,8 +176,7 @@
         <div class="footer-links">
           <a href="contact.html">Contact</a>
           <a href="contact.html">Book a Free Audit</a>
-          <a href="park-login.html">Staff Login</a>
-          <a href="guest-login.html" class="nav-account-link" data-account-slot="footer">My Account</a>
+          <a href="login.html" class="nav-account-link" data-account-slot="footer">Log In</a>
         </div>
       </div>
       <div>

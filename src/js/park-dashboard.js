@@ -1,6 +1,7 @@
 import '../css/tokens.css';
 import { initCore } from './core.js';
 import { confirmDialog, formDialog, alertDialog, withLoading } from './ui-dialogs.js';
+import { PACKAGES, formatUsd as formatUsdWhole } from './services-data.js';
 
 initCore();
 
@@ -23,15 +24,24 @@ let selectedSiteId = null;
 async function loadDashboard() {
   const res = await fetch('/api/admin/dashboard');
   if (res.status === 401) {
-    window.location.href = 'park-login.html';
+    window.location.href = 'login.html';
     return;
   }
   const data = await res.json();
   currentPark = data.park;
   currentSites = data.sites;
 
+  // Reached the dashboard before finishing onboarding (e.g. an old
+  // bookmark, or navigating back mid-signup) — send them to wherever
+  // they actually left off instead of rendering a half-empty dashboard.
+  if (!currentPark.name) {
+    window.location.href = currentPark.planKey ? 'register-park.html' : 'packages.html';
+    return;
+  }
+
   document.getElementById('gate').style.display = 'block';
   document.getElementById('parkNameHeading').textContent = `${currentPark.name} — Staff`;
+  renderPlan(currentPark.planKey);
   renderSites(currentSites);
   renderReservations(data.reservations);
   renderStats(data.stats);
@@ -459,8 +469,16 @@ settingsForm.addEventListener('submit', async (e) => {
 
 document.getElementById('logoutBtn').addEventListener('click', async () => {
   await fetch('/api/admin/auth', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'logout' }) });
-  window.location.href = 'park-login.html';
+  window.location.href = 'login.html';
 });
+
+/* -- current plan -- */
+function renderPlan(planKey) {
+  const el = document.getElementById('planBadge');
+  if (!el) return;
+  const pkg = PACKAGES.find((p) => p.key === planKey);
+  el.textContent = pkg ? `${pkg.name} — ${formatUsdWhole(pkg.monthly)}/mo` : 'No active plan';
+}
 
 /* -- Stripe Connect (automated payouts) -- */
 function renderStripeStatus(status) {

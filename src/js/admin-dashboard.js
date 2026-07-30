@@ -58,7 +58,7 @@ createForm.addEventListener('submit', async (e) => {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Could not create park');
 
-    createAlert.textContent = `${data.park.name} created — give the staff login "${data.park.staffUsername}" and the password you set to their team, and send them to park-login.html.`;
+    createAlert.textContent = `${data.park.name} created — give the staff login "${data.park.staffUsername}" and the password you set to their team, and send them to login.html (RVPark Owner tab).`;
     createAlert.classList.add('is-visible', 'is-success');
     createForm.reset();
     loadParks();

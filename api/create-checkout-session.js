@@ -5,6 +5,7 @@
 // NEVER commit the secret key or put it in any file in this repo — Stripe
 // SDK reads it from process.env at request time only.
 import Stripe from 'stripe';
+import { requireSession } from './_lib/auth.js';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -21,6 +22,13 @@ export default async function handler(req, res) {
     res.setHeader('Allow', 'POST');
     return res.status(405).json({ error: 'Method not allowed' });
   }
+
+  // Picking a plan requires an owner account to exist first (sign up ->
+  // pick a plan -> pay -> register the park) — this is what enforces that
+  // order. A logged-out visitor gets a 401 here; packages.js sends them to
+  // login.html when that happens.
+  const session = requireSession(req, res, { role: 'park-staff' });
+  if (!session) return;
 
   const svcKey = req.body?.service;
   const svc = SERVICES[svcKey];
@@ -52,14 +60,19 @@ export default async function handler(req, res) {
       });
     }
 
-    const session = await stripe.checkout.sessions.create({
+    // client_reference_id + metadata are how the webhook (see
+    // api/reservations/webhook.js's 'subscription' mode branch) knows
+    // which park to record this plan against once payment completes.
+    const checkoutSession = await stripe.checkout.sessions.create({
       mode: svc.monthly ? 'subscription' : 'payment',
       payment_method_types: ['card'],
       line_items: lineItems,
-      success_url: `${origin}/packages.html?checkout=success`,
+      client_reference_id: session.parkId,
+      metadata: { type: 'subscription', service: svcKey },
+      success_url: `${origin}/register-park.html?checkout=success`,
       cancel_url: `${origin}/packages.html?checkout=canceled`,
     });
-    res.status(200).json({ url: session.url });
+    res.status(200).json({ url: checkoutSession.url });
   } catch (err) {
     console.error('Stripe checkout session error:', err.message);
     res.status(500).json({ error: 'Unable to start checkout. Please try again shortly.' });

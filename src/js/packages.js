@@ -5,6 +5,12 @@ import { PACKAGES, formatUsd } from './services-data.js';
 initCore();
 initHeroVideo({ placeholderLabel: 'PRICING — HERO VIDEO COMING SOON' });
 
+const pkgBanner = document.getElementById('pkgBanner');
+if (new URLSearchParams(location.search).get('checkout') === 'canceled') {
+  pkgBanner.textContent = 'Checkout was canceled — no charge was made. Pick a level whenever you\'re ready.';
+  pkgBanner.classList.add('is-visible', 'is-canceled');
+}
+
 const CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
 
 /* -- Three-level pricing grid -- */
@@ -63,6 +69,12 @@ cardBtn.addEventListener('click', async () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ service: selectedPackage.key }),
     });
+    if (res.status === 401) {
+      // Picking a plan requires an owner account first — send them to sign
+      // up, then they'll land right back here per the redirectTo logic.
+      window.location.href = 'login.html';
+      return;
+    }
     if (!res.ok) throw new Error('checkout session request failed');
     const data = await res.json();
     if (!data.url) throw new Error('no checkout url returned');

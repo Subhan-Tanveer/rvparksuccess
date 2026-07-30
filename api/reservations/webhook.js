@@ -1,9 +1,15 @@
 // Vercel serverless function — POST /api/reservations/webhook
-// Stripe calls this once a reservation checkout actually completes payment.
-// This is what flips a reservation from "pending" (held, unpaid) to
-// "confirmed" — the booking page itself never marks a reservation paid on
-// its own, precisely so a guest closing the tab mid-checkout can't fake a
-// confirmed booking.
+// The one Stripe webhook endpoint for the whole platform (kept singular to
+// stay under Vercel's Hobby-plan 12-function limit) — it branches on
+// checkout.session.completed's `mode` to handle two unrelated flows:
+//   - 'payment': a guest's reservation checkout. Flips a reservation from
+//     "pending" (held, unpaid) to "confirmed" — the booking page itself
+//     never marks a reservation paid on its own, precisely so a guest
+//     closing the tab mid-checkout can't fake a confirmed booking.
+//   - 'subscription': an RVPark owner's plan checkout (see
+//     api/create-checkout-session.js). Records which plan they're now on
+//     against their park, using the parkId passed as client_reference_id
+//     at checkout-creation time.
 //
 // Requires STRIPE_WEBHOOK_SECRET, set in the Vercel dashboard (Project →
 // Settings → Environment Variables) once you've created this webhook
@@ -12,7 +18,7 @@
 // for the checkout.session.completed event). Never put this value in any
 // file in this repo.
 import Stripe from 'stripe';
-import { confirmReservationBySessionId } from '../_lib/reservations-store.js';
+import { confirmReservationBySessionId, setParkPlan } from '../_lib/reservations-store.js';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -46,8 +52,21 @@ export default async function handler(req, res) {
 
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object;
-    const confirmed = await confirmReservationBySessionId(session.id);
-    if (!confirmed) console.warn('Webhook confirmed a session with no matching reservation:', session.id);
+
+    if (session.mode === 'subscription') {
+      if (!session.client_reference_id) {
+        console.warn('Subscription checkout completed with no client_reference_id — cannot attribute a plan to any park:', session.id);
+      } else {
+        await setParkPlan(session.client_reference_id, {
+          planKey: session.metadata?.service || null,
+          stripeCustomerId: session.customer,
+          stripeSubscriptionId: session.subscription,
+        });
+      }
+    } else {
+      const confirmed = await confirmReservationBySessionId(session.id);
+      if (!confirmed) console.warn('Webhook confirmed a session with no matching reservation:', session.id);
+    }
   }
 
   res.status(200).json({ received: true });

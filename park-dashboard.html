@@ -52,7 +52,10 @@
 
 <div class="admin-topbar">
   <a href="index.html" class="nav-brand"><span class="mark mark-logo"><img src="/images/logo/rvparksuccess-icon.png" alt="RVPark Success logo"></span><span class="name" id="parkNameHeading">Staff Dashboard</span></a>
-  <button type="button" class="btn btn-ghost btn-sm" id="logoutBtn">Log Out</button>
+  <div style="display:flex; align-items:center; gap: var(--sp-3);">
+    <span id="planBadge" style="font-size:0.8125rem; color: var(--amber-light); font-family: var(--font-mono);"></span>
+    <button type="button" class="btn btn-ghost btn-sm" id="logoutBtn">Log Out</button>
+  </div>
 </div>
 
 <div class="admin-wrap" id="gate" style="display:none;">

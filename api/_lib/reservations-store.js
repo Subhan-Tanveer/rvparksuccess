@@ -72,8 +72,8 @@ function ensureSchema() {
     schemaReady = pool.query(`
       CREATE TABLE IF NOT EXISTS parks (
         id TEXT PRIMARY KEY,
-        name TEXT NOT NULL,
-        location TEXT NOT NULL,
+        name TEXT,
+        location TEXT,
         state TEXT NOT NULL DEFAULT '',
         timezone TEXT NOT NULL DEFAULT 'America/Chicago',
         tax_rate_percent NUMERIC NOT NULL DEFAULT 0,
@@ -84,8 +84,21 @@ function ensureSchema() {
         staff_username TEXT UNIQUE NOT NULL,
         password_hash TEXT NOT NULL,
         stripe_account_id TEXT,
+        plan_key TEXT,
+        stripe_customer_id TEXT,
+        stripe_subscription_id TEXT,
         created_at TIMESTAMPTZ NOT NULL DEFAULT now()
       );
+      -- name/location used to be NOT NULL; an owner account can now exist
+      -- before their park is registered (signup -> pick a plan -> pay ->
+      -- THEN register the park), so both must be nullable. Also backfills
+      -- the plan/Stripe columns onto a table that already existed before
+      -- this feature. All of these are no-ops once already applied.
+      ALTER TABLE parks ALTER COLUMN name DROP NOT NULL;
+      ALTER TABLE parks ALTER COLUMN location DROP NOT NULL;
+      ALTER TABLE parks ADD COLUMN IF NOT EXISTS plan_key TEXT;
+      ALTER TABLE parks ADD COLUMN IF NOT EXISTS stripe_customer_id TEXT;
+      ALTER TABLE parks ADD COLUMN IF NOT EXISTS stripe_subscription_id TEXT;
 
       CREATE TABLE IF NOT EXISTS sites (
         id TEXT PRIMARY KEY,
@@ -194,6 +207,7 @@ function mapPark(row, promoCodes = []) {
     ownerName: row.owner_name, ownerEmail: row.owner_email, ownerPhone: row.owner_phone,
     staffUsername: row.staff_username, passwordHash: row.password_hash,
     stripeAccountId: row.stripe_account_id,
+    planKey: row.plan_key, stripeCustomerId: row.stripe_customer_id, stripeSubscriptionId: row.stripe_subscription_id,
     createdAt: row.created_at.toISOString(),
     promoCodes: promoCodes.map(mapPromo),
   };
@@ -346,9 +360,12 @@ export async function getPark(parkId) {
 
 export async function listParks(locationQuery = '') {
   const q = locationQuery.trim();
+  // name IS NOT NULL excludes owner accounts that haven't registered their
+  // park yet (signed up, maybe even paid, but never finished step 2) —
+  // those must never be bookable or show up in public search.
   const parksRes = q
-    ? await query(`SELECT * FROM parks WHERE name ILIKE $1 OR location ILIKE $1 OR state ILIKE $1`, [`%${q}%`])
-    : await query('SELECT * FROM parks');
+    ? await query(`SELECT * FROM parks WHERE name IS NOT NULL AND (name ILIKE $1 OR location ILIKE $1 OR state ILIKE $1)`, [`%${q}%`])
+    : await query('SELECT * FROM parks WHERE name IS NOT NULL');
   const sitesRes = await query('SELECT * FROM sites');
 
   return parksRes.rows.map((row) => {
@@ -600,11 +617,13 @@ export async function verifyParkLogin(staffUsername, password) {
 
 // Self-service signup for RVPark owners — unlike createPark() (which a
 // super-admin uses to provision a park on someone else's behalf), this is
-// what runs when an owner signs themselves up from the public site. The
-// owner's email doubles as their staff login username so they don't have
-// to invent a separate one.
-export async function signupParkOwner({ parkName, location, ownerName, email, phone, password }) {
-  if (!parkName || !location || !ownerName || !email || !password) throw new Error('All fields are required');
+// what runs when an owner signs themselves up from the public site. This
+// only creates the owner's login identity — no park yet. The intended
+// flow is signup -> pick a plan -> pay -> registerPark() (below), so the
+// row's id is derived from the owner's email (like staffUsername already
+// was) rather than a park name that doesn't exist yet.
+export async function signupOwnerAccount({ ownerName, email, phone, password }) {
+  if (!ownerName || !email || !phone || !password) throw new Error('All fields are required');
   if (password.length < 8) throw new Error('Password must be at least 8 characters');
 
   // verifyParkLogin() slugifies whatever username it's given before
@@ -614,16 +633,35 @@ export async function signupParkOwner({ parkName, location, ownerName, email, ph
   const existing = await query('SELECT 1 FROM parks WHERE staff_username = $1', [username]);
   if (existing.rows.length) throw new Error('An account with that email already exists');
 
-  let id = slugify(parkName);
-  const idTaken = await query('SELECT 1 FROM parks WHERE id = $1', [id]);
-  if (idTaken.rows.length) id = `${id}-${Date.now().toString(36)}`;
-
   const passwordHash = bcrypt.hashSync(password, 10);
   const res = await query(
-    `INSERT INTO parks (id, name, location, owner_name, owner_email, owner_phone, staff_username, password_hash)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
-    [id, parkName, location, ownerName, normalizeEmail(email), phone || '', username, passwordHash]
+    `INSERT INTO parks (id, owner_name, owner_email, owner_phone, staff_username, password_hash)
+     VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`,
+    [username, ownerName, normalizeEmail(email), phone, username, passwordHash]
   );
+  return mapPark(res.rows[0]);
+}
+
+// Step 2 of owner onboarding — fills in the real park name/location once
+// the owner has picked and paid for a plan. Keeps the same row/id from
+// signupOwnerAccount(), so every session/site/reservation reference made
+// afterward is unaffected by this update.
+export async function registerPark(parkId, { parkName, location }) {
+  if (!parkName || !location) throw new Error('Park name and location are required');
+  const res = await query('UPDATE parks SET name = $2, location = $3 WHERE id = $1 RETURNING *', [parkId, parkName, location]);
+  if (!res.rows[0]) throw new Error('Unknown park');
+  return mapPark(res.rows[0]);
+}
+
+// Records which subscription plan an owner is on — called from the Stripe
+// webhook once their subscription checkout completes (see
+// api/reservations/webhook.js's 'subscription' mode branch).
+export async function setParkPlan(parkId, { planKey, stripeCustomerId, stripeSubscriptionId }) {
+  const res = await query(
+    'UPDATE parks SET plan_key = $2, stripe_customer_id = $3, stripe_subscription_id = $4 WHERE id = $1 RETURNING *',
+    [parkId, planKey, stripeCustomerId, stripeSubscriptionId]
+  );
+  if (!res.rows[0]) throw new Error('Unknown park');
   return mapPark(res.rows[0]);
 }
 
@@ -840,7 +878,7 @@ export async function getPayoutSummary(parkId) {
 /* ---------------------------------------------------------------- */
 
 export async function createGuestAccount({ name, email, password, phone }) {
-  if (!name || !email || !password) throw new Error('Name, email, and password are required');
+  if (!name || !email || !password || !phone) throw new Error('Name, email, phone, and password are required');
   if (password.length < 8) throw new Error('Password must be at least 8 characters');
 
   const normalizedEmail = normalizeEmail(email);

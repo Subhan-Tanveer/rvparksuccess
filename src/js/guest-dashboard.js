@@ -19,14 +19,14 @@ function statusChip(status) {
 async function loadDashboard() {
   const wentIdle = await enforceGuestIdleTimeout();
   if (wentIdle) {
-    window.location.href = 'guest-login.html?reason=idle';
+    window.location.href = 'login.html?reason=idle';
     return;
   }
 
   const res = await fetch('/api/guest');
   if (res.status === 401) {
     clearGuestSession();
-    window.location.href = 'guest-login.html';
+    window.location.href = 'login.html';
     return;
   }
   const data = await res.json();
@@ -89,7 +89,7 @@ document.getElementById('bookingsTableBody').addEventListener('click', async (e)
 document.getElementById('logoutBtn').addEventListener('click', async () => {
   await fetch('/api/guest', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'logout' }) });
   clearGuestSession();
-  window.location.href = 'guest-login.html';
+  window.location.href = 'login.html';
 });
 
 loadDashboard();

@@ -8,7 +8,7 @@
 // limit.
 import Stripe from 'stripe';
 import { requireSession } from '../_lib/auth.js';
-import { getPark, getSitesForPark, getReservationsForPark, updateParkSettings, getParkStats, addPromoCode, removePromoCode, getWaitlistForPark, removeWaitlistEntry, getPayoutSummary, setParkStripeAccount } from '../_lib/reservations-store.js';
+import { getPark, getSitesForPark, getReservationsForPark, updateParkSettings, getParkStats, addPromoCode, removePromoCode, getWaitlistForPark, removeWaitlistEntry, getPayoutSummary, setParkStripeAccount, registerPark } from '../_lib/reservations-store.js';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -54,6 +54,17 @@ export default async function handler(req, res) {
       // Surface Stripe's own message since it tells the owner exactly what
       // to do, rather than a generic failure.
       return res.status(400).json({ error: err.message || 'Could not start Stripe onboarding' });
+    }
+  }
+
+  if (req.method === 'POST' && req.body?.resource === 'register-park') {
+    const { parkName, location } = req.body;
+    try {
+      const park = await registerPark(session.parkId, { parkName, location });
+      const { passwordHash, ...safePark } = park;
+      return res.status(200).json({ park: safePark });
+    } catch (err) {
+      return res.status(400).json({ error: err.message });
     }
   }
 

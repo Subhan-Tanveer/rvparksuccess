@@ -4,7 +4,16 @@
 // 12 serverless functions per deployment — these three were small enough
 // to share one file without hurting readability.
 import { createSessionCookie, clearSessionCookie } from '../_lib/auth.js';
-import { verifyParkLogin, signupParkOwner } from '../_lib/reservations-store.js';
+import { verifyParkLogin, signupOwnerAccount } from '../_lib/reservations-store.js';
+
+// Where an owner should land after logging in/signing up, based on how
+// far through onboarding they are: no plan yet -> pick one; plan but no
+// park registered -> finish registering it; otherwise -> the dashboard.
+function ownerRedirect(park) {
+  if (!park.planKey) return 'packages.html';
+  if (!park.name) return 'register-park.html';
+  return 'park-dashboard.html';
+}
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -30,15 +39,15 @@ export default async function handler(req, res) {
     if (!park) return res.status(401).json({ error: 'Incorrect username or password' });
 
     res.setHeader('Set-Cookie', createSessionCookie({ role: 'park-staff', parkId: park.id }));
-    return res.status(200).json({ ok: true, parkName: park.name });
+    return res.status(200).json({ ok: true, parkName: park.name, redirectTo: ownerRedirect(park) });
   }
 
   if (action === 'owner-signup') {
-    const { parkName, location, ownerName, email, phone, password } = req.body;
+    const { ownerName, email, phone, password } = req.body;
     try {
-      const park = await signupParkOwner({ parkName, location, ownerName, email, phone, password });
+      const park = await signupOwnerAccount({ ownerName, email, phone, password });
       res.setHeader('Set-Cookie', createSessionCookie({ role: 'park-staff', parkId: park.id }));
-      return res.status(200).json({ ok: true, parkName: park.name });
+      return res.status(200).json({ ok: true, redirectTo: ownerRedirect(park) });
     } catch (err) {
       return res.status(400).json({ error: err.message });
     }
