@@ -20,6 +20,27 @@ let currentPark = null;
 let currentSites = [];
 let selectedSiteId = null;
 
+/* -- subscription management -- */
+let subscriptionDetails = null;
+
+function renderSubscriptionDetails(details) {
+  if (!currentPark.stripeSubscriptionId || !details) {
+    document.getElementById('subscriptionBox').style.display = 'none';
+    return;
+  }
+
+  const loadingEl = document.getElementById('subscriptionLoading');
+  const detailsEl = document.getElementById('subscriptionDetails');
+
+  const pkg = PACKAGES.find((p) => p.key === currentPark.planKey);
+  document.getElementById('subPlanName').textContent = pkg ? pkg.name : 'Unknown Plan';
+  document.getElementById('subNextBilling').textContent = new Date(details.currentPeriodEnd * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  document.getElementById('subPaymentMethod').textContent = `Payment method: ${details.paymentMethodLast4 ? `••••${details.paymentMethodLast4}` : 'Not available'}`;
+
+  loadingEl.style.display = 'none';
+  detailsEl.style.display = 'block';
+}
+
 /* -- load everything on page open -- */
 async function loadDashboard() {
   const res = await fetch('/api/admin/dashboard');
@@ -42,6 +63,8 @@ async function loadDashboard() {
   document.getElementById('gate').style.display = 'block';
   document.getElementById('parkNameHeading').textContent = `${currentPark.name} — Staff`;
   renderPlan(currentPark.planKey);
+  subscriptionDetails = data.subscriptionDetails;
+  renderSubscriptionDetails(subscriptionDetails);
   renderSites(currentSites);
   renderReservations(data.reservations);
   renderStats(data.stats);
@@ -470,6 +493,47 @@ settingsForm.addEventListener('submit', async (e) => {
 document.getElementById('logoutBtn').addEventListener('click', async () => {
   await fetch('/api/admin/auth', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'logout' }) });
   window.location.href = 'login.html';
+});
+
+/* -- subscription management -- */
+document.getElementById('updatePaymentBtn').addEventListener('click', async () => {
+  try {
+    const res = await fetch('/api/admin/dashboard', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ resource: 'subscription', action: 'portal' }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Could not open billing portal');
+    window.location.href = data.url;
+  } catch (err) {
+    await alertDialog({ title: 'Error', message: err.message });
+  }
+});
+
+document.getElementById('cancelSubscriptionBtn').addEventListener('click', async () => {
+  const ok = await confirmDialog({
+    title: 'Cancel Subscription',
+    message: 'Are you sure? Your subscription will end immediately and you will lose access to premium features.',
+    confirmLabel: 'Cancel Subscription', cancelLabel: 'Keep It', danger: true,
+  });
+  if (!ok) return;
+
+  await withLoading(document.getElementById('cancelSubscriptionBtn'), async () => {
+    try {
+      const res = await fetch('/api/admin/dashboard', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ resource: 'subscription', action: 'cancel' }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not cancel subscription');
+      await alertDialog({ title: 'Success', message: 'Your subscription has been canceled.' });
+      window.location.href = 'park-dashboard.html';
+    } catch (err) {
+      await alertDialog({ title: 'Error', message: err.message });
+    }
+  });
 });
 
 /* -- current plan -- */

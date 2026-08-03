@@ -98,6 +98,32 @@ export default async function handler(req, res) {
     }
   }
 
+  if (req.method === 'POST' && req.body?.resource === 'subscription') {
+    const { action } = req.body;
+    try {
+      const park = await getPark(session.parkId);
+      if (!park) return res.status(404).json({ error: 'Park not found' });
+      if (!park.stripeSubscriptionId) return res.status(400).json({ error: 'No active subscription' });
+
+      if (action === 'portal') {
+        const origin = req.headers.origin || `https://${req.headers.host}`;
+        const portalSession = await stripe.billingPortal.sessions.create({
+          customer: park.stripeCustomerId,
+          return_url: `${origin}/park-dashboard.html`,
+        });
+        return res.status(200).json({ url: portalSession.url });
+      } else if (action === 'cancel') {
+        await stripe.subscriptions.cancel(park.stripeSubscriptionId);
+        return res.status(200).json({ ok: true, message: 'Subscription canceled' });
+      } else {
+        return res.status(400).json({ error: 'Unknown action' });
+      }
+    } catch (err) {
+      console.error('Subscription management error:', err.message);
+      return res.status(400).json({ error: err.message || 'Could not manage subscription' });
+    }
+  }
+
   if (req.method === 'POST') {
     try {
       const park = await updateParkSettings(session.parkId, req.body || {});
@@ -141,5 +167,30 @@ export default async function handler(req, res) {
     getPayoutSummary(session.parkId),
   ]);
 
-  res.status(200).json({ park: safePark, sites, reservations, stats, waitlist, payout, stripeStatus });
+  // Fetch subscription details if an active subscription exists
+  let subscriptionDetails = null;
+  if (park.stripeSubscriptionId) {
+    try {
+      const subscription = await stripe.subscriptions.retrieve(park.stripeSubscriptionId);
+      const paymentMethod = subscription.default_payment_method;
+      let paymentMethodLast4 = null;
+      if (typeof paymentMethod === 'string') {
+        try {
+          const pm = await stripe.paymentMethods.retrieve(paymentMethod);
+          paymentMethodLast4 = pm.card?.last4 || null;
+        } catch (err) {
+          console.warn('Could not fetch payment method:', err.message);
+        }
+      }
+      subscriptionDetails = {
+        status: subscription.status,
+        currentPeriodEnd: subscription.current_period_end,
+        paymentMethodLast4,
+      };
+    } catch (err) {
+      console.error('Could not fetch subscription details:', err.message);
+    }
+  }
+
+  res.status(200).json({ park: safePark, sites, reservations, stats, waitlist, payout, stripeStatus, subscriptionDetails });
 }

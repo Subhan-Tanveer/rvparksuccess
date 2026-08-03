@@ -81,6 +81,37 @@
     </div>
   </div>
 
+  <!-- Subscription Management -->
+  <div class="admin-section glass" data-reveal>
+    <div class="section-head" style="margin-bottom: var(--sp-3);">
+      <p class="eyebrow">Billing</p>
+      <h2 style="font-size: 1.375rem;">Subscription</h2>
+    </div>
+    <div id="subscriptionBox" style="padding: var(--sp-3); border-radius: var(--radius-md); background: var(--surface-glass); border: 1px solid var(--border-glass);">
+      <div id="subscriptionLoading" style="text-align: center; color: var(--cream-dim);">Loading subscription details...</div>
+      <div id="subscriptionDetails" style="display: none;">
+        <div class="field-row-2" style="margin-bottom: var(--sp-3);">
+          <div>
+            <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--cream-dim); margin-bottom: 4px;">Plan</div>
+            <div style="font-size: 1.125rem; font-weight: 600;" id="subPlanName">—</div>
+          </div>
+          <div>
+            <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--cream-dim); margin-bottom: 4px;">Next Billing</div>
+            <div style="font-size: 1.125rem; font-weight: 600;" id="subNextBilling">—</div>
+          </div>
+        </div>
+        <div style="padding-top: var(--sp-3); border-top: 1px solid var(--border-glass);">
+          <p style="font-size: 0.9375rem; color: var(--cream-dim); margin-bottom: var(--sp-2);" id="subPaymentMethod">Payment method: —</p>
+          <div style="display: flex; gap: var(--sp-2); flex-wrap: wrap;">
+            <button type="button" class="btn btn-ghost btn-sm" id="updatePaymentBtn"><span>Update Payment Method</span></button>
+            <button type="button" class="btn btn-ghost btn-sm" id="cancelSubscriptionBtn" style="color: #f0a89a;"><span>Cancel Subscription</span></button>
+          </div>
+        </div>
+      </div>
+      <div id="subscriptionError" style="display: none; color: #f0a89a;"></div>
+    </div>
+  </div>
+
   <!-- New Booking: phone / walk-in reservations, same data as the public site -->
   <div class="admin-section glass" data-reveal>
     <div class="section-head" style="margin-bottom: var(--sp-3);">
