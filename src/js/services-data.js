@@ -56,6 +56,20 @@ export const PACKAGES = [
     ],
     note: 'Seasonal flexibility available — pause in your slow months and resume when your busy season starts. No penalties.',
   },
+  {
+    key: 'website-booking',
+    level: 4,
+    name: 'Website & Booking System',
+    monthly: 30000,
+    commitment: 'Month-to-month',
+    tagline: 'Custom plan: modern website with integrated booking system',
+    features: [
+      'Custom website built for your park',
+      'Integrated guest booking system',
+      'Mobile responsive and SEO optimized',
+      'Monthly support and updates',
+    ],
+  },
 ];
 
 export function formatUsd(cents, { decimals = 0 } = {}) {

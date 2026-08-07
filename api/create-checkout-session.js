@@ -10,11 +10,12 @@ import { requireSession } from './_lib/auth.js';
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 // Prices in cents. Keep in sync with src/js/services-data.js (PACKAGES).
-// All three levels are monthly subscriptions — no one-time setup fees.
+// All are monthly subscriptions — no one-time setup fees.
 const SERVICES = {
   foundation: { name: 'RVPark Success — Level 1: Foundation', setup: 0, monthly: 69500 },
   growth: { name: 'RVPark Success — Level 2: Growth', setup: 0, monthly: 129500 },
   maximum: { name: 'RVPark Success — Level 3: Maximum', setup: 0, monthly: 199500 },
+  'website-booking': { name: 'RVPark Success — Website & Booking System', setup: 0, monthly: 30000 },
 };
 
 export default async function handler(req, res) {
