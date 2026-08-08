@@ -69,6 +69,7 @@ export const PACKAGES = [
       'Mobile responsive and SEO optimized',
       'Monthly support and updates',
     ],
+    note: 'Flexible month-to-month billing — cancel anytime with no penalties.',
   },
 ];
 
