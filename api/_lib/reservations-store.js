@@ -534,6 +534,172 @@ function ensureSchema() {
       );
       CREATE INDEX IF NOT EXISTS idx_blackout_dates_park_site ON blackout_dates(park_id, site_id);
       CREATE INDEX IF NOT EXISTS idx_blackout_dates_date_range ON blackout_dates(start_date, end_date);
+
+      -- Phase 4: Multi-Property Management tables
+      ALTER TABLE parks ADD COLUMN IF NOT EXISTS owner_id TEXT;
+      ALTER TABLE parks ADD COLUMN IF NOT EXISTS display_name TEXT;
+      ALTER TABLE parks ADD COLUMN IF NOT EXISTS website_url TEXT;
+      ALTER TABLE parks ADD COLUMN IF NOT EXISTS branding_json TEXT DEFAULT '{}';
+      CREATE INDEX IF NOT EXISTS idx_parks_owner_id ON parks(owner_id);
+
+      CREATE TABLE IF NOT EXISTS user_permissions (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        park_id TEXT NOT NULL REFERENCES parks(id) ON DELETE CASCADE,
+        permission_level TEXT NOT NULL DEFAULT 'staff',
+        assigned_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+        UNIQUE(user_id, park_id)
+      );
+      CREATE INDEX IF NOT EXISTS idx_user_permissions_user ON user_permissions(user_id);
+      CREATE INDEX IF NOT EXISTS idx_user_permissions_park ON user_permissions(park_id);
+      CREATE INDEX IF NOT EXISTS idx_user_permissions_level ON user_permissions(permission_level);
+
+      CREATE TABLE IF NOT EXISTS property_groups (
+        id TEXT PRIMARY KEY,
+        owner_id TEXT NOT NULL,
+        name TEXT NOT NULL,
+        description TEXT,
+        group_type TEXT NOT NULL DEFAULT 'brand',
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      );
+      CREATE INDEX IF NOT EXISTS idx_property_groups_owner ON property_groups(owner_id);
+
+      CREATE TABLE IF NOT EXISTS property_group_members (
+        id TEXT PRIMARY KEY,
+        group_id TEXT NOT NULL REFERENCES property_groups(id) ON DELETE CASCADE,
+        park_id TEXT NOT NULL REFERENCES parks(id) ON DELETE CASCADE,
+        added_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+        UNIQUE(group_id, park_id)
+      );
+      CREATE INDEX IF NOT EXISTS idx_property_group_members_group ON property_group_members(group_id);
+      CREATE INDEX IF NOT EXISTS idx_property_group_members_park ON property_group_members(park_id);
+
+      CREATE TABLE IF NOT EXISTS bulk_operations (
+        id TEXT PRIMARY KEY,
+        owner_id TEXT NOT NULL,
+        operation_type TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'pending',
+        properties_count INTEGER,
+        completed_count INTEGER DEFAULT 0,
+        failed_count INTEGER DEFAULT 0,
+        operation_data TEXT NOT NULL,
+        error_log TEXT,
+        started_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+        completed_at TIMESTAMPTZ,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      );
+      CREATE INDEX IF NOT EXISTS idx_bulk_operations_owner ON bulk_operations(owner_id);
+      CREATE INDEX IF NOT EXISTS idx_bulk_operations_status ON bulk_operations(status);
+
+      CREATE TABLE IF NOT EXISTS operation_audit_log (
+        id TEXT PRIMARY KEY,
+        operation_id TEXT NOT NULL REFERENCES bulk_operations(id) ON DELETE CASCADE,
+        park_id TEXT NOT NULL REFERENCES parks(id) ON DELETE CASCADE,
+        action TEXT NOT NULL,
+        result TEXT NOT NULL,
+        details TEXT,
+        executed_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      );
+      CREATE INDEX IF NOT EXISTS idx_operation_audit_log_operation ON operation_audit_log(operation_id);
+      CREATE INDEX IF NOT EXISTS idx_operation_audit_log_park ON operation_audit_log(park_id);
+
+      -- Phase 4: ML Rate Optimization Engine tables
+      CREATE TABLE IF NOT EXISTS ml_models (
+        id TEXT PRIMARY KEY,
+        site_id TEXT NOT NULL REFERENCES sites(id) ON DELETE CASCADE,
+        park_id TEXT NOT NULL REFERENCES parks(id) ON DELETE CASCADE,
+        model_version TEXT NOT NULL DEFAULT '1.0',
+        model_json TEXT NOT NULL,
+        accuracy_mae NUMERIC,
+        last_trained TIMESTAMPTZ NOT NULL DEFAULT now(),
+        data_points_count INTEGER DEFAULT 0,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      );
+      CREATE INDEX IF NOT EXISTS idx_ml_models_site ON ml_models(site_id);
+      CREATE INDEX IF NOT EXISTS idx_ml_models_park ON ml_models(park_id);
+      CREATE INDEX IF NOT EXISTS idx_ml_models_trained ON ml_models(last_trained DESC);
+
+      CREATE TABLE IF NOT EXISTS rate_suggestions (
+        id TEXT PRIMARY KEY,
+        site_id TEXT NOT NULL REFERENCES sites(id) ON DELETE CASCADE,
+        park_id TEXT NOT NULL REFERENCES parks(id) ON DELETE CASCADE,
+        date DATE NOT NULL,
+        suggested_rate NUMERIC NOT NULL,
+        confidence NUMERIC NOT NULL DEFAULT 0.8,
+        predicted_occupancy NUMERIC,
+        revenue_estimate NUMERIC,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      );
+      CREATE INDEX IF NOT EXISTS idx_rate_suggestions_site_date ON rate_suggestions(site_id, date);
+      CREATE INDEX IF NOT EXISTS idx_rate_suggestions_park ON rate_suggestions(park_id);
+      CREATE INDEX IF NOT EXISTS idx_rate_suggestions_created ON rate_suggestions(created_at DESC);
+
+      CREATE TABLE IF NOT EXISTS rate_performance (
+        id TEXT PRIMARY KEY,
+        site_id TEXT NOT NULL REFERENCES sites(id) ON DELETE CASCADE,
+        park_id TEXT NOT NULL REFERENCES parks(id) ON DELETE CASCADE,
+        date_of_stay DATE NOT NULL,
+        set_rate NUMERIC,
+        actual_occupancy NUMERIC,
+        actual_revenue_cents INTEGER,
+        ai_suggested_rate NUMERIC,
+        accuracy_error NUMERIC,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      );
+      CREATE INDEX IF NOT EXISTS idx_rate_performance_site_date ON rate_performance(site_id, date_of_stay);
+      CREATE INDEX IF NOT EXISTS idx_rate_performance_park ON rate_performance(park_id);
+      CREATE INDEX IF NOT EXISTS idx_rate_performance_created ON rate_performance(created_at DESC);
+
+      -- Occupancy Forecasting tables
+      CREATE TABLE IF NOT EXISTS occupancy_forecasts (
+        id TEXT PRIMARY KEY,
+        park_id TEXT NOT NULL REFERENCES parks(id) ON DELETE CASCADE,
+        forecast_date DATE NOT NULL,
+        forecast_occupancy NUMERIC NOT NULL,
+        confidence_lower NUMERIC NOT NULL,
+        confidence_upper NUMERIC NOT NULL,
+        confidence_margin NUMERIC NOT NULL,
+        season TEXT NOT NULL DEFAULT 'unknown',
+        trend TEXT NOT NULL DEFAULT 'stable',
+        components_json TEXT DEFAULT '{}',
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+        UNIQUE(park_id, forecast_date)
+      );
+      CREATE INDEX IF NOT EXISTS idx_occupancy_forecasts_park ON occupancy_forecasts(park_id);
+      CREATE INDEX IF NOT EXISTS idx_occupancy_forecasts_date ON occupancy_forecasts(forecast_date);
+      CREATE INDEX IF NOT EXISTS idx_occupancy_forecasts_created ON occupancy_forecasts(created_at DESC);
+
+      CREATE TABLE IF NOT EXISTS seasonal_analysis (
+        id TEXT PRIMARY KEY,
+        park_id TEXT NOT NULL REFERENCES parks(id) ON DELETE CASCADE,
+        month INTEGER NOT NULL,
+        month_name TEXT NOT NULL,
+        average_occupancy NUMERIC NOT NULL,
+        season TEXT NOT NULL,
+        calendar_json TEXT DEFAULT '{}',
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+        UNIQUE(park_id, month)
+      );
+      CREATE INDEX IF NOT EXISTS idx_seasonal_analysis_park ON seasonal_analysis(park_id);
+      CREATE INDEX IF NOT EXISTS idx_seasonal_analysis_updated ON seasonal_analysis(updated_at DESC);
+
+      CREATE TABLE IF NOT EXISTS booking_pace_metrics (
+        id TEXT PRIMARY KEY,
+        site_id TEXT NOT NULL REFERENCES sites(id) ON DELETE CASCADE,
+        park_id TEXT NOT NULL REFERENCES parks(id) ON DELETE CASCADE,
+        metric_date DATE NOT NULL,
+        days_ahead_booked INTEGER NOT NULL,
+        pace_index INTEGER NOT NULL,
+        lead_time_avg_days INTEGER,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+        UNIQUE(site_id, metric_date)
+      );
+      CREATE INDEX IF NOT EXISTS idx_booking_pace_site ON booking_pace_metrics(site_id);
+      CREATE INDEX IF NOT EXISTS idx_booking_pace_park ON booking_pace_metrics(park_id);
+      CREATE INDEX IF NOT EXISTS idx_booking_pace_date ON booking_pace_metrics(metric_date DESC);
     `).catch((err) => { schemaReady = null; throw err; }); // don't cache a failed init — next call retries
   }
   return schemaReady;
@@ -2659,4 +2825,299 @@ export async function getReservationsBySiteInRange(siteId, startDate, endDate) {
     [siteId, startStr, endStr]
   );
   return res.rows.map(mapReservation);
+}
+
+/* ================================================================ */
+/* Phase 4: Multi-Property Management Functions                   */
+/* ================================================================ */
+
+export async function setParksOwner(parkIds, ownerId) {
+  if (!parkIds || parkIds.length === 0) return;
+  const placeholders = parkIds.map((_, i) => `$${i + 1}`).join(',');
+  const params = [...parkIds, ownerId];
+  await query(
+    `UPDATE parks SET owner_id = $${parkIds.length + 1} WHERE id IN (${placeholders})`,
+    params
+  );
+}
+
+export async function getPropertiesForUser(userId) {
+  const res = await query(
+    `SELECT p.*, COALESCE(up.permission_level, 'manager') as permission_level
+     FROM parks p
+     LEFT JOIN user_permissions up ON p.id = up.park_id AND up.user_id = $1
+     WHERE p.owner_id = $1 OR up.user_id = $1
+     ORDER BY p.name ASC`,
+    [userId]
+  );
+  return res.rows.map(row => {
+    const park = mapPark(row);
+    return { ...park, permissionLevel: row.permission_level };
+  });
+}
+
+export async function getUserRole(userId, parkId) {
+  const res = await query(
+    `SELECT permission_level FROM user_permissions WHERE user_id = $1 AND park_id = $2`,
+    [userId, parkId]
+  );
+  if (res.rows[0]) return res.rows[0].permission_level;
+
+  // Check if user is owner
+  const parkRes = await query('SELECT owner_id FROM parks WHERE id = $1', [parkId]);
+  if (parkRes.rows[0]?.owner_id === userId) return 'admin';
+
+  return null; // user has no access
+}
+
+export async function updatePropertyBranding(parkId, branding) {
+  const brandingJson = typeof branding === 'string' ? branding : JSON.stringify(branding);
+  await query(
+    `UPDATE parks SET branding_json = $1, display_name = COALESCE(display_name, name) WHERE id = $2`,
+    [brandingJson, parkId]
+  );
+}
+
+export async function getPropertyBranding(parkId) {
+  const res = await query('SELECT branding_json FROM parks WHERE id = $1', [parkId]);
+  if (!res.rows[0]) return null;
+  try {
+    return JSON.parse(res.rows[0].branding_json || '{}');
+  } catch {
+    return {};
+  }
+}
+
+export async function createPropertyGroup(ownerId, name, description, groupType = 'brand') {
+  const id = `group_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+  await query(
+    `INSERT INTO property_groups (id, owner_id, name, description, group_type)
+     VALUES ($1, $2, $3, $4, $5)`,
+    [id, ownerId, name, description, groupType]
+  );
+  return id;
+}
+
+export async function addPropertyToGroup(groupId, parkId) {
+  const id = `pgm_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+  await query(
+    `INSERT INTO property_group_members (id, group_id, park_id)
+     VALUES ($1, $2, $3)`,
+    [id, groupId, parkId]
+  );
+}
+
+export async function removePropertyFromGroup(groupId, parkId) {
+  await query(
+    `DELETE FROM property_group_members WHERE group_id = $1 AND park_id = $2`,
+    [groupId, parkId]
+  );
+}
+
+export async function getPropertyGroupsForUser(userId) {
+  const res = await query(
+    `SELECT * FROM property_groups WHERE owner_id = $1 ORDER BY name ASC`,
+    [userId]
+  );
+  return res.rows.map(row => ({
+    id: row.id,
+    ownerId: row.owner_id,
+    name: row.name,
+    description: row.description,
+    groupType: row.group_type,
+    createdAt: row.created_at.toISOString(),
+  }));
+}
+
+export async function getPropertiesInGroup(groupId) {
+  const res = await query(
+    `SELECT p.* FROM parks p
+     JOIN property_group_members pgm ON p.id = pgm.park_id
+     WHERE pgm.group_id = $1
+     ORDER BY p.name ASC`,
+    [groupId]
+  );
+  return res.rows.map(mapPark);
+}
+
+export async function createBulkOperation(ownerId, operationType, propertyIds, operationData) {
+  const id = `op_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+  const dataJson = typeof operationData === 'string' ? operationData : JSON.stringify(operationData);
+  await query(
+    `INSERT INTO bulk_operations (id, owner_id, operation_type, properties_count, operation_data)
+     VALUES ($1, $2, $3, $4, $5)`,
+    [id, ownerId, operationType, propertyIds.length, dataJson]
+  );
+  return id;
+}
+
+export async function getBulkOperation(operationId) {
+  const res = await query('SELECT * FROM bulk_operations WHERE id = $1', [operationId]);
+  if (!res.rows[0]) return null;
+  const row = res.rows[0];
+  return {
+    id: row.id,
+    ownerId: row.owner_id,
+    operationType: row.operation_type,
+    status: row.status,
+    propertiesCount: row.properties_count,
+    completedCount: row.completed_count,
+    failedCount: row.failed_count,
+    operationData: JSON.parse(row.operation_data || '{}'),
+    errorLog: row.error_log,
+    startedAt: row.started_at.toISOString(),
+    completedAt: row.completed_at ? row.completed_at.toISOString() : null,
+    createdAt: row.created_at.toISOString(),
+  };
+}
+
+export async function completeBulkOperation(operationId, completedCount, failedCount) {
+  await query(
+    `UPDATE bulk_operations SET status = 'completed', completed_count = $1, failed_count = $2, completed_at = now() WHERE id = $3`,
+    [completedCount, failedCount, operationId]
+  );
+}
+
+export async function failBulkOperation(operationId, errorLog) {
+  await query(
+    `UPDATE bulk_operations SET status = 'failed', error_log = $1, completed_at = now() WHERE id = $2`,
+    [errorLog, operationId]
+  );
+}
+
+export async function logOperationAudit(operationId, parkId, action, result, details = null) {
+  const id = `audit_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+  await query(
+    `INSERT INTO operation_audit_log (id, operation_id, park_id, action, result, details)
+     VALUES ($1, $2, $3, $4, $5, $6)`,
+    [id, operationId, parkId, action, result, details]
+  );
+}
+
+/* ================================================================ */
+/* Occupancy Forecasting                                             */
+/* ================================================================ */
+
+export async function saveOccupancyForecast(parkId, forecastData) {
+  const forecasts = Array.isArray(forecastData) ? forecastData : [forecastData];
+
+  for (const day of forecasts) {
+    await query(
+      `INSERT INTO occupancy_forecasts (id, park_id, forecast_date, forecast_occupancy, confidence_lower, confidence_upper, confidence_margin, season, trend, components_json)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+       ON CONFLICT (park_id, forecast_date) DO UPDATE SET
+       forecast_occupancy = EXCLUDED.forecast_occupancy,
+       confidence_lower = EXCLUDED.confidence_lower,
+       confidence_upper = EXCLUDED.confidence_upper,
+       confidence_margin = EXCLUDED.confidence_margin,
+       season = EXCLUDED.season,
+       trend = EXCLUDED.trend,
+       components_json = EXCLUDED.components_json,
+       created_at = now()`,
+      [
+        `forecast_${parkId}_${day.date}`,
+        parkId,
+        day.date,
+        day.forecastOccupancy,
+        day.confidenceLower,
+        day.confidenceUpper,
+        day.confidenceMargin,
+        day.season || 'unknown',
+        day.trend || 'stable',
+        JSON.stringify(day.components || {})
+      ]
+    );
+  }
+}
+
+export async function getOccupancyForecastCache(parkId) {
+  const res = await query(
+    `SELECT forecast_date, forecast_occupancy, confidence_lower, confidence_upper,
+            confidence_margin, season, trend, components_json, created_at
+     FROM occupancy_forecasts
+     WHERE park_id = $1
+     ORDER BY forecast_date ASC
+     LIMIT 90`,
+    [parkId]
+  );
+
+  if (res.rows.length === 0) return null;
+
+  const forecastData = res.rows.map(row => ({
+    date: row.forecast_date,
+    forecastOccupancy: Number(row.forecast_occupancy),
+    confidenceLower: Number(row.confidence_lower),
+    confidenceUpper: Number(row.confidence_upper),
+    confidenceMargin: Number(row.confidence_margin),
+    season: row.season,
+    trend: row.trend,
+    components: JSON.parse(row.components_json || '{}')
+  }));
+
+  return {
+    parkId,
+    forecastData,
+    createdAt: res.rows[0].created_at.toISOString()
+  };
+}
+
+export async function saveSeasonalAnalysis(parkId, calendarData) {
+  for (const month of calendarData) {
+    await query(
+      `INSERT INTO seasonal_analysis (id, park_id, month, month_name, average_occupancy, season, calendar_json)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       ON CONFLICT (park_id, month) DO UPDATE SET
+       average_occupancy = EXCLUDED.average_occupancy,
+       season = EXCLUDED.season,
+       calendar_json = EXCLUDED.calendar_json,
+       updated_at = now()`,
+      [
+        `seasonal_${parkId}_${month.month}`,
+        parkId,
+        month.month,
+        month.monthName,
+        month.averageOccupancy,
+        month.season,
+        JSON.stringify(month.days || [])
+      ]
+    );
+  }
+}
+
+export async function getSeasonalAnalysis(parkId) {
+  const res = await query(
+    `SELECT month, month_name, average_occupancy, season, calendar_json, updated_at
+     FROM seasonal_analysis
+     WHERE park_id = $1
+     ORDER BY month ASC`,
+    [parkId]
+  );
+
+  if (res.rows.length === 0) return null;
+
+  const calendar = res.rows.map(row => ({
+    month: row.month,
+    monthName: row.month_name,
+    averageOccupancy: Number(row.average_occupancy),
+    season: row.season,
+    days: JSON.parse(row.calendar_json || '[]')
+  }));
+
+  return {
+    parkId,
+    calendar,
+    updatedAt: res.rows[0].updated_at.toISOString()
+  };
+}
+
+export async function saveBookingPaceMetric(siteId, parkId, date, daysAheadBooked, paceIndex) {
+  const id = `pace_${siteId}_${date}`;
+  await query(
+    `INSERT INTO booking_pace_metrics (id, site_id, park_id, metric_date, days_ahead_booked, pace_index)
+     VALUES ($1, $2, $3, $4, $5, $6)
+     ON CONFLICT (site_id, metric_date) DO UPDATE SET
+     days_ahead_booked = EXCLUDED.days_ahead_booked,
+     pace_index = EXCLUDED.pace_index`,
+    [id, siteId, parkId, date, daysAheadBooked, paceIndex]
+  );
 }

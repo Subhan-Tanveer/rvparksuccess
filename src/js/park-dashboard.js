@@ -9,6 +9,8 @@ import { initCampaignsDashboard } from './campaigns-dashboard.js';
 import { initSocialDashboard } from './social-dashboard.js';
 import { initializeCompetitiveIntelligenceDashboard } from './competitive-intelligence-dashboard.js';
 import { initBookingRulesDashboard } from './booking-rules-dashboard.js';
+import { initMLOptimizationDashboard } from './ml-optimization-dashboard.js';
+import { initializeOccupancyForecastingDashboard } from './occupancy-forecasting-dashboard.js';
 
 initCore();
 
@@ -115,6 +117,12 @@ async function loadDashboard() {
 
   // Initialize booking rules dashboard
   initBookingRulesDashboard();
+
+  // Initialize ML optimization dashboard
+  await initMLOptimizationDashboard(currentPark.id, currentSites);
+
+  // Initialize occupancy forecasting dashboard
+  await initializeOccupancyForecastingDashboard();
 }
 
 /* -- stats -- */
