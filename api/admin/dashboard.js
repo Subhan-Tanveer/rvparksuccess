@@ -8,7 +8,7 @@
 // limit.
 import Stripe from 'stripe';
 import { requireSession } from '../_lib/auth.js';
-import { getPark, getSitesForPark, getReservationsForPark, updateParkSettings, getParkStats, addPromoCode, removePromoCode, getWaitlistForPark, removeWaitlistEntry, getPayoutSummary, setParkStripeAccount, registerPark } from '../_lib/reservations-store.js';
+import { getPark, getSitesForPark, getReservationsForPark, updateParkSettings, getParkStats, addPromoCode, removePromoCode, getWaitlistForPark, removeWaitlistEntry, getPayoutSummary, setParkStripeAccount, registerPark, getPropertiesForUser } from '../_lib/reservations-store.js';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -159,12 +159,13 @@ export default async function handler(req, res) {
     }
   }
 
-  const [sites, reservations, stats, waitlist, payout] = await Promise.all([
+  const [sites, reservations, stats, waitlist, payout, userProperties] = await Promise.all([
     getSitesForPark(session.parkId),
     getReservationsForPark(session.parkId),
     getParkStats(session.parkId),
     getWaitlistForPark(session.parkId),
     getPayoutSummary(session.parkId),
+    getPropertiesForUser(session.parkId).catch(() => []), // Phase 4: Multi-property check
   ]);
 
   // Fetch subscription details if an active subscription exists
@@ -192,5 +193,5 @@ export default async function handler(req, res) {
     }
   }
 
-  res.status(200).json({ park: safePark, sites, reservations, stats, waitlist, payout, stripeStatus, subscriptionDetails });
+  res.status(200).json({ park: safePark, sites, reservations, stats, waitlist, payout, stripeStatus, subscriptionDetails, propertiesCount: userProperties.length });
 }

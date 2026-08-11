@@ -69,6 +69,13 @@ async function loadDashboard() {
     return;
   }
 
+  // Phase 4: Multi-Property Management — if user has 2+ parks,
+  // redirect to portfolio dashboard for property selection/management
+  if (data.propertiesCount && data.propertiesCount > 1) {
+    window.location.href = 'portfolio-dashboard.html';
+    return;
+  }
+
   document.getElementById('gate').style.display = 'block';
   document.getElementById('parkNameHeading').textContent = `${currentPark.name} — Staff`;
   renderPlan(currentPark.planKey);

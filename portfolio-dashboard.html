@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Property Portfolio — RVPark Success</title>
+<meta name="robots" content="noindex, nofollow" />
+<link rel="icon" type="image/png" href="/favicon.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/src/css/tokens.css">
+<link rel="stylesheet" href="/src/css/components.css">
+<link rel="stylesheet" href="/src/css/portfolio-dashboard.css">
+<style>
+  .admin-topbar { display: flex; align-items: center; justify-content: space-between; padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--border-glass); flex-wrap: wrap; gap: var(--sp-2); }
+  .nav-brand { display: flex; align-items: center; gap: var(--sp-2); text-decoration: none; }
+  .nav-brand .mark { display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; }
+  .nav-brand .mark img { width: 100%; height: auto; }
+  .nav-brand .name { font-weight: 700; color: var(--cream); font-size: 1.125rem; }
+  #gate { display: none; }
+  .cursor-dot { display: none; }
+  .cursor-ring { display: none; }
+</style>
+</head>
+<body>
+
+<div class="cursor-dot"></div>
+<div class="cursor-ring"></div>
+
+<div class="admin-topbar">
+  <a href="index.html" class="nav-brand">
+    <span class="mark mark-logo"><img src="/images/logo/rvparksuccess-icon.png" alt="RVPark Success logo"></span>
+    <span class="name">Property Portfolio</span>
+  </a>
+  <div style="display:flex; align-items:center; gap: var(--sp-3);">
+    <button type="button" class="btn btn-ghost btn-sm" id="logoutBtn">Log Out</button>
+  </div>
+</div>
+
+<div class="portfolio-container" id="gate" style="display:none;">
+
+  <!-- Portfolio Overview Cards -->
+  <section class="portfolio-overview">
+    <div class="overview-card glass">
+      <div class="label">Total Properties</div>
+      <div class="value" id="portfolioTotalProperties">0</div>
+    </div>
+    <div class="overview-card glass">
+      <div class="label">Total Sites</div>
+      <div class="value" id="portfolioTotalSites">0</div>
+    </div>
+    <div class="overview-card glass">
+      <div class="label">Revenue (YTD)</div>
+      <div class="value" id="portfolioTotalRevenue">$0</div>
+    </div>
+    <div class="overview-card glass">
+      <div class="label">Avg. Occupancy</div>
+      <div class="value" id="portfolioAverageOccupancy">0%</div>
+    </div>
+    <div class="overview-card glass">
+      <div class="label">Total Guests</div>
+      <div class="value" id="portfolioTotalGuests">0</div>
+    </div>
+  </section>
+
+  <!-- Alerts Section -->
+  <section class="alerts-container">
+    <div class="section-header">
+      <h2>Active Alerts</h2>
+    </div>
+    <div id="alertsContainer" class="alerts-list"></div>
+  </section>
+
+  <!-- Consolidated Metrics -->
+  <section class="metrics-container">
+    <div class="section-header">
+      <h2>Performance Metrics</h2>
+    </div>
+    <div id="consolidatedMetricsContainer"></div>
+  </section>
+
+  <!-- Bulk Operations -->
+  <section id="bulkOperationsContainer" class="bulk-operations-container">
+    <div class="bulk-operations-header">
+      <h3>Bulk Operations</h3>
+      <span class="bulk-selection-info"><span id="selectedPropertiesCount">0</span> properties selected</span>
+    </div>
+    <div class="bulk-operations-buttons">
+      <button class="btn-bulk" onclick="startBulkRateUpdate()">Update Rates</button>
+      <button class="btn-bulk" onclick="startBulkCampaign()">Send Promotion</button>
+      <button class="btn-bulk" onclick="startBulkMaintenance()">Schedule Maintenance</button>
+    </div>
+    <div class="bulk-selection-controls">
+      <button class="btn-select-all" onclick="selectAllProperties()">Select All</button>
+      <button class="btn-clear-selection" onclick="clearPropertySelection()">Clear Selection</button>
+    </div>
+  </section>
+
+  <!-- Property Grid -->
+  <section class="properties-section">
+    <div class="section-header">
+      <h2>Your Properties</h2>
+    </section>
+    <div id="propertyGridContainer" class="property-grid"></div>
+  </section>
+
+  <!-- White-Label Branding Settings (Hidden for now) -->
+  <section class="branding-settings" style="display:none;">
+    <h3>White-Label Branding</h3>
+    <form class="branding-form">
+      <div class="branding-row">
+        <div class="form-group">
+          <label>Company Name</label>
+          <input type="text" id="brandingCompanyName" placeholder="Your company name">
+        </div>
+        <div class="form-group">
+          <label>Custom Domain</label>
+          <input type="text" id="brandingDomain" placeholder="yourbrand.example.com">
+        </div>
+      </div>
+      <div class="branding-row">
+        <div class="form-group">
+          <label>Primary Color</label>
+          <div class="color-input-wrapper">
+            <input type="color" class="color-input" id="brandingPrimaryColor" value="#2e9b54">
+            <input type="text" id="brandingPrimaryColorText" placeholder="#2e9b54">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Accent Color</label>
+          <div class="color-input-wrapper">
+            <input type="color" class="color-input" id="brandingAccentColor" value="#d97d2e">
+            <input type="text" id="brandingAccentColorText" placeholder="#d97d2e">
+          </div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Logo Upload</label>
+        <input type="file" id="brandingLogo" accept="image/png,image/svg+xml" />
+      </div>
+      <button type="button" class="btn btn-primary">Save Branding</button>
+    </form>
+  </section>
+
+</div>
+
+<script type="module" src="/src/js/portfolio-dashboard.js"></script>
+</body>
+</html>
