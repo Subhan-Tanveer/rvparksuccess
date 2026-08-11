@@ -3,6 +3,8 @@ import { initCore } from './core.js';
 import { confirmDialog, formDialog, alertDialog, withLoading } from './ui-dialogs.js';
 import { PACKAGES, formatUsd as formatUsdWhole } from './services-data.js';
 import { initPricingDashboard } from './pricing-dashboard.js';
+import { initCrmDashboard } from './crm-dashboard.js';
+import AnalyticsDashboard from './analytics-dashboard.js';
 
 initCore();
 
@@ -90,6 +92,13 @@ async function loadDashboard() {
 
   // Initialize pricing dashboard
   await initPricingDashboard(currentPark);
+
+  // Initialize CRM dashboard
+  await initCrmDashboard(currentPark);
+
+  // Initialize analytics dashboard
+  const analyticsDashboard = new AnalyticsDashboard('analyticsDashboard');
+  await analyticsDashboard.init();
 }
 
 /* -- stats -- */
