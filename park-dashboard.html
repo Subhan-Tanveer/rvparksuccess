@@ -11,6 +11,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/src/css/tokens.css">
 <link rel="stylesheet" href="/src/css/components.css">
+<link rel="stylesheet" href="/src/css/pricing-dashboard.css">
+<link rel="stylesheet" href="/src/css/calendar-grid.css">
 <style>
   .admin-topbar { display: flex; align-items: center; justify-content: space-between; padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--border-glass); flex-wrap: wrap; gap: var(--sp-2); }
   .admin-wrap { max-width: 1100px; margin: 0 auto; padding: var(--sp-6) var(--sp-4); }
@@ -169,6 +171,29 @@
     </table>
     </div>
     <div class="admin-empty" id="sitesEmpty" style="display:none;">No sites yet — add your first one above.</div>
+  </div>
+
+  <!-- Pricing Intelligence -->
+  <div class="admin-section glass" data-reveal>
+    <div class="section-head" style="margin-bottom: var(--sp-3);">
+      <p class="eyebrow">Revenue Optimization</p>
+      <h2 style="font-size: 1.375rem;">Pricing Intelligence</h2>
+    </div>
+    <div id="pricingSettingsContainer">
+      <p style="color: var(--cream-dim); font-size: 0.95rem;">Loading pricing settings...</p>
+    </div>
+  </div>
+
+  <!-- Calendar Grid Link -->
+  <div class="admin-section glass" data-reveal style="padding: var(--sp-4);">
+    <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); flex-wrap: wrap;">
+      <div>
+        <p class="eyebrow">Quick Access</p>
+        <h3 style="margin: 0; font-size: 1.125rem;">Interactive Calendar</h3>
+        <p style="font-size: 0.9375rem; color: var(--cream-dim); margin-top: var(--sp-1);">Drag-drop reservations, quick-book available dates, and manage blocked dates.</p>
+      </div>
+      <a href="calendar-grid.html" class="btn btn-primary magnetic" style="flex-shrink: 0;"><span>Open Calendar</span></a>
+    </div>
   </div>
 
   <!-- Recent reservations -->

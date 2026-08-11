@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Calendar Grid — RVPark Success</title>
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/src/css/tokens.css">
+  <link rel="stylesheet" href="/src/css/components.css">
+  <link rel="stylesheet" href="/src/css/calendar-grid.css">
+  <style>
+    body { margin: 0; background: var(--surface-base); color: var(--cream); font-family: var(--font-body); }
+    .admin-topbar { display: flex; align-items: center; justify-content: space-between; padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--border-glass); }
+    .admin-wrap { max-width: 100%; margin: 0 auto; padding: var(--sp-4); }
+  </style>
+</head>
+<body>
+
+<div class="cursor-dot"></div>
+<div class="cursor-ring"></div>
+
+<div class="admin-topbar">
+  <a href="index.html" class="nav-brand"><span class="mark mark-logo"><img src="/images/logo/rvparksuccess-icon.png" alt="RVPark Success logo"></span><span class="name" id="parkNameHeading">Calendar</span></a>
+  <div style="display:flex; align-items:center; gap: var(--sp-3);">
+    <button type="button" class="btn btn-ghost btn-sm" id="backToDashboardBtn">Back to Dashboard</button>
+    <button type="button" class="btn btn-ghost btn-sm" id="logoutBtn">Log Out</button>
+  </div>
+</div>
+
+<div class="admin-wrap" id="gate" style="display:none;">
+  <div id="calendarGridContainer"></div>
+</div>
+
+<script type="module">
+  import { initCore } from './src/js/core.js';
+  import { CalendarGrid } from './src/js/calendar-grid.js';
+
+  initCore();
+
+  // Get park ID from session
+  const res = await fetch('/api/admin/dashboard');
+  if (res.status === 401) {
+    window.location.href = 'login.html';
+  } else {
+    const data = await res.json();
+    const parkId = data.park.id;
+    const parkName = data.park.name;
+
+    document.getElementById('gate').style.display = 'block';
+    document.getElementById('parkNameHeading').textContent = `${parkName} — Calendar`;
+
+    // Initialize calendar
+    const calendar = new CalendarGrid('calendarGridContainer', {
+      viewMode: 'month',
+      parkId,
+      onReservationChange: () => {
+        console.log('Reservation changed, could trigger dashboard update');
+      },
+    });
+
+    // Back button
+    document.getElementById('backToDashboardBtn').addEventListener('click', () => {
+      window.location.href = 'park-dashboard.html';
+    });
+
+    // Logout
+    document.getElementById('logoutBtn').addEventListener('click', async () => {
+      await fetch('/api/admin/auth', { method: 'POST', body: JSON.stringify({ action: 'logout' }) });
+      window.location.href = 'login.html';
+    });
+  }
+</script>
+
+</body>
+</html>

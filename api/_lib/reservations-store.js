@@ -99,6 +99,14 @@ function ensureSchema() {
       ALTER TABLE parks ADD COLUMN IF NOT EXISTS plan_key TEXT;
       ALTER TABLE parks ADD COLUMN IF NOT EXISTS stripe_customer_id TEXT;
       ALTER TABLE parks ADD COLUMN IF NOT EXISTS stripe_subscription_id TEXT;
+      ALTER TABLE parks ADD COLUMN IF NOT EXISTS dynamic_pricing_enabled BOOLEAN NOT NULL DEFAULT false;
+      ALTER TABLE parks ADD COLUMN IF NOT EXISTS min_price_cents INTEGER NOT NULL DEFAULT 2000;
+      ALTER TABLE parks ADD COLUMN IF NOT EXISTS max_price_cents INTEGER NOT NULL DEFAULT 50000;
+      ALTER TABLE parks ADD COLUMN IF NOT EXISTS occupancy_target_percent INTEGER NOT NULL DEFAULT 85;
+      ALTER TABLE parks ADD COLUMN IF NOT EXISTS airbnb_listing_id TEXT;
+      ALTER TABLE parks ADD COLUMN IF NOT EXISTS booking_listing_id TEXT;
+      ALTER TABLE parks ADD COLUMN IF NOT EXISTS vrbo_listing_id TEXT;
+      ALTER TABLE parks ADD COLUMN IF NOT EXISTS ota_integration_enabled BOOLEAN NOT NULL DEFAULT false;
 
       CREATE TABLE IF NOT EXISTS sites (
         id TEXT PRIMARY KEY,
@@ -106,7 +114,8 @@ function ensureSchema() {
         name TEXT NOT NULL,
         type TEXT NOT NULL,
         capacity INTEGER NOT NULL,
-        nightly_rate_cents INTEGER NOT NULL
+        nightly_rate_cents INTEGER NOT NULL,
+        price_modifier NUMERIC NOT NULL DEFAULT 1.0
       );
       CREATE INDEX IF NOT EXISTS idx_sites_park ON sites(park_id);
 
@@ -183,6 +192,87 @@ function ensureSchema() {
         created_at TIMESTAMPTZ NOT NULL DEFAULT now()
       );
       CREATE INDEX IF NOT EXISTS idx_waitlist_park ON waitlist(park_id);
+
+      CREATE TABLE IF NOT EXISTS pricing_log (
+        id TEXT PRIMARY KEY,
+        park_id TEXT NOT NULL REFERENCES parks(id) ON DELETE CASCADE,
+        site_id TEXT NOT NULL REFERENCES sites(id) ON DELETE CASCADE,
+        date_of_stay DATE NOT NULL,
+        previous_rate_cents INTEGER NOT NULL,
+        suggested_rate_cents INTEGER NOT NULL,
+        applied_rate_cents INTEGER,
+        status TEXT NOT NULL DEFAULT 'pending',
+        applied_by TEXT,
+        applied_at TIMESTAMPTZ,
+        reservation_id TEXT REFERENCES reservations(id),
+        actual_revenue_cents INTEGER,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      );
+      CREATE INDEX IF NOT EXISTS idx_pricing_log_park ON pricing_log(park_id);
+      CREATE INDEX IF NOT EXISTS idx_pricing_log_date ON pricing_log(date_of_stay);
+
+      CREATE TABLE IF NOT EXISTS peak_date_ranges (
+        id TEXT PRIMARY KEY,
+        park_id TEXT NOT NULL REFERENCES parks(id) ON DELETE CASCADE,
+        label TEXT NOT NULL,
+        start_date DATE NOT NULL,
+        end_date DATE NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      );
+      CREATE INDEX IF NOT EXISTS idx_peak_ranges_park ON peak_date_ranges(park_id);
+
+      -- OTA Integration tables
+      CREATE TABLE IF NOT EXISTS ota_bookings (
+        id TEXT PRIMARY KEY,
+        park_id TEXT NOT NULL REFERENCES parks(id) ON DELETE CASCADE,
+        ota_name TEXT NOT NULL,
+        ota_booking_id TEXT NOT NULL,
+        guest_id TEXT NOT NULL REFERENCES guests(id),
+        linked_reservation_id TEXT REFERENCES reservations(id),
+        pulled_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+        UNIQUE(park_id, ota_name, ota_booking_id)
+      );
+      CREATE INDEX IF NOT EXISTS idx_ota_bookings_park ON ota_bookings(park_id);
+      CREATE INDEX IF NOT EXISTS idx_ota_bookings_ota ON ota_bookings(ota_name);
+      CREATE INDEX IF NOT EXISTS idx_ota_bookings_guest ON ota_bookings(guest_id);
+
+      CREATE TABLE IF NOT EXISTS ota_sync_logs (
+        id TEXT PRIMARY KEY,
+        park_id TEXT NOT NULL REFERENCES parks(id) ON DELETE CASCADE,
+        ota_name TEXT NOT NULL,
+        sync_type TEXT NOT NULL,
+        status TEXT NOT NULL,
+        error_msg TEXT,
+        synced_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      );
+      CREATE INDEX IF NOT EXISTS idx_ota_sync_logs_park ON ota_sync_logs(park_id);
+      CREATE INDEX IF NOT EXISTS idx_ota_sync_logs_ota ON ota_sync_logs(ota_name);
+      CREATE INDEX IF NOT EXISTS idx_ota_sync_logs_synced_at ON ota_sync_logs(synced_at DESC);
+
+      CREATE TABLE IF NOT EXISTS ota_credentials (
+        id TEXT PRIMARY KEY,
+        park_id TEXT NOT NULL REFERENCES parks(id) ON DELETE CASCADE,
+        ota_name TEXT NOT NULL,
+        credentials TEXT NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+        UNIQUE(park_id, ota_name)
+      );
+      CREATE INDEX IF NOT EXISTS idx_ota_credentials_park ON ota_credentials(park_id);
+
+      CREATE TABLE IF NOT EXISTS blocked_dates (
+        id TEXT PRIMARY KEY,
+        park_id TEXT NOT NULL REFERENCES parks(id) ON DELETE CASCADE,
+        site_id TEXT NOT NULL REFERENCES sites(id) ON DELETE CASCADE,
+        date DATE NOT NULL,
+        reason TEXT NOT NULL DEFAULT 'Blocked by staff',
+        blocked_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      );
+      CREATE INDEX IF NOT EXISTS idx_blocked_dates_park_site ON blocked_dates(park_id, site_id);
+      CREATE INDEX IF NOT EXISTS idx_blocked_dates_date ON blocked_dates(date);
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_blocked_dates_unique ON blocked_dates(site_id, date);
     `).catch((err) => { schemaReady = null; throw err; }); // don't cache a failed init — next call retries
   }
   return schemaReady;
@@ -208,6 +298,14 @@ function mapPark(row, promoCodes = []) {
     staffUsername: row.staff_username, passwordHash: row.password_hash,
     stripeAccountId: row.stripe_account_id,
     planKey: row.plan_key, stripeCustomerId: row.stripe_customer_id, stripeSubscriptionId: row.stripe_subscription_id,
+    dynamicPricingEnabled: row.dynamic_pricing_enabled || false,
+    minPriceCents: Number(row.min_price_cents) || 2000,
+    maxPriceCents: Number(row.max_price_cents) || 50000,
+    occupancyTargetPercent: Number(row.occupancy_target_percent) || 85,
+    airbnbListingId: row.airbnb_listing_id,
+    bookingListingId: row.booking_listing_id,
+    vrboListingId: row.vrbo_listing_id,
+    otaIntegrationEnabled: row.ota_integration_enabled || false,
     createdAt: row.created_at.toISOString(),
     promoCodes: promoCodes.map(mapPromo),
   };
@@ -221,6 +319,7 @@ function mapSite(row, seasonalRates = []) {
   return {
     id: row.id, parkId: row.park_id, name: row.name, type: row.type,
     capacity: row.capacity, nightlyRateCents: row.nightly_rate_cents,
+    priceModifier: Number(row.price_modifier) || 1.0,
     seasonalRates: seasonalRates.map(mapSeason),
   };
 }
@@ -254,6 +353,35 @@ function mapWaitlist(row) {
   return {
     id: row.id, parkId: row.park_id, checkIn: row.check_in, checkOut: row.check_out,
     name: row.name, email: row.email, phone: row.phone, notes: row.notes,
+    createdAt: row.created_at.toISOString(),
+  };
+}
+
+function mapPricingLog(row) {
+  return {
+    id: row.id,
+    parkId: row.park_id,
+    siteId: row.site_id,
+    dateOfStay: row.date_of_stay,
+    previousRateCents: Number(row.previous_rate_cents),
+    suggestedRateCents: Number(row.suggested_rate_cents),
+    appliedRateCents: row.applied_rate_cents ? Number(row.applied_rate_cents) : null,
+    status: row.status,
+    appliedBy: row.applied_by,
+    appliedAt: row.applied_at ? row.applied_at.toISOString() : null,
+    reservationId: row.reservation_id,
+    actualRevenueCents: row.actual_revenue_cents ? Number(row.actual_revenue_cents) : null,
+    createdAt: row.created_at.toISOString(),
+  };
+}
+
+function mapPeakDateRange(row) {
+  return {
+    id: row.id,
+    parkId: row.park_id,
+    label: row.label,
+    startDate: row.start_date,
+    endDate: row.end_date,
     createdAt: row.created_at.toISOString(),
   };
 }
@@ -929,4 +1057,302 @@ export async function cancelReservationForGuest(reservationId, guestEmail) {
 
   const updated = await query(`UPDATE reservations SET status = 'canceled', canceled_at = now() WHERE id = $1 RETURNING *`, [reservationId]);
   return mapReservation(updated.rows[0]);
+}
+
+/* ---------------------------------------------------------------- */
+/* Dynamic pricing configuration                                    */
+/* ---------------------------------------------------------------- */
+
+export async function updatePricingSettings(parkId, settings = {}) {
+  const sets = [];
+  const params = [parkId];
+
+  if (settings.dynamicPricingEnabled !== undefined) {
+    params.push(settings.dynamicPricingEnabled);
+    sets.push(`dynamic_pricing_enabled = $${params.length}`);
+  }
+  if (settings.minPriceCents !== undefined) {
+    const minPrice = Number(settings.minPriceCents);
+    if (isNaN(minPrice) || minPrice < 0) throw new Error('Min price must be non-negative');
+    params.push(minPrice);
+    sets.push(`min_price_cents = $${params.length}`);
+  }
+  if (settings.maxPriceCents !== undefined) {
+    const maxPrice = Number(settings.maxPriceCents);
+    if (isNaN(maxPrice) || maxPrice < 0) throw new Error('Max price must be non-negative');
+    params.push(maxPrice);
+    sets.push(`max_price_cents = $${params.length}`);
+  }
+  if (settings.occupancyTargetPercent !== undefined) {
+    const target = Number(settings.occupancyTargetPercent);
+    if (isNaN(target) || target < 0 || target > 100) throw new Error('Occupancy target must be between 0 and 100');
+    params.push(target);
+    sets.push(`occupancy_target_percent = $${params.length}`);
+  }
+
+  if (!sets.length) {
+    return getPark(parkId);
+  }
+
+  const res = await query(`UPDATE parks SET ${sets.join(', ')} WHERE id = $1 RETURNING *`, params);
+  if (!res.rows[0]) throw new Error('Unknown park');
+  return getPark(parkId);
+}
+
+export async function updateSiteModifier(siteId, parkId, priceModifier) {
+  const modifier = Number(priceModifier);
+  if (isNaN(modifier) || modifier < 0.5 || modifier > 2.0) {
+    throw new Error('Site modifier must be between 0.5 and 2.0');
+  }
+
+  const res = await query(
+    'UPDATE sites SET price_modifier = $1 WHERE id = $2 AND park_id = $3 RETURNING *',
+    [modifier, siteId, parkId]
+  );
+  if (!res.rows[0]) throw new Error('Unknown site');
+  return getSite(siteId);
+}
+
+export async function getPeakDateRanges(parkId) {
+  const res = await query(
+    'SELECT * FROM peak_date_ranges WHERE park_id = $1 ORDER BY start_date ASC',
+    [parkId]
+  );
+  return res.rows.map(mapPeakDateRange);
+}
+
+export async function addPeakDateRange(parkId, { label, startDate, endDate }) {
+  if (!startDate || !endDate) throw new Error('Start and end dates are required');
+  if (new Date(endDate) <= new Date(startDate)) throw new Error('End date must be after start date');
+
+  const parkExists = await query('SELECT 1 FROM parks WHERE id = $1', [parkId]);
+  if (!parkExists.rows.length) throw new Error('Unknown park');
+
+  const id = `peak-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  await query(
+    'INSERT INTO peak_date_ranges (id, park_id, label, start_date, end_date) VALUES ($1,$2,$3,$4,$5)',
+    [id, parkId, label || 'Peak Season', startDate, endDate]
+  );
+  return getPeakDateRanges(parkId);
+}
+
+export async function removePeakDateRange(parkId, rangeId) {
+  const parkExists = await query('SELECT 1 FROM parks WHERE id = $1', [parkId]);
+  if (!parkExists.rows.length) throw new Error('Unknown park');
+  await query('DELETE FROM peak_date_ranges WHERE id = $1 AND park_id = $2', [rangeId, parkId]);
+  return getPeakDateRanges(parkId);
+}
+
+export async function logPricingChange(parkId, siteId, dateOfStay, previousRateCents, suggestedRateCents) {
+  const id = `plog-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const res = await query(
+    `INSERT INTO pricing_log
+      (id, park_id, site_id, date_of_stay, previous_rate_cents, suggested_rate_cents, status)
+     VALUES ($1,$2,$3,$4,$5,$6,'pending')
+     RETURNING *`,
+    [id, parkId, siteId, dateOfStay, previousRateCents, suggestedRateCents]
+  );
+  return mapPricingLog(res.rows[0]);
+}
+
+export async function applyPricingChange(logId, appliedRateCents, appliedByUser) {
+  const res = await query(
+    `UPDATE pricing_log
+     SET status = 'applied', applied_rate_cents = $2, applied_by = $3, applied_at = now()
+     WHERE id = $1 RETURNING *`,
+    [logId, appliedRateCents, appliedByUser]
+  );
+  if (!res.rows[0]) throw new Error('Unknown pricing log entry');
+  return mapPricingLog(res.rows[0]);
+}
+
+export async function getPricingLog(parkId, fromDate = null, toDate = null) {
+  let whereClause = 'park_id = $1';
+  const params = [parkId];
+
+  if (fromDate) {
+    params.push(fromDate);
+    whereClause += ` AND date_of_stay >= $${params.length}`;
+  }
+  if (toDate) {
+    params.push(toDate);
+    whereClause += ` AND date_of_stay <= $${params.length}`;
+  }
+
+  const res = await query(
+    `SELECT * FROM pricing_log WHERE ${whereClause} ORDER BY date_of_stay DESC`,
+    params
+  );
+  return res.rows.map(mapPricingLog);
+}
+
+/* ---------------------------------------------------------------- */
+/* Calendar Grid Functions — blocked dates, reservation management  */
+/* ---------------------------------------------------------------- */
+
+function mapBlockedDate(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    parkId: row.park_id,
+    siteId: row.site_id,
+    date: row.date instanceof Date ? row.date : new Date(row.date + 'T00:00:00Z'),
+    reason: row.reason,
+    blockedAt: new Date(row.blocked_at),
+  };
+}
+
+export async function getBlockedDatesForPark(parkId, startDate = null, endDate = null) {
+  let whereClause = 'park_id = $1';
+  const params = [parkId];
+
+  if (startDate) {
+    params.push(startDate instanceof Date ? startDate.toISOString().split('T')[0] : startDate);
+    whereClause += ` AND date >= $${params.length}`;
+  }
+  if (endDate) {
+    params.push(endDate instanceof Date ? endDate.toISOString().split('T')[0] : endDate);
+    whereClause += ` AND date <= $${params.length}`;
+  }
+
+  const res = await query(
+    `SELECT * FROM blocked_dates WHERE ${whereClause} ORDER BY date ASC`,
+    params
+  );
+  return res.rows.map(mapBlockedDate);
+}
+
+export async function addBlockedDate(parkId, siteId, date, reason = 'Blocked by staff') {
+  const dateStr = date instanceof Date ? date.toISOString().split('T')[0] : date;
+  const id = `block-${siteId}-${dateStr}`;
+
+  try {
+    const res = await query(
+      `INSERT INTO blocked_dates (id, park_id, site_id, date, reason)
+       VALUES ($1, $2, $3, $4, $5)
+       ON CONFLICT (site_id, date) DO UPDATE SET reason = $5
+       RETURNING *`,
+      [id, parkId, siteId, dateStr, reason]
+    );
+    return mapBlockedDate(res.rows[0]);
+  } catch (err) {
+    if (err.code === '23505') {
+      // Unique constraint violation — already blocked
+      const existing = await query(
+        'SELECT * FROM blocked_dates WHERE site_id = $1 AND date = $2',
+        [siteId, dateStr]
+      );
+      return mapBlockedDate(existing.rows[0]);
+    }
+    throw err;
+  }
+}
+
+export async function removeBlockedDate(parkId, siteId, date) {
+  const dateStr = date instanceof Date ? date.toISOString().split('T')[0] : date;
+  const res = await query(
+    'DELETE FROM blocked_dates WHERE park_id = $1 AND site_id = $2 AND date = $3 RETURNING *',
+    [parkId, siteId, dateStr]
+  );
+  return res.rowCount > 0;
+}
+
+export async function getReservationById(reservationId) {
+  const res = await query('SELECT * FROM reservations WHERE id = $1', [reservationId]);
+  return res.rows[0] ? mapReservation(res.rows[0]) : null;
+}
+
+export async function getReservationsForParkInRange(parkId, startDate, endDate) {
+  const startStr = startDate instanceof Date ? startDate.toISOString().split('T')[0] : startDate;
+  const endStr = endDate instanceof Date ? endDate.toISOString().split('T')[0] : endDate;
+
+  const res = await query(
+    `SELECT * FROM reservations
+     WHERE park_id = $1
+       AND check_in <= $3
+       AND check_out > $2
+       AND canceled_at IS NULL
+     ORDER BY check_in ASC`,
+    [parkId, startStr, endStr]
+  );
+  return res.rows.map(mapReservation);
+}
+
+export async function moveReservation(reservationId, newSiteId, newCheckInDate, newCheckOutDate) {
+  const checkInStr = newCheckInDate instanceof Date ? newCheckInDate.toISOString().split('T')[0] : newCheckInDate;
+  const checkOutStr = newCheckOutDate instanceof Date ? newCheckOutDate.toISOString().split('T')[0] : newCheckOutDate;
+
+  // Get the reservation to calculate new nights
+  const existing = await getReservationById(reservationId);
+  if (!existing) throw new Error('Reservation not found');
+
+  const nights = Math.ceil((new Date(checkOutStr) - new Date(checkInStr)) / (1000 * 60 * 60 * 24));
+
+  const res = await query(
+    `UPDATE reservations
+     SET site_id = $2,
+         check_in = $3,
+         check_out = $4,
+         nights = $5
+     WHERE id = $1
+     RETURNING *`,
+    [reservationId, newSiteId, checkInStr, checkOutStr, nights]
+  );
+
+  if (!res.rows[0]) throw new Error('Failed to move reservation');
+  return mapReservation(res.rows[0]);
+}
+
+export async function cancelReservation(reservationId) {
+  const res = await query(
+    `UPDATE reservations
+     SET status = 'canceled',
+         canceled_at = now()
+     WHERE id = $1
+     RETURNING *`,
+    [reservationId]
+  );
+
+  if (!res.rows[0]) throw new Error('Reservation not found');
+  return mapReservation(res.rows[0]);
+}
+
+export async function createReservation({ parkId, siteId, guestName, guestPhone, guestEmail, checkInDate, checkOutDate, source = 'staff', status = 'confirmed', paymentMethod = 'cash' }) {
+  const checkInStr = checkInDate instanceof Date ? checkInDate.toISOString().split('T')[0] : checkInDate;
+  const checkOutStr = checkOutDate instanceof Date ? checkOutDate.toISOString().split('T')[0] : checkOutDate;
+
+  const nights = Math.ceil((new Date(checkOutStr) - new Date(checkInStr)) / (1000 * 60 * 60 * 24));
+
+  // Get site rate
+  const siteRes = await query('SELECT nightly_rate_cents FROM sites WHERE id = $1', [siteId]);
+  if (!siteRes.rows[0]) throw new Error('Site not found');
+  const nightlyRateCents = siteRes.rows[0].nightly_rate_cents;
+
+  const subtotalCents = nightlyRateCents * nights;
+  const feeCents = BOOKING_FEE_CENTS;
+  const taxCents = 0; // TODO: Calculate based on park tax rate
+  const totalCents = subtotalCents + feeCents + taxCents;
+
+  const id = `res-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+  const res = await query(
+    `INSERT INTO reservations (
+       id, park_id, site_id, check_in, check_out, nights,
+       guest_name, guest_email, guest_phone,
+       subtotal_cents, fee_cents, total_cents,
+       tax_cents, deposit_cents, status,
+       source, payment_method
+     )
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
+     RETURNING *`,
+    [
+      id, parkId, siteId, checkInStr, checkOutStr, nights,
+      guestName, guestEmail || '', guestPhone || '',
+      subtotalCents, feeCents, totalCents,
+      taxCents, 0, status,
+      source, paymentMethod,
+    ]
+  );
+
+  return mapReservation(res.rows[0]);
 }
