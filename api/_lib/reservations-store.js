@@ -403,6 +403,137 @@ function ensureSchema() {
         created_at TIMESTAMPTZ NOT NULL DEFAULT now()
       );
       CREATE INDEX IF NOT EXISTS idx_campaign_variants_campaign ON campaign_variants(campaign_id);
+
+      -- Social Media Integration tables
+      CREATE TABLE IF NOT EXISTS social_accounts (
+        id TEXT PRIMARY KEY,
+        park_id TEXT NOT NULL REFERENCES parks(id) ON DELETE CASCADE,
+        platform TEXT NOT NULL,
+        username TEXT NOT NULL,
+        access_token_encrypted TEXT NOT NULL,
+        refresh_token_encrypted TEXT,
+        status TEXT NOT NULL DEFAULT 'connected',
+        last_posted TIMESTAMPTZ,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+        UNIQUE(park_id, platform)
+      );
+      CREATE INDEX IF NOT EXISTS idx_social_accounts_park ON social_accounts(park_id);
+      CREATE INDEX IF NOT EXISTS idx_social_accounts_platform ON social_accounts(platform);
+
+      CREATE TABLE IF NOT EXISTS social_posts (
+        id TEXT PRIMARY KEY,
+        park_id TEXT NOT NULL REFERENCES parks(id) ON DELETE CASCADE,
+        platform TEXT NOT NULL,
+        content TEXT NOT NULL,
+        image_url TEXT,
+        scheduled_time TIMESTAMPTZ,
+        published_time TIMESTAMPTZ,
+        platform_post_id TEXT,
+        status TEXT NOT NULL DEFAULT 'draft',
+        engagement_json TEXT DEFAULT '{}',
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      );
+      CREATE INDEX IF NOT EXISTS idx_social_posts_park ON social_posts(park_id);
+      CREATE INDEX IF NOT EXISTS idx_social_posts_status ON social_posts(status);
+      CREATE INDEX IF NOT EXISTS idx_social_posts_scheduled ON social_posts(scheduled_time);
+
+      CREATE TABLE IF NOT EXISTS social_metrics (
+        id TEXT PRIMARY KEY,
+        park_id TEXT NOT NULL REFERENCES parks(id) ON DELETE CASCADE,
+        platform TEXT NOT NULL,
+        date_collected DATE NOT NULL,
+        likes INTEGER DEFAULT 0,
+        shares INTEGER DEFAULT 0,
+        comments INTEGER DEFAULT 0,
+        reach INTEGER DEFAULT 0,
+        engagement_rate NUMERIC DEFAULT 0,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+        UNIQUE(park_id, platform, date_collected)
+      );
+      CREATE INDEX IF NOT EXISTS idx_social_metrics_park ON social_metrics(park_id);
+      CREATE INDEX IF NOT EXISTS idx_social_metrics_date ON social_metrics(date_collected);
+
+      -- Competitive Intelligence tables
+      CREATE TABLE IF NOT EXISTS competitors (
+        id TEXT PRIMARY KEY,
+        park_id TEXT NOT NULL REFERENCES parks(id) ON DELETE CASCADE,
+        name TEXT NOT NULL,
+        website_url TEXT NOT NULL,
+        location TEXT,
+        scrape_enabled BOOLEAN NOT NULL DEFAULT true,
+        last_scraped TIMESTAMPTZ,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      );
+      CREATE INDEX IF NOT EXISTS idx_competitors_park ON competitors(park_id);
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_competitors_unique ON competitors(park_id, website_url);
+
+      CREATE TABLE IF NOT EXISTS competitor_pricing (
+        id TEXT PRIMARY KEY,
+        competitor_id TEXT NOT NULL REFERENCES competitors(id) ON DELETE CASCADE,
+        date DATE NOT NULL,
+        avg_rate_cents INTEGER,
+        low_rate_cents INTEGER,
+        high_rate_cents INTEGER,
+        occupancy_signal NUMERIC,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      );
+      CREATE INDEX IF NOT EXISTS idx_competitor_pricing_competitor ON competitor_pricing(competitor_id);
+      CREATE INDEX IF NOT EXISTS idx_competitor_pricing_date ON competitor_pricing(date DESC);
+
+      CREATE TABLE IF NOT EXISTS market_analytics (
+        id TEXT PRIMARY KEY,
+        park_id TEXT NOT NULL REFERENCES parks(id) ON DELETE CASCADE,
+        date DATE NOT NULL,
+        market_avg_rate_cents INTEGER,
+        market_median_cents INTEGER,
+        price_percentile NUMERIC,
+        competitor_count INTEGER,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      );
+      CREATE INDEX IF NOT EXISTS idx_market_analytics_park ON market_analytics(park_id);
+      CREATE INDEX IF NOT EXISTS idx_market_analytics_date ON market_analytics(date DESC);
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_market_analytics_unique ON market_analytics(park_id, date);
+
+      CREATE TABLE IF NOT EXISTS pricing_suggestions (
+        id TEXT PRIMARY KEY,
+        park_id TEXT NOT NULL REFERENCES parks(id) ON DELETE CASCADE,
+        site_id TEXT NOT NULL REFERENCES sites(id) ON DELETE CASCADE,
+        suggested_rate_cents INTEGER NOT NULL,
+        confidence_score NUMERIC NOT NULL,
+        reason TEXT,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      );
+      CREATE INDEX IF NOT EXISTS idx_pricing_suggestions_park ON pricing_suggestions(park_id);
+      CREATE INDEX IF NOT EXISTS idx_pricing_suggestions_site ON pricing_suggestions(site_id);
+
+      -- Booking Rules Engine tables
+      CREATE TABLE IF NOT EXISTS booking_rules (
+        id TEXT PRIMARY KEY,
+        park_id TEXT NOT NULL REFERENCES parks(id) ON DELETE CASCADE,
+        site_id TEXT REFERENCES sites(id) ON DELETE CASCADE,
+        rule_type TEXT NOT NULL,
+        rule_config_json TEXT NOT NULL,
+        is_active BOOLEAN NOT NULL DEFAULT true,
+        priority INTEGER NOT NULL DEFAULT 0,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      );
+      CREATE INDEX IF NOT EXISTS idx_booking_rules_park ON booking_rules(park_id);
+      CREATE INDEX IF NOT EXISTS idx_booking_rules_site ON booking_rules(site_id);
+      CREATE INDEX IF NOT EXISTS idx_booking_rules_active ON booking_rules(is_active);
+
+      CREATE TABLE IF NOT EXISTS blackout_dates (
+        id TEXT PRIMARY KEY,
+        park_id TEXT NOT NULL REFERENCES parks(id) ON DELETE CASCADE,
+        site_id TEXT NOT NULL REFERENCES sites(id) ON DELETE CASCADE,
+        start_date DATE NOT NULL,
+        end_date DATE NOT NULL,
+        reason TEXT NOT NULL DEFAULT 'Blocked by staff',
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      );
+      CREATE INDEX IF NOT EXISTS idx_blackout_dates_park_site ON blackout_dates(park_id, site_id);
+      CREATE INDEX IF NOT EXISTS idx_blackout_dates_date_range ON blackout_dates(start_date, end_date);
     `).catch((err) => { schemaReady = null; throw err; }); // don't cache a failed init — next call retries
   }
   return schemaReady;
@@ -2217,5 +2348,299 @@ export async function getGuestSegments(parkId) {
     occasional: { count: Number(occasionalRes.rows[0]?.count || 0), avgLifetimeValue: Number(occasionalRes.rows[0]?.avg_ltv || 0) },
     atRisk: { count: Number(atRiskRes.rows[0]?.count || 0), avgLifetimeValue: Number(atRiskRes.rows[0]?.avg_ltv || 0) },
     inactive: { count: Number(inactiveRes.rows[0]?.count || 0), avgLifetimeValue: Number(inactiveRes.rows[0]?.avg_ltv || 0) },
+  };
+}
+
+/* ================================================================ */
+/* Competitive Intelligence — competitor tracking and market analysis */
+/* ================================================================ */
+
+function mapCompetitor(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    parkId: row.park_id,
+    name: row.name,
+    websiteUrl: row.website_url,
+    location: row.location,
+    scrapeEnabled: row.scrape_enabled,
+    lastScraped: row.last_scraped ? row.last_scraped.toISOString() : null,
+    createdAt: row.created_at.toISOString(),
+  };
+}
+
+function mapCompetitorPricing(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    competitorId: row.competitor_id,
+    date: row.date,
+    avgRateCents: row.avg_rate_cents ? Number(row.avg_rate_cents) : null,
+    lowRateCents: row.low_rate_cents ? Number(row.low_rate_cents) : null,
+    highRateCents: row.high_rate_cents ? Number(row.high_rate_cents) : null,
+    occupancySignal: row.occupancy_signal ? Number(row.occupancy_signal) : null,
+    createdAt: row.created_at.toISOString(),
+  };
+}
+
+function mapMarketAnalytics(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    parkId: row.park_id,
+    date: row.date,
+    marketAvgRateCents: row.market_avg_rate_cents ? Number(row.market_avg_rate_cents) : null,
+    marketMedianCents: row.market_median_cents ? Number(row.market_median_cents) : null,
+    pricePercentile: row.price_percentile ? Number(row.price_percentile) : null,
+    competitorCount: row.competitor_count || 0,
+    createdAt: row.created_at.toISOString(),
+  };
+}
+
+function mapPricingSuggestion(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    parkId: row.park_id,
+    siteId: row.site_id,
+    suggestedRateCents: row.suggested_rate_cents ? Number(row.suggested_rate_cents) : null,
+    confidenceScore: row.confidence_score ? Number(row.confidence_score) : null,
+    reason: row.reason,
+    createdAt: row.created_at.toISOString(),
+  };
+}
+
+export async function addCompetitor(parkId, { name, websiteUrl, location }) {
+  if (!name || !websiteUrl) throw new Error('Competitor name and URL are required');
+  const parkExists = await query('SELECT 1 FROM parks WHERE id = $1', [parkId]);
+  if (!parkExists.rows.length) throw new Error('Unknown park');
+
+  const id = `comp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const res = await query(
+    'INSERT INTO competitors (id, park_id, name, website_url, location) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+    [id, parkId, name, websiteUrl, location || null]
+  );
+  return mapCompetitor(res.rows[0]);
+}
+
+export async function getCompetitorsForPark(parkId) {
+  const res = await query('SELECT * FROM competitors WHERE park_id = $1 ORDER BY created_at DESC', [parkId]);
+  return res.rows.map(mapCompetitor);
+}
+
+export async function removeCompetitor(competitorId, parkId) {
+  const res = await query('DELETE FROM competitors WHERE id = $1 AND park_id = $2', [competitorId, parkId]);
+  if (res.rowCount === 0) throw new Error('Unknown competitor');
+}
+
+export async function recordCompetitorPricing(competitorId, { date, avgRateCents, lowRateCents, highRateCents, occupancySignal }) {
+  const id = `cprice-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const res = await query(
+    `INSERT INTO competitor_pricing (id, competitor_id, date, avg_rate_cents, low_rate_cents, high_rate_cents, occupancy_signal)
+     VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+    [id, competitorId, date, avgRateCents || null, lowRateCents || null, highRateCents || null, occupancySignal || null]
+  );
+  return mapCompetitorPricing(res.rows[0]);
+}
+
+export async function getCompetitorPricingHistory(competitorId, days = 90) {
+  const startDate = new Date();
+  startDate.setDate(startDate.getDate() - days);
+  const res = await query(
+    `SELECT * FROM competitor_pricing WHERE competitor_id = $1 AND date >= $2 ORDER BY date DESC`,
+    [competitorId, startDate.toISOString().split('T')[0]]
+  );
+  return res.rows.map(mapCompetitorPricing);
+}
+
+export async function recordMarketAnalytics(parkId, { date, marketAvgRateCents, marketMedianCents, pricePercentile, competitorCount }) {
+  const id = `mkt-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  try {
+    const res = await query(
+      `INSERT INTO market_analytics (id, park_id, date, market_avg_rate_cents, market_median_cents, price_percentile, competitor_count)
+       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+      [id, parkId, date, marketAvgRateCents || null, marketMedianCents || null, pricePercentile || null, competitorCount || 0]
+    );
+    return mapMarketAnalytics(res.rows[0]);
+  } catch (err) {
+    if (err.code === '23505') {
+      const updateRes = await query(
+        `UPDATE market_analytics SET market_avg_rate_cents = $3, market_median_cents = $4, price_percentile = $5, competitor_count = $6
+         WHERE park_id = $1 AND date = $2 RETURNING *`,
+        [parkId, date, marketAvgRateCents || null, marketMedianCents || null, pricePercentile || null, competitorCount || 0]
+      );
+      return mapMarketAnalytics(updateRes.rows[0]);
+    }
+    throw err;
+  }
+}
+
+export async function getMarketAnalytics(parkId, days = 90) {
+  const startDate = new Date();
+  startDate.setDate(startDate.getDate() - days);
+  const res = await query(
+    `SELECT * FROM market_analytics WHERE park_id = $1 AND date >= $2 ORDER BY date DESC`,
+    [parkId, startDate.toISOString().split('T')[0]]
+  );
+  return res.rows.map(mapMarketAnalytics);
+}
+
+export async function createPricingSuggestion(parkId, siteId, { suggestedRateCents, confidenceScore, reason }) {
+  if (!suggestedRateCents) throw new Error('Suggested rate is required');
+  const siteExists = await query('SELECT 1 FROM sites WHERE id = $1 AND park_id = $2', [siteId, parkId]);
+  if (!siteExists.rows.length) throw new Error('Unknown site');
+
+  const id = `sug-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const res = await query(
+    `INSERT INTO pricing_suggestions (id, park_id, site_id, suggested_rate_cents, confidence_score, reason)
+     VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+    [id, parkId, siteId, suggestedRateCents, confidenceScore || 0.5, reason || '']
+  );
+  return mapPricingSuggestion(res.rows[0]);
+}
+
+export async function getPricingSuggestionsForSite(siteId, parkId) {
+  const res = await query(
+    `SELECT * FROM pricing_suggestions WHERE site_id = $1 AND park_id = $2 ORDER BY created_at DESC`,
+    [siteId, parkId]
+  );
+  return res.rows.map(mapPricingSuggestion);
+}
+
+export async function getPricingSuggestionsForPark(parkId) {
+  const res = await query(
+    `SELECT * FROM pricing_suggestions WHERE park_id = $1 ORDER BY confidence_score DESC, created_at DESC`,
+    [parkId]
+  );
+  return res.rows.map(mapPricingSuggestion);
+}
+
+/* ========== Booking Rules Engine ========== */
+
+export async function getBookingRules(parkId, siteId = null) {
+  let query_text = 'SELECT * FROM booking_rules WHERE park_id = $1';
+  let params = [parkId];
+  
+  if (siteId) {
+    query_text += ' AND (site_id = $2 OR site_id IS NULL)';
+    params.push(siteId);
+  }
+  
+  query_text += ' ORDER BY priority DESC, created_at ASC';
+  const res = await query(query_text, params);
+  return res.rows.map(mapBookingRule);
+}
+
+export async function getBookingRulesBySite(siteId) {
+  const res = await query(
+    'SELECT * FROM booking_rules WHERE site_id = $1 ORDER BY priority DESC',
+    [siteId]
+  );
+  return res.rows.map(mapBookingRule);
+}
+
+export async function createBookingRule(rule) {
+  const res = await query(
+    `INSERT INTO booking_rules (id, park_id, site_id, rule_type, rule_config_json, is_active, priority, created_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+    [rule.id, rule.park_id, rule.site_id || null, rule.rule_type, rule.rule_config_json, rule.is_active, rule.priority, rule.created_at]
+  );
+  return mapBookingRule(res.rows[0]);
+}
+
+export async function updateBookingRule(ruleId, updates) {
+  const sets = [];
+  const params = [];
+  let paramIndex = 1;
+
+  if (updates.is_active !== undefined) {
+    sets.push(`is_active = $${paramIndex}`);
+    params.push(updates.is_active);
+    paramIndex++;
+  }
+  if (updates.rule_config_json !== undefined) {
+    sets.push(`rule_config_json = $${paramIndex}`);
+    params.push(updates.rule_config_json);
+    paramIndex++;
+  }
+  if (updates.priority !== undefined) {
+    sets.push(`priority = $${paramIndex}`);
+    params.push(updates.priority);
+    paramIndex++;
+  }
+
+  if (!sets.length) return null;
+
+  params.push(ruleId);
+  const res = await query(
+    `UPDATE booking_rules SET ${sets.join(', ')} WHERE id = $${paramIndex} RETURNING *`,
+    params
+  );
+  return mapBookingRule(res.rows[0]);
+}
+
+export async function deleteBookingRule(ruleId) {
+  await query('DELETE FROM booking_rules WHERE id = $1', [ruleId]);
+}
+
+export async function getBlackoutDates(parkId, siteId = null) {
+  let query_text = 'SELECT * FROM blackout_dates WHERE park_id = $1';
+  const params = [parkId];
+  
+  if (siteId) {
+    query_text += ' AND site_id = $2';
+    params.push(siteId);
+  }
+  
+  query_text += ' ORDER BY start_date ASC';
+  const res = await query(query_text, params);
+  return res.rows.map(mapBlackoutDate);
+}
+
+export async function getBlackoutDatesByDateRange(siteId, startDate, endDate) {
+  const res = await query(
+    `SELECT * FROM blackout_dates WHERE site_id = $1 AND start_date <= $2 AND end_date >= $3 ORDER BY start_date ASC`,
+    [siteId, endDate, startDate]
+  );
+  return res.rows.map(mapBlackoutDate);
+}
+
+export async function createBlackoutDate(blackout) {
+  const res = await query(
+    `INSERT INTO blackout_dates (id, park_id, site_id, start_date, end_date, reason, created_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+    [blackout.id, blackout.park_id, blackout.site_id, blackout.start_date, blackout.end_date, blackout.reason, blackout.created_at]
+  );
+  return mapBlackoutDate(res.rows[0]);
+}
+
+export async function deleteBlackoutDate(blackoutId) {
+  await query('DELETE FROM blackout_dates WHERE id = $1', [blackoutId]);
+}
+
+function mapBookingRule(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    park_id: row.park_id,
+    site_id: row.site_id,
+    rule_type: row.rule_type,
+    rule_config_json: row.rule_config_json,
+    is_active: row.is_active,
+    priority: row.priority,
+    created_at: row.created_at.toISOString(),
+  };
+}
+
+function mapBlackoutDate(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    park_id: row.park_id,
+    site_id: row.site_id,
+    start_date: row.start_date,
+    end_date: row.end_date,
+    reason: row.reason,
+    created_at: row.created_at.toISOString(),
   };
 }

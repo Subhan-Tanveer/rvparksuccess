@@ -1,0 +1,718 @@
+/* Competitive Intelligence Dashboard Styling */
+/* Market overview, competitor tracking, price comparison, alerts */
+
+:root {
+  --ci-positive: #2e9b54;
+  --ci-positive-light: #7db7ff;
+  --ci-neutral: #60a5fa;
+  --ci-warning: #d97f2e;
+  --ci-danger: #d93c2e;
+  --ci-success-alpha: rgba(46, 155, 84, 0.12);
+  --ci-warning-alpha: rgba(217, 127, 46, 0.12);
+  --ci-danger-alpha: rgba(217, 60, 46, 0.12);
+}
+
+/* Main container */
+#competitiveIntelligenceDashboard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-5);
+  padding: var(--sp-4);
+}
+
+/* ============================================================ */
+/* Risk Alerts — Red/Yellow/Green status banners */
+/* ============================================================ */
+
+.ci-alert {
+  padding: var(--sp-3) var(--sp-4);
+  border-radius: var(--radius-md);
+  border-left: 4px solid;
+  font-size: 0.9375rem;
+  margin-bottom: var(--sp-4);
+  display: none;
+  animation: slideInDown 0.3s ease-out;
+}
+
+.ci-alert.is-visible {
+  display: block;
+}
+
+@keyframes slideInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.ci-alert.is-danger {
+  background: var(--ci-danger-alpha);
+  border-color: var(--ci-danger);
+  color: #f0a89a;
+}
+
+.ci-alert.is-danger strong {
+  color: #f0a89a;
+}
+
+.ci-alert.is-warning {
+  background: var(--ci-warning-alpha);
+  border-color: var(--ci-warning);
+  color: #e0a86a;
+}
+
+.ci-alert.is-warning strong {
+  color: #e0a86a;
+}
+
+.ci-alert.is-success {
+  background: var(--ci-success-alpha);
+  border-color: var(--ci-positive);
+  color: var(--amber-light);
+}
+
+.ci-alert.is-success strong {
+  color: var(--amber-light);
+}
+
+/* ============================================================ */
+/* Market Overview Card */
+/* ============================================================ */
+
+.ci-market-overview {
+  padding: var(--sp-5) var(--sp-4);
+  border-radius: var(--radius-lg);
+  background: var(--surface-glass);
+  border: 1px solid var(--border-glass);
+}
+
+.ci-market-overview .section-head {
+  margin-bottom: var(--sp-4);
+}
+
+.ci-market-overview .section-head h2 {
+  font-size: 1.375rem;
+  margin-bottom: var(--sp-2);
+}
+
+.ci-market-overview .eyebrow {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--cream-dim);
+  margin-bottom: var(--sp-2);
+}
+
+.ci-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-4);
+}
+
+.ci-metric-card {
+  padding: var(--sp-3);
+  border-radius: var(--radius-md);
+  background: var(--surface-glass-strong);
+  border: 1px solid var(--border-glass);
+}
+
+.ci-metric-card .label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--cream-dim);
+  margin-bottom: 4px;
+}
+
+.ci-metric-card .value {
+  font-family: var(--font-mono);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--amber-light);
+}
+
+.ci-metric-card .sub {
+  font-size: 0.75rem;
+  color: var(--cream-dim);
+  margin-top: 4px;
+}
+
+.ci-position-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 600;
+  margin-top: var(--sp-2);
+}
+
+.ci-position-badge.is-good {
+  background: var(--ci-success-alpha);
+  color: var(--amber-light);
+}
+
+.ci-position-badge.is-neutral {
+  background: rgba(96, 165, 250, 0.15);
+  color: #7db7ff;
+}
+
+.ci-position-badge.is-risk {
+  background: var(--ci-danger-alpha);
+  color: #f0a89a;
+}
+
+/* ============================================================ */
+/* Competitor Tracking Table */
+/* ============================================================ */
+
+.ci-competitor-section {
+  padding: var(--sp-5) var(--sp-4);
+  border-radius: var(--radius-lg);
+  background: var(--surface-glass);
+  border: 1px solid var(--border-glass);
+}
+
+.ci-competitor-section .section-head {
+  margin-bottom: var(--sp-3);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+}
+
+.ci-competitor-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: var(--sp-3);
+}
+
+.ci-competitor-table th {
+  text-align: left;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--cream-dim);
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border-glass);
+  font-weight: 600;
+}
+
+.ci-competitor-table td {
+  padding: 12px 10px;
+  border-bottom: 1px solid var(--border-glass);
+  font-size: 0.9375rem;
+  vertical-align: middle;
+}
+
+.ci-competitor-table .comp-name {
+  font-weight: 600;
+}
+
+.ci-competitor-table .comp-rate {
+  font-family: var(--font-mono);
+  color: var(--amber-light);
+  font-weight: 700;
+}
+
+.ci-competitor-table .comp-status {
+  font-size: 0.75rem;
+  color: var(--cream-dim);
+}
+
+.ci-competitor-table .action-btn {
+  padding: 4px 8px;
+  font-size: 0.75rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-glass);
+  background: transparent;
+  color: var(--cream-dim);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.ci-competitor-table .action-btn:hover {
+  border-color: var(--ci-danger);
+  color: #f0a89a;
+  background: var(--ci-danger-alpha);
+}
+
+.ci-empty-state {
+  text-align: center;
+  padding: var(--sp-6) var(--sp-4);
+  color: var(--cream-dim);
+}
+
+.ci-empty-state p {
+  margin-bottom: var(--sp-3);
+}
+
+/* ============================================================ */
+/* Add Competitor Modal / Form */
+/* ============================================================ */
+
+.ci-add-competitor-form {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--sp-3);
+  margin-top: var(--sp-3);
+  padding-top: var(--sp-3);
+  border-top: 1px solid var(--border-glass);
+}
+
+.ci-add-competitor-form .field-float {
+  margin-bottom: var(--sp-2);
+}
+
+.ci-add-competitor-form .btn {
+  margin-top: var(--sp-2);
+}
+
+/* ============================================================ */
+/* Price Comparison Chart */
+/* ============================================================ */
+
+.ci-comparison-card {
+  padding: var(--sp-5) var(--sp-4);
+  border-radius: var(--radius-lg);
+  background: var(--surface-glass);
+  border: 1px solid var(--border-glass);
+}
+
+.ci-comparison-card .section-head {
+  margin-bottom: var(--sp-4);
+}
+
+.ci-chart-controls {
+  display: flex;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-4);
+  flex-wrap: wrap;
+}
+
+.ci-chart-controls .btn-group {
+  display: flex;
+  gap: 0;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 1px solid var(--border-glass);
+}
+
+.ci-chart-controls .btn-group button {
+  flex: 1;
+  padding: 6px 12px;
+  border: none;
+  background: transparent;
+  color: var(--cream-dim);
+  cursor: pointer;
+  font-size: 0.8125rem;
+  transition: all 0.2s ease;
+}
+
+.ci-chart-controls .btn-group button:first-child {
+  border-right: 1px solid var(--border-glass);
+}
+
+.ci-chart-controls .btn-group button.is-active {
+  background: var(--surface-glass-strong);
+  color: var(--amber-light);
+  border-color: var(--border-amber);
+}
+
+.ci-comparison-chart {
+  height: 300px;
+  margin-bottom: var(--sp-4);
+  background: var(--surface-glass-strong);
+  border-radius: var(--radius-md);
+  padding: var(--sp-3);
+  overflow-x: auto;
+}
+
+.ci-bar-chart {
+  display: flex;
+  align-items: flex-end;
+  height: 280px;
+  gap: 16px;
+  justify-content: space-around;
+  padding: 20px 10px;
+}
+
+.ci-bar-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  min-width: 60px;
+}
+
+.ci-bar-item .bar {
+  width: 100%;
+  background: linear-gradient(to top, var(--amber), var(--amber-light));
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  margin-bottom: 8px;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.ci-bar-item .bar:hover {
+  opacity: 0.8;
+}
+
+.ci-bar-item .bar.is-your-rate {
+  background: linear-gradient(to top, var(--ci-positive), #7db7ff);
+}
+
+.ci-bar-item .label {
+  font-size: 0.75rem;
+  color: var(--cream-dim);
+  text-align: center;
+  line-height: 1.2;
+  max-width: 100%;
+  word-break: break-word;
+}
+
+.ci-bar-item .value {
+  font-size: 0.8125rem;
+  font-family: var(--font-mono);
+  color: var(--amber-light);
+  font-weight: 700;
+  margin-top: 4px;
+}
+
+/* ============================================================ */
+/* Pricing Opportunities Cards */
+/* ============================================================ */
+
+.ci-opportunities-section {
+  padding: var(--sp-5) var(--sp-4);
+  border-radius: var(--radius-lg);
+  background: var(--surface-glass);
+  border: 1px solid var(--border-glass);
+}
+
+.ci-opportunities-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--sp-4);
+  margin-top: var(--sp-4);
+}
+
+.ci-opportunity-card {
+  padding: var(--sp-4);
+  border-radius: var(--radius-md);
+  background: var(--surface-glass-strong);
+  border: 1px solid var(--border-glass);
+  transition: all 0.2s ease;
+}
+
+.ci-opportunity-card:hover {
+  border-color: var(--border-amber);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+.ci-opportunity-card .site-name {
+  font-weight: 600;
+  font-size: 1rem;
+  margin-bottom: var(--sp-2);
+}
+
+.ci-opportunity-card .site-type {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: var(--cream-dim);
+  margin-bottom: var(--sp-3);
+}
+
+.ci-opportunity-card .rate-comparison {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-3);
+  padding-bottom: var(--sp-3);
+  border-bottom: 1px solid var(--border-glass);
+}
+
+.ci-opportunity-card .rate-item .label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: var(--cream-dim);
+  margin-bottom: 4px;
+}
+
+.ci-opportunity-card .rate-item .value {
+  font-family: var(--font-mono);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--amber-light);
+}
+
+.ci-opportunity-card .suggestion {
+  font-size: 0.875rem;
+  color: var(--cream-dim);
+  margin-bottom: var(--sp-3);
+  line-height: 1.5;
+}
+
+.ci-opportunity-card .impact-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 600;
+  margin-bottom: var(--sp-3);
+}
+
+.ci-opportunity-card .impact-badge.is-positive {
+  background: var(--ci-success-alpha);
+  color: var(--amber-light);
+}
+
+.ci-opportunity-card .impact-badge.is-negative {
+  background: var(--ci-danger-alpha);
+  color: #f0a89a;
+}
+
+.ci-opportunity-card .apply-btn {
+  width: 100%;
+  padding: 8px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-amber);
+  background: transparent;
+  color: var(--amber-light);
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+}
+
+.ci-opportunity-card .apply-btn:hover {
+  background: rgba(207, 143, 23, 0.2);
+  border-color: var(--amber);
+}
+
+.ci-opportunity-card .apply-btn:active {
+  opacity: 0.8;
+}
+
+/* ============================================================ */
+/* Market Trends Chart */
+/* ============================================================ */
+
+.ci-trends-section {
+  padding: var(--sp-5) var(--sp-4);
+  border-radius: var(--radius-lg);
+  background: var(--surface-glass);
+  border: 1px solid var(--border-glass);
+}
+
+.ci-trends-section .section-head {
+  margin-bottom: var(--sp-4);
+}
+
+.ci-trends-chart {
+  height: 300px;
+  margin-bottom: var(--sp-4);
+  background: var(--surface-glass-strong);
+  border-radius: var(--radius-md);
+  padding: var(--sp-3);
+  position: relative;
+  overflow: hidden;
+}
+
+.ci-line-chart {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.ci-trend-legend {
+  display: flex;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+  padding: var(--sp-3) 0;
+  border-top: 1px solid var(--border-glass);
+  margin-top: var(--sp-3);
+}
+
+.ci-trend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.875rem;
+}
+
+.ci-trend-item .dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.ci-trend-item .dot.market {
+  background: linear-gradient(135deg, var(--amber), var(--amber-light));
+}
+
+.ci-trend-item .dot.your-rate {
+  background: linear-gradient(135deg, var(--ci-positive), #7db7ff);
+}
+
+/* ============================================================ */
+/* Stats Summary */
+/* ============================================================ */
+
+.ci-stats-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--sp-3);
+  margin-top: var(--sp-4);
+}
+
+.ci-stat {
+  padding: var(--sp-3);
+  border-radius: var(--radius-md);
+  background: var(--surface-glass-strong);
+  border: 1px solid var(--border-glass);
+  text-align: center;
+}
+
+.ci-stat .value {
+  font-family: var(--font-mono);
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--amber-light);
+}
+
+.ci-stat .label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--cream-dim);
+  margin-top: 6px;
+}
+
+/* ============================================================ */
+/* Responsive Design — mobile, tablet, desktop */
+/* ============================================================ */
+
+@media (max-width: 768px) {
+  #competitiveIntelligenceDashboard {
+    padding: var(--sp-3);
+    gap: var(--sp-4);
+  }
+
+  .ci-market-overview,
+  .ci-competitor-section,
+  .ci-comparison-card,
+  .ci-opportunities-section,
+  .ci-trends-section {
+    padding: var(--sp-4) var(--sp-3);
+  }
+
+  .ci-metrics-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .ci-opportunities-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ci-comparison-chart {
+    height: 250px;
+  }
+
+  .ci-trends-chart {
+    height: 250px;
+  }
+
+  .ci-chart-controls {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 480px) {
+  .ci-metrics-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ci-metric-card .value {
+    font-size: 1.25rem;
+  }
+
+  .ci-competitor-table th,
+  .ci-competitor-table td {
+    padding: 8px 6px;
+    font-size: 0.85rem;
+  }
+
+  .ci-comparison-chart {
+    height: 200px;
+  }
+
+  .ci-trends-chart {
+    height: 200px;
+  }
+
+  .ci-rate-comparison {
+    grid-template-columns: 1fr;
+  }
+
+  .ci-opportunity-card {
+    padding: var(--sp-3);
+  }
+
+  .ci-stats-summary {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* ============================================================ */
+/* Dark Mode Support (built-in via CSS vars) */
+/* ============================================================ */
+
+@media (prefers-color-scheme: dark) {
+  .ci-alert,
+  .ci-market-overview,
+  .ci-competitor-section,
+  .ci-comparison-card,
+  .ci-opportunities-section,
+  .ci-trends-section {
+    /* Already using CSS variables — no additional changes needed */
+  }
+}
+
+/* ============================================================ */
+/* Loading & Transition States */
+/* ============================================================ */
+
+.ci-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  color: var(--cream-dim);
+}
+
+.ci-loading::after {
+  content: '';
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid var(--border-glass);
+  border-top-color: var(--amber-light);
+  animation: spin 0.8s linear infinite;
+  margin-left: var(--sp-2);
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

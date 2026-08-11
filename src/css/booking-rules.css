@@ -1,0 +1,444 @@
+/**
+ * Booking Rules Dashboard Styles
+ * Responsive design with dark mode support
+ */
+
+/* ========== Layout ========== */
+
+.booking-rules-section {
+  padding: var(--sp-5) var(--sp-4);
+  border-radius: var(--radius-lg);
+}
+
+.rules-table-container {
+  overflow-x: auto;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-glass);
+}
+
+.rules-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9375rem;
+}
+
+.rules-table th {
+  text-align: left;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--cream-dim);
+  padding: 12px 15px;
+  border-bottom: 1px solid var(--border-glass);
+  font-weight: 600;
+  background: var(--surface-glass);
+}
+
+.rules-table td {
+  padding: 12px 15px;
+  border-bottom: 1px solid var(--border-glass);
+  vertical-align: middle;
+}
+
+.rules-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.rules-table code {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  color: var(--amber-light);
+  background: rgba(255, 255, 255, 0.05);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  word-break: break-all;
+}
+
+/* ========== Filter Buttons ========== */
+
+.rule-filter-btn {
+  padding: 8px 14px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-glass);
+  background: transparent;
+  color: var(--cream);
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease;
+}
+
+.rule-filter-btn:hover {
+  border-color: var(--border-amber);
+  background: rgba(255, 193, 7, 0.08);
+}
+
+.rule-filter-btn.is-active {
+  border-color: var(--amber);
+  background: rgba(255, 193, 7, 0.15);
+  color: var(--amber-light);
+}
+
+/* ========== Rule Type Badge ========== */
+
+.rule-type-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  background: rgba(96, 165, 250, 0.15);
+  color: #7db7ff;
+  font-size: 0.75rem;
+  text-transform: capitalize;
+  letter-spacing: 0.03em;
+  font-weight: 600;
+}
+
+/* ========== Action Buttons ========== */
+
+.rule-action-btn {
+  padding: 4px 10px;
+  margin-right: 6px;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: rgba(96, 165, 250, 0.15);
+  color: #7db7ff;
+  font-size: 0.8125rem;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+  text-decoration: none;
+}
+
+.rule-action-btn:hover {
+  background: rgba(96, 165, 250, 0.25);
+}
+
+/* ========== Form Groups ========== */
+
+.form-group {
+  margin-bottom: var(--sp-3);
+}
+
+.form-group label {
+  display: block;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--cream-dim);
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: var(--sp-2);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-md);
+  background: var(--surface-glass);
+  color: var(--cream);
+  font-size: 0.9375rem;
+  font-family: inherit;
+  transition: border-color 0.2s ease;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: var(--border-amber);
+  box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.1);
+}
+
+.form-group input[type='checkbox'] {
+  width: auto;
+  margin-right: 8px;
+}
+
+.form-group small {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.75rem;
+  color: var(--cream-dim);
+}
+
+/* ========== Modal Dialogs ========== */
+
+.modal-dialog {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.modal-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+}
+
+.modal-content {
+  position: relative;
+  background: var(--surface-glass-strong);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+  width: 90%;
+  max-width: 600px;
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.modal-header {
+  padding: var(--sp-4);
+  border-bottom: 1px solid var(--border-glass);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-header h2 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.modal-close {
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: transparent;
+  color: var(--cream-dim);
+  font-size: 1.5rem;
+  cursor: pointer;
+  transition: color 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-close:hover {
+  color: var(--cream);
+}
+
+.modal-body {
+  padding: var(--sp-4);
+  max-height: calc(90vh - 140px);
+  overflow-y: auto;
+}
+
+.modal-footer {
+  padding: var(--sp-4);
+  border-top: 1px solid var(--border-glass);
+  display: flex;
+  gap: var(--sp-2);
+  justify-content: flex-end;
+}
+
+/* ========== Buttons ========== */
+
+.btn {
+  padding: 10px 20px;
+  border-radius: var(--radius-md);
+  border: none;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-primary {
+  background: var(--amber);
+  color: var(--surface-glass-strong);
+}
+
+.btn-primary:hover {
+  background: var(--amber-light);
+  box-shadow: 0 8px 20px rgba(255, 193, 7, 0.3);
+}
+
+.btn-secondary {
+  background: var(--surface-glass);
+  color: var(--cream);
+  border: 1px solid var(--border-glass);
+}
+
+.btn-secondary:hover {
+  background: var(--surface-glass-strong);
+  border-color: var(--border-amber);
+}
+
+.btn-sm {
+  padding: 6px 14px;
+  font-size: 0.8125rem;
+}
+
+/* ========== Alert Boxes ========== */
+
+.admin-alert {
+  padding: var(--sp-3) var(--sp-3);
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  display: none;
+  animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+  from {
+    transform: translateY(-10px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.admin-alert.is-visible {
+  display: block;
+}
+
+.admin-alert.is-success {
+  background: rgba(46, 155, 84, 0.12);
+  border: 1px solid rgba(46, 155, 84, 0.4);
+  color: var(--amber-light);
+}
+
+.admin-alert.is-error {
+  background: rgba(217, 60, 46, 0.1);
+  border: 1px solid rgba(217, 60, 46, 0.4);
+  color: #f0a89a;
+}
+
+.admin-alert.is-warning {
+  background: rgba(217, 127, 46, 0.1);
+  border: 1px solid rgba(217, 127, 46, 0.4);
+  color: #e0a86a;
+}
+
+/* ========== Status Chips ========== */
+
+.status-chip {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 600;
+}
+
+.status-chip.is-confirmed {
+  background: rgba(46, 155, 84, 0.15);
+  color: var(--amber-light);
+}
+
+.status-chip.is-pending {
+  background: rgba(217, 127, 46, 0.15);
+  color: #e0a86a;
+}
+
+.status-chip.is-disabled {
+  background: rgba(100, 100, 100, 0.15);
+  color: var(--cream-dim);
+}
+
+/* ========== Responsive Design ========== */
+
+@media (max-width: 768px) {
+  .rules-table th,
+  .rules-table td {
+    padding: 10px 8px;
+    font-size: 0.8125rem;
+  }
+
+  .modal-content {
+    width: 95%;
+    max-width: 90vw;
+  }
+
+  .modal-body {
+    max-height: calc(90vh - 120px);
+  }
+
+  .rules-table code {
+    font-size: 0.75rem;
+  }
+
+  .btn {
+    padding: 8px 16px;
+    font-size: 0.8125rem;
+  }
+
+  .form-group {
+    margin-bottom: var(--sp-2);
+  }
+}
+
+/* ========== Dark Mode Adjustments ========== */
+
+@media (prefers-color-scheme: dark) {
+  .rules-table tbody tr:hover {
+    background: rgba(255, 255, 255, 0.04);
+  }
+
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  .modal-content {
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  .rule-filter-btn:hover {
+    background: rgba(255, 193, 7, 0.12);
+  }
+}
+
+/* ========== Validation Result Styling ========== */
+
+#validationResult ul {
+  list-style: disc;
+  margin-left: 20px;
+  padding: 0;
+}
+
+#validationResult li {
+  margin-bottom: 4px;
+}
+
+#validationResult strong {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--cream);
+}

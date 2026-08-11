@@ -6,6 +6,9 @@ import { initPricingDashboard } from './pricing-dashboard.js';
 import { initCrmDashboard } from './crm-dashboard.js';
 import AnalyticsDashboard from './analytics-dashboard.js';
 import { initCampaignsDashboard } from './campaigns-dashboard.js';
+import { initSocialDashboard } from './social-dashboard.js';
+import { initializeCompetitiveIntelligenceDashboard } from './competitive-intelligence-dashboard.js';
+import { initBookingRulesDashboard } from './booking-rules-dashboard.js';
 
 initCore();
 
@@ -103,6 +106,12 @@ async function loadDashboard() {
 
   // Initialize campaigns dashboard
   await initCampaignsDashboard(currentPark);
+
+  // Initialize social media dashboard
+  await initSocialDashboard(currentPark);
+
+  // Initialize booking rules dashboard
+  initBookingRulesDashboard();
 }
 
 /* -- stats -- */
