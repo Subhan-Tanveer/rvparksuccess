@@ -1,0 +1,708 @@
+/* Occupancy Forecasting Dashboard — styling for all UI sections,
+   charts, heatmaps, gauges, and responsive design with dark mode support */
+
+.occupancy-forecasting {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+  padding: 0;
+}
+
+/* ================================================================ */
+/* Section Styling                                                   */
+/* ================================================================ */
+
+.ocf-section {
+  border-radius: 12px;
+  padding: 1.5rem;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+}
+
+.ocf-section:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.section-head {
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 1rem;
+}
+
+.section-head h3 {
+  margin: 0 0 0.25rem 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.section-head .sub {
+  margin: 0;
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* ================================================================ */
+/* 90-Day Forecast Chart                                            */
+/* ================================================================ */
+
+.ocf-chart-wrapper {
+  position: relative;
+  height: 300px;
+  margin-bottom: 1rem;
+  border-radius: 8px;
+  background: rgba(50, 50, 50, 0.3);
+  padding: 1rem;
+}
+
+#occupancyForecastChart {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+}
+
+.ocf-info-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.info-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  border-radius: 6px;
+  background: rgba(50, 50, 50, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.info-label {
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 500;
+}
+
+.info-value {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #4da8ff;
+}
+
+/* ================================================================ */
+/* Seasonal Calendar                                                 */
+/* ================================================================ */
+
+.seasonal-calendar-container {
+  overflow-x: auto;
+  padding: 0.5rem 0;
+}
+
+.seasonal-months {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+  min-width: 100%;
+}
+
+.seasonal-month {
+  border-radius: 8px;
+  padding: 1rem;
+  background: rgba(50, 50, 50, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.3s ease;
+}
+
+.seasonal-month:hover {
+  background: rgba(50, 50, 50, 0.6);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.month-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+  font-size: 0.875rem;
+}
+
+.month-name {
+  font-weight: 600;
+  color: #fff;
+}
+
+.month-occ {
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  background: rgba(77, 168, 255, 0.2);
+  color: #4da8ff;
+  font-weight: 600;
+}
+
+.month-days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.25rem;
+}
+
+.day-cell {
+  aspect-ratio: 1;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.day-cell:hover {
+  transform: scale(1.1);
+  box-shadow: 0 0 8px rgba(77, 168, 255, 0.3);
+}
+
+/* ================================================================ */
+/* Booking Pace                                                      */
+/* ================================================================ */
+
+.pace-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.pace-card {
+  border-radius: 8px;
+  padding: 1.5rem;
+  background: rgba(50, 50, 50, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.pace-card:hover {
+  background: rgba(50, 50, 50, 0.6);
+  border-color: rgba(77, 168, 255, 0.3);
+}
+
+.pace-label {
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+}
+
+.pace-index {
+  font-size: 2.25rem;
+  font-weight: 700;
+  color: #4da8ff;
+  margin-bottom: 0.25rem;
+}
+
+.pace-days {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #4CAF50;
+  margin-bottom: 0.25rem;
+}
+
+.pace-count {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #FF9800;
+  margin-bottom: 0.25rem;
+}
+
+.pace-sub {
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.pace-interpretation {
+  font-size: 0.95rem;
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 500;
+}
+
+/* ================================================================ */
+/* Capacity Gauge                                                    */
+/* ================================================================ */
+
+.capacity-gauge-wrapper {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  align-items: center;
+}
+
+.gauge-container {
+  position: relative;
+  width: 200px;
+  margin: 0 auto;
+}
+
+.capacity-gauge {
+  width: 100%;
+  height: auto;
+  filter: drop-shadow(0 0 8px rgba(77, 168, 255, 0.2));
+}
+
+.gauge-bg {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.1);
+  stroke-width: 6;
+}
+
+.gauge-fill {
+  fill: none;
+  stroke: #4CAF50;
+  stroke-width: 6;
+  stroke-linecap: round;
+  transition: stroke 0.3s ease, stroke-dashoffset 0.5s ease;
+}
+
+.gauge-value {
+  font-size: 20px;
+  font-weight: 700;
+  text-anchor: middle;
+  fill: #fff;
+}
+
+.gauge-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  border-radius: 6px;
+  background: rgba(50, 50, 50, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.detail-label {
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 500;
+}
+
+.detail-value {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #4da8ff;
+}
+
+/* ================================================================ */
+/* Tables                                                            */
+/* ================================================================ */
+
+.ocf-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.ocf-table thead tr {
+  border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+.ocf-table th {
+  text-align: left;
+  padding: 1rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.8);
+  background: rgba(50, 50, 50, 0.3);
+}
+
+.ocf-table tbody tr {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  transition: background 0.2s ease;
+}
+
+.ocf-table tbody tr:hover {
+  background: rgba(77, 168, 255, 0.05);
+}
+
+.ocf-table td {
+  padding: 1rem;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.recommendation-cell {
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.7);
+  font-style: italic;
+}
+
+.ocf-empty {
+  text-align: center;
+  color: rgba(255, 255, 255, 0.5);
+  padding: 2rem 1rem;
+  font-style: italic;
+}
+
+/* ================================================================ */
+/* Staffing Timeline                                                 */
+/* ================================================================ */
+
+.staffing-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.staffing-period {
+  display: grid;
+  grid-template-columns: 60px 1fr;
+  gap: 1rem;
+  align-items: stretch;
+}
+
+.period-bar {
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 80px;
+  transition: all 0.3s ease;
+}
+
+.period-bar:hover {
+  transform: scaleX(1.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.period-occ {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.period-info {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.25rem;
+}
+
+.period-dates {
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 600;
+}
+
+.period-recommendation {
+  font-size: 0.95rem;
+  color: #fff;
+  font-weight: 500;
+}
+
+.period-adjustment {
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* ================================================================ */
+/* Peak Prediction Card                                              */
+/* ================================================================ */
+
+.peak-card {
+  padding: 2rem;
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(76, 175, 80, 0.1) 0%, rgba(255, 152, 0, 0.1) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  text-align: center;
+  min-height: 150px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.peak-label {
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.peak-dates {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #4CAF50;
+  margin-bottom: 0.75rem;
+}
+
+.peak-expected {
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 0.5rem;
+}
+
+.peak-countdown {
+  font-size: 0.95rem;
+  color: #FF9800;
+  font-weight: 600;
+}
+
+/* ================================================================ */
+/* Trend Analysis                                                    */
+/* ================================================================ */
+
+.trend-analysis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+}
+
+.trend-stat {
+  border-radius: 8px;
+  padding: 1rem;
+  background: rgba(50, 50, 50, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.trend-stat:hover {
+  background: rgba(50, 50, 50, 0.6);
+  border-color: rgba(77, 168, 255, 0.3);
+}
+
+.trend-label {
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+}
+
+.trend-value {
+  font-size: 1.375rem;
+  font-weight: 700;
+  color: #4da8ff;
+}
+
+/* ================================================================ */
+/* Error Message                                                     */
+/* ================================================================ */
+
+.error-message {
+  padding: 1rem;
+  border-radius: 8px;
+  background: rgba(244, 67, 54, 0.1);
+  border: 1px solid rgba(244, 67, 54, 0.3);
+  color: #ff6b6b;
+  font-weight: 500;
+  margin-bottom: 1rem;
+}
+
+/* ================================================================ */
+/* Responsive Design                                                 */
+/* ================================================================ */
+
+@media (max-width: 768px) {
+  .occupancy-forecasting {
+    gap: 1rem;
+  }
+
+  .ocf-section {
+    padding: 1rem;
+  }
+
+  .ocf-info-row {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .seasonal-months {
+    grid-template-columns: 1fr;
+  }
+
+  .capacity-gauge-wrapper {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .gauge-container {
+    width: 150px;
+  }
+
+  .ocf-table {
+    font-size: 0.85rem;
+  }
+
+  .ocf-table th,
+  .ocf-table td {
+    padding: 0.75rem 0.5rem;
+  }
+
+  .staffing-period {
+    grid-template-columns: 50px 1fr;
+    gap: 0.75rem;
+  }
+
+  .period-bar {
+    min-height: 60px;
+  }
+}
+
+@media (max-width: 480px) {
+  .occupancy-forecasting {
+    gap: 0.75rem;
+  }
+
+  .section-head {
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+  }
+
+  .section-head h3 {
+    font-size: 1.1rem;
+  }
+
+  .ocf-info-row {
+    grid-template-columns: 1fr;
+  }
+
+  .info-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+
+  .ocf-chart-wrapper {
+    height: 250px;
+    padding: 0.75rem;
+  }
+
+  .pace-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ocf-table {
+    font-size: 0.75rem;
+  }
+
+  .ocf-table th,
+  .ocf-table td {
+    padding: 0.5rem 0.25rem;
+  }
+
+  .trend-analysis {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* ================================================================ */
+/* Dark Mode (explicit support)                                      */
+/* ================================================================ */
+
+:root[data-theme='dark'] .occupancy-forecasting {
+  --text-primary: #fff;
+  --text-secondary: rgba(255, 255, 255, 0.7);
+  --bg-surface: rgba(30, 30, 30, 0.5);
+  --bg-hover: rgba(50, 50, 50, 0.6);
+  --border-color: rgba(255, 255, 255, 0.1);
+  --accent-primary: #4da8ff;
+  --accent-success: #4CAF50;
+  --accent-warning: #FF9800;
+}
+
+:root[data-theme='light'] .occupancy-forecasting {
+  --text-primary: #1a1a1a;
+  --text-secondary: rgba(26, 26, 26, 0.7);
+  --bg-surface: rgba(240, 240, 240, 0.8);
+  --bg-hover: rgba(230, 230, 230, 0.9);
+  --border-color: rgba(0, 0, 0, 0.1);
+  --accent-primary: #1976d2;
+  --accent-success: #388e3c;
+  --accent-warning: #f57c00;
+}
+
+@media (prefers-color-scheme: light) {
+  .occupancy-forecasting {
+    --text-primary: #1a1a1a;
+    --text-secondary: rgba(26, 26, 26, 0.7);
+    --bg-surface: rgba(240, 240, 240, 0.8);
+    --bg-hover: rgba(230, 230, 230, 0.9);
+    --border-color: rgba(0, 0, 0, 0.1);
+    --accent-primary: #1976d2;
+    --accent-success: #388e3c;
+    --accent-warning: #f57c00;
+  }
+
+  .ocf-section {
+    background: rgba(240, 240, 240, 0.6);
+    border-color: rgba(0, 0, 0, 0.1);
+  }
+
+  .ocf-section:hover {
+    background: rgba(240, 240, 240, 0.8);
+    border-color: rgba(0, 0, 0, 0.15);
+  }
+
+  .section-head {
+    border-bottom-color: rgba(0, 0, 0, 0.1);
+  }
+
+  .section-head h3 {
+    color: #1a1a1a;
+  }
+
+  .section-head .sub {
+    color: rgba(26, 26, 26, 0.6);
+  }
+
+  .ocf-info-row,
+  .pace-grid,
+  .gauge-details,
+  .detail-row,
+  .trend-analysis,
+  .trend-stat {
+    background-color: rgba(220, 220, 220, 0.4);
+    border-color: rgba(0, 0, 0, 0.08);
+  }
+
+  .ocf-table th {
+    background: rgba(220, 220, 220, 0.5);
+    color: rgba(26, 26, 26, 0.9);
+  }
+
+  .ocf-table tbody tr:hover {
+    background: rgba(100, 150, 255, 0.1);
+  }
+
+  .info-value,
+  .pace-index,
+  .pace-days,
+  .detail-value,
+  .trend-value {
+    color: #1976d2;
+  }
+
+  .pace-count {
+    color: #f57c00;
+  }
+
+  .peak-dates {
+    color: #388e3c;
+  }
+}
