@@ -156,8 +156,8 @@ export async function calculateBookingCost(dates, site, store, parkId) {
   let totalCost = 0;
 
   try {
-    const rules = await store.getBookingRules(parkId, site.site_id);
-    const seasonalRates = await store.getSeasonalRates(site.site_id);
+    const rules = await store.getBookingRules(parkId, site.id);
+    const seasonalRates = site.seasonalRates || [];
 
     // Iterate through each night
     for (let i = 0; i < nights; i++) {
@@ -293,7 +293,7 @@ export async function getAvailableDates(
   const unavailable = [];
 
   try {
-    const reservations = await store.getReservationsByDateRange(
+    const reservations = await store.getReservationsBySiteInRange(
       siteId,
       startDate,
       endDate

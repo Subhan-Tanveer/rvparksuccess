@@ -2644,3 +2644,19 @@ function mapBlackoutDate(row) {
     created_at: row.created_at.toISOString(),
   };
 }
+
+export async function getReservationsBySiteInRange(siteId, startDate, endDate) {
+  const startStr = startDate instanceof Date ? startDate.toISOString().split('T')[0] : startDate;
+  const endStr = endDate instanceof Date ? endDate.toISOString().split('T')[0] : endDate;
+
+  const res = await query(
+    `SELECT * FROM reservations
+     WHERE site_id = $1
+       AND check_in <= $3
+       AND check_out > $2
+       AND canceled_at IS NULL
+     ORDER BY check_in ASC`,
+    [siteId, startStr, endStr]
+  );
+  return res.rows.map(mapReservation);
+}

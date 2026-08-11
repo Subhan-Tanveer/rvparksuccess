@@ -234,7 +234,7 @@ export async function testBooking(req) {
     );
 
     // Get booking cost
-    const site = await store.getSiteById(siteId);
+    const site = await store.getSite(siteId);
     const costData = await calculateBookingCost(
       { checkIn, checkOut },
       site,
