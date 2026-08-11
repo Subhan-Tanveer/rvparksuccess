@@ -5,6 +5,7 @@ import { PACKAGES, formatUsd as formatUsdWhole } from './services-data.js';
 import { initPricingDashboard } from './pricing-dashboard.js';
 import { initCrmDashboard } from './crm-dashboard.js';
 import AnalyticsDashboard from './analytics-dashboard.js';
+import { initCampaignsDashboard } from './campaigns-dashboard.js';
 
 initCore();
 
@@ -99,6 +100,9 @@ async function loadDashboard() {
   // Initialize analytics dashboard
   const analyticsDashboard = new AnalyticsDashboard('analyticsDashboard');
   await analyticsDashboard.init();
+
+  // Initialize campaigns dashboard
+  await initCampaignsDashboard(currentPark);
 }
 
 /* -- stats -- */

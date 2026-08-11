@@ -273,6 +273,136 @@ function ensureSchema() {
       CREATE INDEX IF NOT EXISTS idx_blocked_dates_park_site ON blocked_dates(park_id, site_id);
       CREATE INDEX IF NOT EXISTS idx_blocked_dates_date ON blocked_dates(date);
       CREATE UNIQUE INDEX IF NOT EXISTS idx_blocked_dates_unique ON blocked_dates(site_id, date);
+
+      -- CRM Integration tables
+      CREATE TABLE IF NOT EXISTS guest_profiles (
+        id TEXT PRIMARY KEY,
+        guest_email TEXT NOT NULL UNIQUE,
+        park_id TEXT NOT NULL REFERENCES parks(id) ON DELETE CASCADE,
+        lifetime_value_cents INTEGER NOT NULL DEFAULT 0,
+        risk_score INTEGER NOT NULL DEFAULT 0,
+        last_contacted TIMESTAMPTZ,
+        preferences_json TEXT NOT NULL DEFAULT '{}',
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      );
+      CREATE INDEX IF NOT EXISTS idx_guest_profiles_park ON guest_profiles(park_id);
+      CREATE INDEX IF NOT EXISTS idx_guest_profiles_email ON guest_profiles(guest_email);
+
+      CREATE TABLE IF NOT EXISTS guest_notes (
+        id TEXT PRIMARY KEY,
+        guest_email TEXT NOT NULL,
+        park_id TEXT NOT NULL REFERENCES parks(id) ON DELETE CASCADE,
+        note_text TEXT NOT NULL,
+        created_by_staff_id TEXT,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      );
+      CREATE INDEX IF NOT EXISTS idx_guest_notes_park_email ON guest_notes(park_id, guest_email);
+      CREATE INDEX IF NOT EXISTS idx_guest_notes_created ON guest_notes(created_at DESC);
+
+      CREATE TABLE IF NOT EXISTS guest_tags (
+        id TEXT PRIMARY KEY,
+        guest_email TEXT NOT NULL,
+        park_id TEXT NOT NULL REFERENCES parks(id) ON DELETE CASCADE,
+        tag_name TEXT NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      );
+      CREATE INDEX IF NOT EXISTS idx_guest_tags_park_email ON guest_tags(park_id, guest_email);
+      CREATE INDEX IF NOT EXISTS idx_guest_tags_park_tag ON guest_tags(park_id, tag_name);
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_guest_tags_unique ON guest_tags(guest_email, park_id, tag_name);
+
+      CREATE TABLE IF NOT EXISTS communication_log (
+        id TEXT PRIMARY KEY,
+        guest_email TEXT NOT NULL,
+        park_id TEXT NOT NULL REFERENCES parks(id) ON DELETE CASCADE,
+        type TEXT NOT NULL,
+        subject TEXT,
+        message_preview TEXT,
+        status TEXT NOT NULL DEFAULT 'sent',
+        timestamp TIMESTAMPTZ NOT NULL DEFAULT now()
+      );
+      CREATE INDEX IF NOT EXISTS idx_communication_log_park_email ON communication_log(park_id, guest_email);
+      CREATE INDEX IF NOT EXISTS idx_communication_log_timestamp ON communication_log(timestamp DESC);
+
+      -- Campaign Management tables
+      CREATE TABLE IF NOT EXISTS campaigns (
+        id TEXT PRIMARY KEY,
+        park_id TEXT NOT NULL REFERENCES parks(id) ON DELETE CASCADE,
+        name TEXT NOT NULL,
+        type TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'draft',
+        start_date DATE NOT NULL,
+        end_date DATE NOT NULL,
+        budget_cents INTEGER,
+        discount_amount NUMERIC NOT NULL DEFAULT 0,
+        discount_type TEXT NOT NULL DEFAULT 'percent',
+        promo_code TEXT,
+        description TEXT,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      );
+      CREATE INDEX IF NOT EXISTS idx_campaigns_park_status ON campaigns(park_id, status);
+      CREATE INDEX IF NOT EXISTS idx_campaigns_park_dates ON campaigns(park_id, start_date, end_date);
+
+      CREATE TABLE IF NOT EXISTS campaign_recipients (
+        id TEXT PRIMARY KEY,
+        campaign_id TEXT NOT NULL REFERENCES campaigns(id) ON DELETE CASCADE,
+        guest_email TEXT NOT NULL,
+        guest_phone TEXT,
+        guest_id TEXT,
+        email_sent BOOLEAN DEFAULT false,
+        email_sent_at TIMESTAMPTZ,
+        email_opened BOOLEAN DEFAULT false,
+        email_clicked BOOLEAN DEFAULT false,
+        email_click_count INTEGER DEFAULT 0,
+        sms_sent BOOLEAN DEFAULT false,
+        sms_sent_at TIMESTAMPTZ,
+        sms_delivered BOOLEAN DEFAULT false,
+        converted BOOLEAN DEFAULT false,
+        conversion_value_cents INTEGER DEFAULT 0,
+        conversion_date TIMESTAMPTZ,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      );
+      CREATE INDEX IF NOT EXISTS idx_campaign_recipients_campaign ON campaign_recipients(campaign_id);
+      CREATE INDEX IF NOT EXISTS idx_campaign_recipients_guest_email ON campaign_recipients(guest_email);
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_campaign_recipients_unique ON campaign_recipients(campaign_id, guest_email);
+
+      CREATE TABLE IF NOT EXISTS campaign_performance (
+        id TEXT PRIMARY KEY,
+        campaign_id TEXT NOT NULL REFERENCES campaigns(id) ON DELETE CASCADE,
+        emails_sent INTEGER DEFAULT 0,
+        emails_opened INTEGER DEFAULT 0,
+        emails_clicked INTEGER DEFAULT 0,
+        open_rate_percent NUMERIC DEFAULT 0,
+        click_rate_percent NUMERIC DEFAULT 0,
+        conversions INTEGER DEFAULT 0,
+        conversion_rate_percent NUMERIC DEFAULT 0,
+        revenue_generated_cents INTEGER DEFAULT 0,
+        cost_cents INTEGER DEFAULT 0,
+        roi_percent NUMERIC DEFAULT 0,
+        calculated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      );
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_campaign_performance_campaign ON campaign_performance(campaign_id);
+
+      CREATE TABLE IF NOT EXISTS campaign_variants (
+        id TEXT PRIMARY KEY,
+        campaign_id TEXT NOT NULL REFERENCES campaigns(id) ON DELETE CASCADE,
+        variant_name TEXT NOT NULL,
+        variant_type TEXT NOT NULL DEFAULT 'A',
+        subject TEXT,
+        body TEXT,
+        sms_body TEXT,
+        recipient_count INTEGER DEFAULT 0,
+        emails_sent INTEGER DEFAULT 0,
+        emails_opened INTEGER DEFAULT 0,
+        email_open_rate_percent NUMERIC DEFAULT 0,
+        emails_clicked INTEGER DEFAULT 0,
+        conversions INTEGER DEFAULT 0,
+        revenue_cents INTEGER DEFAULT 0,
+        is_winner BOOLEAN DEFAULT false,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      );
+      CREATE INDEX IF NOT EXISTS idx_campaign_variants_campaign ON campaign_variants(campaign_id);
     `).catch((err) => { schemaReady = null; throw err; }); // don't cache a failed init — next call retries
   }
   return schemaReady;
@@ -1202,6 +1332,91 @@ function mapBlockedDate(row) {
   };
 }
 
+/* Campaign mapping functions */
+function mapCampaign(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    parkId: row.park_id,
+    name: row.name,
+    type: row.type,
+    status: row.status,
+    startDate: row.start_date,
+    endDate: row.end_date,
+    budgetCents: row.budget_cents ? Number(row.budget_cents) : null,
+    discountAmount: Number(row.discount_amount),
+    discountType: row.discount_type,
+    promoCode: row.promo_code,
+    description: row.description,
+    createdAt: row.created_at.toISOString(),
+    updatedAt: row.updated_at.toISOString(),
+  };
+}
+
+function mapCampaignRecipient(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    campaignId: row.campaign_id,
+    guestEmail: row.guest_email,
+    guestPhone: row.guest_phone,
+    guestId: row.guest_id,
+    emailSent: row.email_sent,
+    emailSentAt: row.email_sent_at ? row.email_sent_at.toISOString() : null,
+    emailOpened: row.email_opened,
+    emailClicked: row.email_clicked,
+    emailClickCount: row.email_click_count || 0,
+    smsSent: row.sms_sent,
+    smsSentAt: row.sms_sent_at ? row.sms_sent_at.toISOString() : null,
+    smsDelivered: row.sms_delivered,
+    converted: row.converted,
+    conversionValueCents: row.conversion_value_cents || 0,
+    conversionDate: row.conversion_date ? row.conversion_date.toISOString() : null,
+    createdAt: row.created_at.toISOString(),
+  };
+}
+
+function mapCampaignPerformance(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    campaignId: row.campaign_id,
+    emailsSent: row.emails_sent || 0,
+    emailsOpened: row.emails_opened || 0,
+    emailsClicked: row.emails_clicked || 0,
+    openRatePercent: Number(row.open_rate_percent) || 0,
+    clickRatePercent: Number(row.click_rate_percent) || 0,
+    conversions: row.conversions || 0,
+    conversionRatePercent: Number(row.conversion_rate_percent) || 0,
+    revenueGeneratedCents: row.revenue_generated_cents || 0,
+    costCents: row.cost_cents || 0,
+    roiPercent: Number(row.roi_percent) || 0,
+    calculatedAt: row.calculated_at.toISOString(),
+  };
+}
+
+function mapCampaignVariant(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    campaignId: row.campaign_id,
+    variantName: row.variant_name,
+    variantType: row.variant_type,
+    subject: row.subject,
+    body: row.body,
+    smsBody: row.sms_body,
+    recipientCount: row.recipient_count || 0,
+    emailsSent: row.emails_sent || 0,
+    emailsOpened: row.emails_opened || 0,
+    emailOpenRatePercent: Number(row.email_open_rate_percent) || 0,
+    emailsClicked: row.emails_clicked || 0,
+    conversions: row.conversions || 0,
+    revenueCents: row.revenue_cents || 0,
+    isWinner: row.is_winner || false,
+    createdAt: row.created_at.toISOString(),
+  };
+}
+
 export async function getBlockedDatesForPark(parkId, startDate = null, endDate = null) {
   let whereClause = 'park_id = $1';
   const params = [parkId];
@@ -1355,4 +1570,652 @@ export async function createReservation({ parkId, siteId, guestName, guestPhone,
   );
 
   return mapReservation(res.rows[0]);
+}
+
+/* ================================================================ */
+/* Campaign Management — Promotional campaigns, A/B testing, ROI     */
+/* ================================================================ */
+
+export async function createCampaign(parkId, campaign) {
+  const {
+    name, type, startDate, endDate, budgetCents, discountAmount, discountType = 'percent', promoCode, description,
+  } = campaign;
+
+  if (!name || !type || !startDate || !endDate) {
+    throw new Error('Campaign requires name, type, startDate, endDate');
+  }
+
+  // Validate date range
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  if (start >= end) {
+    throw new Error('startDate must be before endDate');
+  }
+
+  // Validate discount (prevent 100%+ discounts)
+  if (discountType === 'percent' && discountAmount > 100) {
+    throw new Error('Percent discount cannot exceed 100%');
+  }
+
+  const id = `camp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+  const res = await query(
+    `INSERT INTO campaigns (
+       id, park_id, name, type, status, start_date, end_date,
+       budget_cents, discount_amount, discount_type, promo_code, description
+     )
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+     RETURNING *`,
+    [
+      id, parkId, name, type, 'draft', startDate, endDate,
+      budgetCents, discountAmount, discountType, promoCode, description,
+    ]
+  );
+
+  return mapCampaign(res.rows[0]);
+}
+
+export async function getCampaign(campaignId) {
+  const res = await query(
+    'SELECT * FROM campaigns WHERE id = $1',
+    [campaignId]
+  );
+  return res.rows[0] ? mapCampaign(res.rows[0]) : null;
+}
+
+export async function getCampaignsByPark(parkId, status = null, limit = 50, offset = 0) {
+  let whereClause = 'park_id = $1';
+  const params = [parkId];
+
+  if (status) {
+    params.push(status);
+    whereClause += ` AND status = $${params.length}`;
+  }
+
+  const res = await query(
+    `SELECT * FROM campaigns
+     WHERE ${whereClause}
+     ORDER BY start_date DESC, created_at DESC
+     LIMIT $${params.length + 1} OFFSET $${params.length + 2}`,
+    [...params, limit, offset]
+  );
+
+  return res.rows.map(mapCampaign);
+}
+
+export async function updateCampaign(campaignId, updates) {
+  const {
+    name, status, startDate, endDate, budgetCents, discountAmount, discountType, promoCode, description,
+  } = updates;
+
+  const setClauses = [];
+  const values = [campaignId];
+
+  if (name !== undefined) {
+    values.push(name);
+    setClauses.push(`name = $${values.length}`);
+  }
+  if (status !== undefined) {
+    values.push(status);
+    setClauses.push(`status = $${values.length}`);
+  }
+  if (startDate !== undefined) {
+    values.push(startDate);
+    setClauses.push(`start_date = $${values.length}`);
+  }
+  if (endDate !== undefined) {
+    values.push(endDate);
+    setClauses.push(`end_date = $${values.length}`);
+  }
+  if (budgetCents !== undefined) {
+    values.push(budgetCents);
+    setClauses.push(`budget_cents = $${values.length}`);
+  }
+  if (discountAmount !== undefined) {
+    values.push(discountAmount);
+    setClauses.push(`discount_amount = $${values.length}`);
+  }
+  if (discountType !== undefined) {
+    values.push(discountType);
+    setClauses.push(`discount_type = $${values.length}`);
+  }
+  if (promoCode !== undefined) {
+    values.push(promoCode);
+    setClauses.push(`promo_code = $${values.length}`);
+  }
+  if (description !== undefined) {
+    values.push(description);
+    setClauses.push(`description = $${values.length}`);
+  }
+
+  if (setClauses.length === 0) return getCampaign(campaignId);
+
+  values.push(new Date().toISOString());
+  setClauses.push(`updated_at = $${values.length}`);
+
+  const res = await query(
+    `UPDATE campaigns
+     SET ${setClauses.join(', ')}
+     WHERE id = $1
+     RETURNING *`,
+    values
+  );
+
+  return mapCampaign(res.rows[0]);
+}
+
+export async function deleteCampaign(campaignId) {
+  await query('DELETE FROM campaign_recipients WHERE campaign_id = $1', [campaignId]);
+  await query('DELETE FROM campaign_variants WHERE campaign_id = $1', [campaignId]);
+  await query('DELETE FROM campaign_performance WHERE campaign_id = $1', [campaignId]);
+  const res = await query('DELETE FROM campaigns WHERE id = $1 RETURNING *', [campaignId]);
+  return res.rows[0] ? mapCampaign(res.rows[0]) : null;
+}
+
+export async function addCampaignRecipient(campaignId, guestEmail, guestPhone = null, guestId = null) {
+  if (!guestEmail) {
+    throw new Error('Guest email is required');
+  }
+
+  const id = `crecip-${campaignId}-${guestEmail}`.replace(/[^a-zA-Z0-9-]/g, '_');
+
+  try {
+    const res = await query(
+      `INSERT INTO campaign_recipients (id, campaign_id, guest_email, guest_phone, guest_id)
+       VALUES ($1, $2, $3, $4, $5)
+       ON CONFLICT (campaign_id, guest_email) DO UPDATE SET guest_phone = $4, guest_id = $5
+       RETURNING *`,
+      [id, campaignId, guestEmail, guestPhone, guestId]
+    );
+    return mapCampaignRecipient(res.rows[0]);
+  } catch (err) {
+    throw new Error(`Failed to add recipient: ${err.message}`);
+  }
+}
+
+export async function getCampaignRecipients(campaignId, limit = 100, offset = 0) {
+  const res = await query(
+    `SELECT * FROM campaign_recipients
+     WHERE campaign_id = $1
+     ORDER BY created_at DESC
+     LIMIT $2 OFFSET $3`,
+    [campaignId, limit, offset]
+  );
+  return res.rows.map(mapCampaignRecipient);
+}
+
+export async function updateCampaignRecipient(recipientId, updates) {
+  const {
+    emailSent, emailSentAt, emailOpened, emailClicked, emailClickCount,
+    smsSent, smsSentAt, smsDelivered,
+    converted, conversionValueCents, conversionDate,
+  } = updates;
+
+  const setClauses = [];
+  const values = [recipientId];
+
+  if (emailSent !== undefined) {
+    values.push(emailSent);
+    setClauses.push(`email_sent = $${values.length}`);
+  }
+  if (emailSentAt !== undefined) {
+    values.push(emailSentAt);
+    setClauses.push(`email_sent_at = $${values.length}`);
+  }
+  if (emailOpened !== undefined) {
+    values.push(emailOpened);
+    setClauses.push(`email_opened = $${values.length}`);
+  }
+  if (emailClicked !== undefined) {
+    values.push(emailClicked);
+    setClauses.push(`email_clicked = $${values.length}`);
+  }
+  if (emailClickCount !== undefined) {
+    values.push(emailClickCount);
+    setClauses.push(`email_click_count = $${values.length}`);
+  }
+  if (smsSent !== undefined) {
+    values.push(smsSent);
+    setClauses.push(`sms_sent = $${values.length}`);
+  }
+  if (smsSentAt !== undefined) {
+    values.push(smsSentAt);
+    setClauses.push(`sms_sent_at = $${values.length}`);
+  }
+  if (smsDelivered !== undefined) {
+    values.push(smsDelivered);
+    setClauses.push(`sms_delivered = $${values.length}`);
+  }
+  if (converted !== undefined) {
+    values.push(converted);
+    setClauses.push(`converted = $${values.length}`);
+  }
+  if (conversionValueCents !== undefined) {
+    values.push(conversionValueCents);
+    setClauses.push(`conversion_value_cents = $${values.length}`);
+  }
+  if (conversionDate !== undefined) {
+    values.push(conversionDate);
+    setClauses.push(`conversion_date = $${values.length}`);
+  }
+
+  if (setClauses.length === 0) {
+    const res = await query('SELECT * FROM campaign_recipients WHERE id = $1', [recipientId]);
+    return res.rows[0] ? mapCampaignRecipient(res.rows[0]) : null;
+  }
+
+  const res = await query(
+    `UPDATE campaign_recipients
+     SET ${setClauses.join(', ')}
+     WHERE id = $1
+     RETURNING *`,
+    values
+  );
+
+  return res.rows[0] ? mapCampaignRecipient(res.rows[0]) : null;
+}
+
+export async function getCampaignPerformance(campaignId) {
+  const res = await query(
+    'SELECT * FROM campaign_performance WHERE campaign_id = $1',
+    [campaignId]
+  );
+  return res.rows[0] ? mapCampaignPerformance(res.rows[0]) : null;
+}
+
+export async function updateCampaignPerformance(campaignId, performance) {
+  const {
+    emailsSent, emailsOpened, emailsClicked, openRatePercent, clickRatePercent,
+    conversions, conversionRatePercent, revenueGeneratedCents, costCents, roiPercent,
+  } = performance;
+
+  const id = `cperf-${campaignId}`;
+
+  try {
+    const res = await query(
+      `INSERT INTO campaign_performance (
+         id, campaign_id, emails_sent, emails_opened, emails_clicked,
+         open_rate_percent, click_rate_percent, conversions, conversion_rate_percent,
+         revenue_generated_cents, cost_cents, roi_percent
+       )
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+       ON CONFLICT (campaign_id) DO UPDATE SET
+         emails_sent = $3, emails_opened = $4, emails_clicked = $5,
+         open_rate_percent = $6, click_rate_percent = $7, conversions = $8,
+         conversion_rate_percent = $9, revenue_generated_cents = $10,
+         cost_cents = $11, roi_percent = $12, calculated_at = now()
+       RETURNING *`,
+      [
+        id, campaignId, emailsSent, emailsOpened, emailsClicked,
+        openRatePercent, clickRatePercent, conversions, conversionRatePercent,
+        revenueGeneratedCents, costCents, roiPercent,
+      ]
+    );
+    return mapCampaignPerformance(res.rows[0]);
+  } catch (err) {
+    throw new Error(`Failed to update campaign performance: ${err.message}`);
+  }
+}
+
+export async function createCampaignVariant(campaignId, variant) {
+  const {
+    variantName, variantType = 'A', subject, body, smsBody, recipientCount = 0,
+  } = variant;
+
+  const id = `cvar-${campaignId}-${variantType}`;
+
+  const res = await query(
+    `INSERT INTO campaign_variants (
+       id, campaign_id, variant_name, variant_type, subject, body, sms_body, recipient_count
+     )
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+     ON CONFLICT (campaign_id) WHERE campaign_id = $2 AND variant_type = $4
+     DO UPDATE SET variant_name = $3, subject = $5, body = $6, sms_body = $7, recipient_count = $8
+     RETURNING *`,
+    [id, campaignId, variantName, variantType, subject, body, smsBody, recipientCount]
+  );
+
+  return mapCampaignVariant(res.rows[0]);
+}
+
+export async function getCampaignVariants(campaignId) {
+  const res = await query(
+    `SELECT * FROM campaign_variants
+     WHERE campaign_id = $1
+     ORDER BY created_at ASC`,
+    [campaignId]
+  );
+  return res.rows.map(mapCampaignVariant);
+}
+
+export async function updateCampaignVariant(variantId, updates) {
+  const {
+    emailsSent, emailsOpened, emailOpenRatePercent, emailsClicked,
+    conversions, revenueCents, isWinner,
+  } = updates;
+
+  const setClauses = [];
+  const values = [variantId];
+
+  if (emailsSent !== undefined) {
+    values.push(emailsSent);
+    setClauses.push(`emails_sent = $${values.length}`);
+  }
+  if (emailsOpened !== undefined) {
+    values.push(emailsOpened);
+    setClauses.push(`emails_opened = $${values.length}`);
+  }
+  if (emailOpenRatePercent !== undefined) {
+    values.push(emailOpenRatePercent);
+    setClauses.push(`email_open_rate_percent = $${values.length}`);
+  }
+  if (emailsClicked !== undefined) {
+    values.push(emailsClicked);
+    setClauses.push(`emails_clicked = $${values.length}`);
+  }
+  if (conversions !== undefined) {
+    values.push(conversions);
+    setClauses.push(`conversions = $${values.length}`);
+  }
+  if (revenueCents !== undefined) {
+    values.push(revenueCents);
+    setClauses.push(`revenue_cents = $${values.length}`);
+  }
+  if (isWinner !== undefined) {
+    values.push(isWinner);
+    setClauses.push(`is_winner = $${values.length}`);
+  }
+
+  if (setClauses.length === 0) {
+    const res = await query('SELECT * FROM campaign_variants WHERE id = $1', [variantId]);
+    return res.rows[0] ? mapCampaignVariant(res.rows[0]) : null;
+  }
+
+  const res = await query(
+    `UPDATE campaign_variants
+     SET ${setClauses.join(', ')}
+     WHERE id = $1
+     RETURNING *`,
+    values
+  );
+
+  return res.rows[0] ? mapCampaignVariant(res.rows[0]) : null;
+}
+
+/* ---------------------------------------------------------------- */
+/* CRM Functions — guest profiles, notes, tags, communication log  */
+/* ---------------------------------------------------------------- */
+
+function mapGuestProfile(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    guestEmail: row.guest_email,
+    parkId: row.park_id,
+    lifetimeValueCents: Number(row.lifetime_value_cents) || 0,
+    riskScore: Number(row.risk_score) || 0,
+    lastContacted: row.last_contacted ? row.last_contacted.toISOString() : null,
+    preferences: row.preferences_json ? JSON.parse(row.preferences_json) : {},
+    createdAt: row.created_at.toISOString(),
+    updatedAt: row.updated_at.toISOString(),
+  };
+}
+
+function mapGuestNote(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    guestEmail: row.guest_email,
+    parkId: row.park_id,
+    noteText: row.note_text,
+    createdByStaffId: row.created_by_staff_id,
+    createdAt: row.created_at.toISOString(),
+  };
+}
+
+function mapGuestTag(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    guestEmail: row.guest_email,
+    parkId: row.park_id,
+    tagName: row.tag_name,
+    createdAt: row.created_at.toISOString(),
+  };
+}
+
+function mapCommunication(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    guestEmail: row.guest_email,
+    parkId: row.park_id,
+    type: row.type,
+    subject: row.subject,
+    messagePreview: row.message_preview,
+    status: row.status,
+    timestamp: row.timestamp.toISOString(),
+  };
+}
+
+export async function getOrCreateGuestProfile(parkId, guestEmail) {
+  const normalizedEmail = normalizeEmail(guestEmail);
+  let res = await query('SELECT * FROM guest_profiles WHERE guest_email = $1 AND park_id = $2', [normalizedEmail, parkId]);
+
+  if (res.rows.length === 0) {
+    const id = `profile-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    res = await query(
+      `INSERT INTO guest_profiles (id, guest_email, park_id, preferences_json)
+       VALUES ($1,$2,$3,'{}') RETURNING *`,
+      [id, normalizedEmail, parkId]
+    );
+  }
+
+  return mapGuestProfile(res.rows[0]);
+}
+
+export async function addGuestNote(parkId, guestEmail, noteText, staffId = null) {
+  if (!noteText || noteText.trim().length === 0) throw new Error('Note text is required');
+  if (noteText.length > 1000) throw new Error('Note must be 1000 characters or less');
+
+  const normalizedEmail = normalizeEmail(guestEmail);
+  const profileExists = await query('SELECT 1 FROM guest_profiles WHERE guest_email = $1 AND park_id = $2', [normalizedEmail, parkId]);
+
+  if (!profileExists.rows.length) {
+    await getOrCreateGuestProfile(parkId, normalizedEmail);
+  }
+
+  const id = `note-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const res = await query(
+    `INSERT INTO guest_notes (id, guest_email, park_id, note_text, created_by_staff_id)
+     VALUES ($1,$2,$3,$4,$5) RETURNING *`,
+    [id, normalizedEmail, parkId, noteText.trim(), staffId || null]
+  );
+
+  return mapGuestNote(res.rows[0]);
+}
+
+export async function tagGuest(parkId, guestEmail, tagName) {
+  if (!tagName || tagName.trim().length === 0) throw new Error('Tag name is required');
+
+  const normalizedEmail = normalizeEmail(guestEmail);
+  const profileExists = await query('SELECT 1 FROM guest_profiles WHERE guest_email = $1 AND park_id = $2', [normalizedEmail, parkId]);
+
+  if (!profileExists.rows.length) {
+    await getOrCreateGuestProfile(parkId, normalizedEmail);
+  }
+
+  const cleanTag = tagName.trim();
+  const existing = await query(
+    'SELECT 1 FROM guest_tags WHERE guest_email = $1 AND park_id = $2 AND tag_name = $3',
+    [normalizedEmail, parkId, cleanTag]
+  );
+
+  if (existing.rows.length) {
+    return null;
+  }
+
+  const id = `tag-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const res = await query(
+    `INSERT INTO guest_tags (id, guest_email, park_id, tag_name)
+     VALUES ($1,$2,$3,$4) RETURNING *`,
+    [id, normalizedEmail, parkId, cleanTag]
+  );
+
+  return mapGuestTag(res.rows[0]);
+}
+
+export async function removeTag(parkId, tagId) {
+  const res = await query('DELETE FROM guest_tags WHERE id = $1 AND park_id = $2 RETURNING *', [tagId, parkId]);
+  return res.rowCount > 0;
+}
+
+export async function updateGuestPreferences(parkId, guestEmail, preferences) {
+  const normalizedEmail = normalizeEmail(guestEmail);
+  const profile = await getOrCreateGuestProfile(parkId, normalizedEmail);
+
+  const updatedPrefs = { ...profile.preferences, ...preferences };
+  const res = await query(
+    `UPDATE guest_profiles SET preferences_json = $1, updated_at = now()
+     WHERE guest_email = $2 AND park_id = $3 RETURNING *`,
+    [JSON.stringify(updatedPrefs), normalizedEmail, parkId]
+  );
+
+  return mapGuestProfile(res.rows[0]);
+}
+
+export async function logCommunication(parkId, guestEmail, { type, subject, messagePreview, status = 'sent' }) {
+  const normalizedEmail = normalizeEmail(guestEmail);
+  const profileExists = await query('SELECT 1 FROM guest_profiles WHERE guest_email = $1 AND park_id = $2', [normalizedEmail, parkId]);
+
+  if (!profileExists.rows.length) {
+    await getOrCreateGuestProfile(parkId, normalizedEmail);
+  }
+
+  const id = `comm-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const res = await query(
+    `INSERT INTO communication_log (id, guest_email, park_id, type, subject, message_preview, status)
+     VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
+    [id, normalizedEmail, parkId, type, subject || null, messagePreview || null, status]
+  );
+
+  return mapCommunication(res.rows[0]);
+}
+
+export async function getGuestHistory(parkId, guestEmail) {
+  const normalizedEmail = normalizeEmail(guestEmail);
+
+  const profileRes = await query(
+    'SELECT * FROM guest_profiles WHERE guest_email = $1 AND park_id = $2',
+    [normalizedEmail, parkId]
+  );
+
+  const notesRes = await query(
+    'SELECT * FROM guest_notes WHERE guest_email = $1 AND park_id = $2 ORDER BY created_at DESC',
+    [normalizedEmail, parkId]
+  );
+
+  const tagsRes = await query(
+    'SELECT * FROM guest_tags WHERE guest_email = $1 AND park_id = $2 ORDER BY created_at DESC',
+    [normalizedEmail, parkId]
+  );
+
+  const commRes = await query(
+    'SELECT * FROM communication_log WHERE guest_email = $1 AND park_id = $2 ORDER BY timestamp DESC LIMIT 20',
+    [normalizedEmail, parkId]
+  );
+
+  const reservationsRes = await query(
+    'SELECT * FROM reservations WHERE guest_email = $1 AND park_id = $2 ORDER BY created_at DESC LIMIT 10',
+    [normalizedEmail, parkId]
+  );
+
+  return {
+    profile: profileRes.rows.length ? mapGuestProfile(profileRes.rows[0]) : null,
+    notes: notesRes.rows.map(mapGuestNote),
+    tags: tagsRes.rows.map(mapGuestTag),
+    communications: commRes.rows.map(mapCommunication),
+    reservations: reservationsRes.rows.map(mapReservation),
+  };
+}
+
+export async function getGuestsForPark(parkId, limit = 50, offset = 0) {
+  const countRes = await query('SELECT COUNT(*) as count FROM guest_profiles WHERE park_id = $1', [parkId]);
+  const totalCount = Number(countRes.rows[0]?.count || 0);
+
+  const res = await query(
+    `SELECT * FROM guest_profiles WHERE park_id = $1
+     ORDER BY updated_at DESC LIMIT $2 OFFSET $3`,
+    [parkId, limit, offset]
+  );
+
+  const profiles = res.rows.map(mapGuestProfile);
+
+  const guestsWithData = await Promise.all(profiles.map(async (profile) => {
+    const tagsRes = await query(
+      'SELECT * FROM guest_tags WHERE guest_email = $1 AND park_id = $2',
+      [profile.guestEmail, parkId]
+    );
+
+    const bookingsRes = await query(
+      'SELECT COUNT(*) as count FROM reservations WHERE guest_email = $1 AND park_id = $2 AND status IN ($3, $4)',
+      [profile.guestEmail, parkId, 'confirmed', 'confirmed-deposit']
+    );
+
+    return {
+      ...profile,
+      tags: tagsRes.rows.map(mapGuestTag),
+      bookingCount: Number(bookingsRes.rows[0]?.count || 0),
+    };
+  }));
+
+  return { guests: guestsWithData, total: totalCount };
+}
+
+export async function identifyAtRiskGuests(parkId, limit = 10) {
+  const res = await query(
+    `SELECT * FROM guest_profiles
+     WHERE park_id = $1 AND risk_score > 50
+     ORDER BY risk_score DESC LIMIT $2`,
+    [parkId, limit]
+  );
+
+  return res.rows.map(mapGuestProfile);
+}
+
+export async function getGuestSegments(parkId) {
+  const loyalRes = await query(
+    `SELECT COUNT(DISTINCT guest_email) as count, AVG(lifetime_value_cents) as avg_ltv
+     FROM guest_profiles
+     WHERE park_id = $1 AND risk_score < 30`,
+    [parkId]
+  );
+
+  const occasionalRes = await query(
+    `SELECT COUNT(DISTINCT guest_email) as count, AVG(lifetime_value_cents) as avg_ltv
+     FROM guest_profiles
+     WHERE park_id = $1 AND risk_score BETWEEN 30 AND 60`,
+    [parkId]
+  );
+
+  const atRiskRes = await query(
+    `SELECT COUNT(DISTINCT guest_email) as count, AVG(lifetime_value_cents) as avg_ltv
+     FROM guest_profiles
+     WHERE park_id = $1 AND risk_score > 60`,
+    [parkId]
+  );
+
+  const inactiveRes = await query(
+    `SELECT COUNT(DISTINCT guest_email) as count, AVG(lifetime_value_cents) as avg_ltv
+     FROM guest_profiles
+     WHERE park_id = $1 AND (last_contacted IS NULL OR last_contacted < now() - interval '90 days')`,
+    [parkId]
+  );
+
+  return {
+    loyal: { count: Number(loyalRes.rows[0]?.count || 0), avgLifetimeValue: Number(loyalRes.rows[0]?.avg_ltv || 0) },
+    occasional: { count: Number(occasionalRes.rows[0]?.count || 0), avgLifetimeValue: Number(occasionalRes.rows[0]?.avg_ltv || 0) },
+    atRisk: { count: Number(atRiskRes.rows[0]?.count || 0), avgLifetimeValue: Number(atRiskRes.rows[0]?.avg_ltv || 0) },
+    inactive: { count: Number(inactiveRes.rows[0]?.count || 0), avgLifetimeValue: Number(inactiveRes.rows[0]?.avg_ltv || 0) },
+  };
 }

@@ -1,0 +1,710 @@
+/* CRM Dashboard Styling */
+
+.crm-wrapper {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--sp-4);
+}
+
+.crm-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-4);
+  flex-wrap: wrap;
+}
+
+.crm-header h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--cream);
+  margin: 0;
+}
+
+.crm-search-bar {
+  display: flex;
+  gap: var(--sp-2);
+  flex: 1;
+  min-width: 300px;
+}
+
+.crm-search-input,
+.crm-segment-filter {
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-md);
+  background: var(--surface-glass);
+  color: var(--cream);
+  font-size: 0.9375rem;
+}
+
+.crm-search-input::placeholder {
+  color: var(--cream-dim);
+}
+
+.crm-tabs {
+  display: flex;
+  gap: var(--sp-2);
+  border-bottom: 1px solid var(--border-glass);
+  margin-bottom: var(--sp-4);
+}
+
+.crm-tab-btn {
+  padding: var(--sp-2) var(--sp-3);
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--cream-dim);
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  transition: all 0.2s ease;
+}
+
+.crm-tab-btn:hover {
+  color: var(--cream);
+}
+
+.crm-tab-btn.is-active {
+  color: var(--amber-light);
+  border-bottom-color: var(--amber);
+}
+
+.crm-tab-content {
+  display: none;
+}
+
+/* Guest List Table */
+.crm-guest-list {
+  background: var(--surface-glass);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.crm-guests-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9375rem;
+}
+
+.crm-guests-table thead {
+  background: var(--surface-glass-strong);
+  border-bottom: 1px solid var(--border-glass);
+}
+
+.crm-guests-table th {
+  padding: var(--sp-3);
+  text-align: left;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--cream-dim);
+  font-weight: 600;
+}
+
+.crm-guests-table td {
+  padding: var(--sp-3);
+  border-bottom: 1px solid var(--border-glass);
+  color: var(--cream);
+}
+
+.crm-table-row:hover {
+  background: var(--surface-glass-strong);
+}
+
+.crm-loading,
+.crm-empty {
+  text-align: center;
+  color: var(--cream-dim);
+  padding: var(--sp-4) !important;
+}
+
+.crm-link {
+  color: var(--amber-light);
+  text-decoration: none;
+  cursor: pointer;
+  border-bottom: 1px dotted var(--amber-light);
+}
+
+.crm-link:hover {
+  color: var(--amber);
+  border-bottom-color: var(--amber);
+}
+
+.crm-risk-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--surface);
+}
+
+.crm-tags-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.crm-tag {
+  display: inline-block;
+  padding: 3px 8px;
+  background: rgba(96, 165, 250, 0.15);
+  border-radius: var(--radius-pill);
+  font-size: 0.75rem;
+  color: #7db7ff;
+}
+
+.crm-btn-small {
+  padding: 6px 12px;
+  background: var(--amber);
+  color: var(--surface);
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.crm-btn-small:hover {
+  background: var(--amber-light);
+}
+
+.crm-btn-small:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.crm-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3);
+  border-top: 1px solid var(--border-glass);
+}
+
+.crm-btn {
+  padding: 6px 12px;
+  background: transparent;
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-md);
+  color: var(--cream);
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+}
+
+.crm-btn:hover {
+  border-color: var(--amber);
+  color: var(--amber);
+}
+
+.crm-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Segmentation Cards */
+.crm-segments-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--sp-4);
+}
+
+.crm-segment-card {
+  padding: var(--sp-4);
+  background: var(--surface-glass);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.crm-segment-card:hover {
+  border-color: var(--amber);
+  background: var(--surface-glass-strong);
+}
+
+.crm-segment-label {
+  font-size: 0.9375rem;
+  color: var(--cream-dim);
+  margin-bottom: var(--sp-2);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+
+.crm-segment-count {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--amber-light);
+  margin-bottom: var(--sp-2);
+}
+
+.crm-segment-ltv {
+  font-size: 0.875rem;
+  color: var(--cream-dim);
+}
+
+/* At-Risk Items */
+.crm-at-risk-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--sp-3);
+  background: var(--surface-glass);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--sp-2);
+}
+
+.crm-risk-info {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  flex: 1;
+}
+
+.crm-risk-score {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  font-weight: 700;
+  font-size: 1.25rem;
+  color: var(--surface);
+}
+
+.crm-risk-meta {
+  font-size: 0.8125rem;
+  color: var(--cream-dim);
+  margin-top: 4px;
+}
+
+/* Guest Detail Modal */
+.crm-modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: var(--sp-4);
+}
+
+.crm-modal-content {
+  position: relative;
+  max-width: 900px;
+  width: 100%;
+  max-height: 90vh;
+  background: var(--surface-glass);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-lg);
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.crm-modal-close {
+  position: absolute;
+  top: var(--sp-3);
+  right: var(--sp-3);
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  color: var(--cream-dim);
+  font-size: 1.5rem;
+  cursor: pointer;
+  line-height: 1;
+  transition: color 0.2s ease;
+}
+
+.crm-modal-close:hover {
+  color: var(--cream);
+}
+
+.crm-guest-detail {
+  padding: var(--sp-4);
+}
+
+.crm-guest-header {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--sp-4);
+  margin-bottom: var(--sp-4);
+  padding-bottom: var(--sp-4);
+  border-bottom: 1px solid var(--border-glass);
+}
+
+.crm-guest-name-block h3 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--cream);
+  margin: 0 0 var(--sp-2) 0;
+}
+
+.crm-guest-name-block p {
+  color: var(--cream-dim);
+  font-size: 0.9375rem;
+  margin: 0;
+}
+
+.crm-guest-stats {
+  display: flex;
+  gap: var(--sp-4);
+}
+
+.crm-stat-item {
+  display: flex;
+  flex-direction: column;
+  text-align: right;
+}
+
+.crm-stat-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--cream-dim);
+  margin-bottom: 4px;
+}
+
+.crm-stat-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--amber-light);
+}
+
+.crm-detail-tabs {
+  display: flex;
+  gap: var(--sp-2);
+  border-bottom: 1px solid var(--border-glass);
+  margin-bottom: var(--sp-4);
+}
+
+.crm-detail-tab-btn {
+  padding: var(--sp-2) var(--sp-3);
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--cream-dim);
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+}
+
+.crm-detail-tab-btn:hover {
+  color: var(--cream);
+}
+
+.crm-detail-tab-btn.is-active {
+  color: var(--amber-light);
+  border-bottom-color: var(--amber);
+}
+
+.crm-detail-content {
+  display: block;
+}
+
+.crm-detail-tab {
+  display: none;
+}
+
+.crm-preferences-block,
+.crm-tags-block {
+  margin-bottom: var(--sp-4);
+}
+
+.crm-preferences-block h4,
+.crm-tags-block h4 {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--cream);
+  margin: 0 0 var(--sp-2) 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.crm-preferences-list {
+  background: var(--surface-glass-strong);
+  border-radius: var(--radius-md);
+  padding: var(--sp-3);
+}
+
+.crm-preferences-list ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.crm-preferences-list li {
+  padding: var(--sp-2) 0;
+  color: var(--cream);
+  font-size: 0.9375rem;
+  border-bottom: 1px solid var(--border-glass);
+}
+
+.crm-preferences-list li:last-child {
+  border-bottom: none;
+}
+
+.crm-empty-item {
+  color: var(--cream-dim);
+  font-size: 0.9rem;
+}
+
+/* Tags Container */
+.crm-tags-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-3);
+}
+
+.crm-tag-removable {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: rgba(96, 165, 250, 0.15);
+  border: 1px solid rgba(96, 165, 250, 0.3);
+  border-radius: var(--radius-pill);
+  color: #7db7ff;
+  font-size: 0.875rem;
+}
+
+.crm-tag-remove {
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  font-size: 1.25rem;
+  line-height: 1;
+  padding: 0;
+  transition: opacity 0.2s ease;
+}
+
+.crm-tag-remove:hover {
+  opacity: 0.7;
+}
+
+.crm-add-tag {
+  display: flex;
+  gap: var(--sp-2);
+}
+
+.crm-tag-input {
+  flex: 1;
+  padding: var(--sp-2) var(--sp-3);
+  background: var(--surface-glass-strong);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-md);
+  color: var(--cream);
+  font-size: 0.9375rem;
+}
+
+.crm-tag-input::placeholder {
+  color: var(--cream-dim);
+}
+
+/* Bookings List */
+.crm-bookings-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.crm-booking-item {
+  padding: var(--sp-3);
+  background: var(--surface-glass-strong);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-glass);
+}
+
+.crm-booking-item strong {
+  color: var(--cream);
+}
+
+.crm-booking-meta {
+  display: flex;
+  gap: var(--sp-3);
+  margin-top: var(--sp-2);
+  font-size: 0.875rem;
+  color: var(--cream-dim);
+}
+
+.crm-status-chip {
+  display: inline-block;
+  padding: 2px 8px;
+  background: rgba(46, 155, 84, 0.15);
+  border-radius: var(--radius-pill);
+  color: var(--amber-light);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+}
+
+/* Communications Timeline */
+.crm-communications-timeline {
+  position: relative;
+  padding: var(--sp-3) 0;
+}
+
+.crm-timeline-item {
+  display: grid;
+  grid-template-columns: 50px 1fr;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-3);
+  padding-bottom: var(--sp-3);
+  border-bottom: 1px solid var(--border-glass);
+}
+
+.crm-timeline-item:last-child {
+  border-bottom: none;
+}
+
+.crm-timeline-marker {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(96, 165, 250, 0.15);
+  border-radius: 50%;
+  color: #7db7ff;
+  font-weight: 700;
+  font-size: 0.875rem;
+}
+
+.crm-timeline-content {
+  padding-top: 2px;
+}
+
+.crm-timeline-header {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-2);
+}
+
+.crm-timeline-header strong {
+  color: var(--cream);
+  text-transform: capitalize;
+}
+
+.crm-timeline-date {
+  color: var(--cream-dim);
+  font-size: 0.875rem;
+}
+
+.crm-timeline-subject {
+  color: var(--cream);
+  margin: var(--sp-2) 0;
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+.crm-timeline-preview {
+  color: var(--cream-dim);
+  margin: var(--sp-2) 0;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+/* Notes Section */
+.crm-notes-editor {
+  margin-bottom: var(--sp-4);
+}
+
+.crm-note-textarea {
+  width: 100%;
+  padding: var(--sp-3);
+  background: var(--surface-glass-strong);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-md);
+  color: var(--cream);
+  font-family: var(--font-body);
+  font-size: 0.9375rem;
+  resize: vertical;
+  min-height: 100px;
+}
+
+.crm-note-textarea::placeholder {
+  color: var(--cream-dim);
+}
+
+.crm-notes-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.crm-note-item {
+  padding: var(--sp-3);
+  background: var(--surface-glass-strong);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-glass);
+}
+
+.crm-note-text {
+  color: var(--cream);
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  margin-bottom: var(--sp-2);
+}
+
+.crm-note-meta {
+  color: var(--cream-dim);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .crm-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .crm-search-bar {
+    flex-direction: column;
+  }
+
+  .crm-guests-table {
+    font-size: 0.875rem;
+  }
+
+  .crm-guests-table th,
+  .crm-guests-table td {
+    padding: var(--sp-2);
+  }
+
+  .crm-guest-header {
+    grid-template-columns: 1fr;
+    gap: var(--sp-3);
+  }
+
+  .crm-guest-stats {
+    flex-wrap: wrap;
+  }
+
+  .crm-modal {
+    padding: var(--sp-2);
+  }
+
+  .crm-modal-content {
+    max-height: 95vh;
+  }
+}
