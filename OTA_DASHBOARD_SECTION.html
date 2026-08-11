@@ -1,0 +1,637 @@
+<!--
+  OTA Marketplace Connections Section
+  Add this to park-dashboard.html after the existing sections
+-->
+
+<section id="marketplace-connections" class="dashboard-section">
+  <div class="section-header">
+    <h2>Marketplace Connections</h2>
+    <p>Expand your reach by syncing with major travel platforms. Each connection automatically keeps your calendar, rates, and availability synchronized.</p>
+  </div>
+
+  <!-- Revenue Attribution Summary -->
+  <div class="revenue-summary">
+    <div class="summary-card">
+      <div class="metric">
+        <span class="label">Total OTA Bookings (30 days)</span>
+        <span class="value" id="ota-total-bookings">0</span>
+      </div>
+    </div>
+    <div class="summary-card">
+      <div class="metric">
+        <span class="label">OTA Revenue (30 days)</span>
+        <span class="value" id="ota-total-revenue">$0.00</span>
+      </div>
+    </div>
+    <div class="summary-card">
+      <div class="metric">
+        <span class="label">% of Total Bookings</span>
+        <span class="value" id="ota-percentage">0%</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- OTA Cards Grid -->
+  <div class="ota-grid">
+    <!-- AIRBNB -->
+    <div class="ota-card airbnb">
+      <div class="ota-header">
+        <div class="ota-logo">
+          <svg viewBox="0 0 24 24" width="32" height="32">
+            <path fill="currentColor" d="M12 0C5.37 0 0 5.37 0 12s5.37 12 12 12 12-5.37 12-12-5.37-12-12-12zm0 1.8c5.62 0 10.2 4.58 10.2 10.2s-4.58 10.2-10.2 10.2-10.2-4.58-10.2-10.2 4.58-10.2 10.2-10.2z"/>
+          </svg>
+        </div>
+        <div class="ota-info">
+          <h3>Airbnb</h3>
+          <p class="ota-status" id="airbnb-status">Not Connected</p>
+        </div>
+      </div>
+
+      <div class="ota-content">
+        <div id="airbnb-connected" class="connected-state hidden">
+          <div class="listing-info">
+            <p><strong>Listing ID:</strong> <span id="airbnb-listing-id">-</span></p>
+            <p><strong>Status:</strong> <span id="airbnb-health" class="health-badge">Unknown</span></p>
+            <p><strong>Rating:</strong> <span id="airbnb-rating">-</span></p>
+            <p><strong>Reviews:</strong> <span id="airbnb-reviews">0</span></p>
+          </div>
+
+          <div class="sync-info">
+            <p><strong>Last Sync:</strong> <span id="airbnb-last-sync">Never</span></p>
+            <div class="sync-status" id="airbnb-sync-status">
+              <span class="status-indicator success"></span> All synced
+            </div>
+          </div>
+
+          <div class="ota-stats">
+            <div class="stat">
+              <span class="label">Bookings (30d)</span>
+              <span class="value" id="airbnb-bookings-30d">0</span>
+            </div>
+            <div class="stat">
+              <span class="label">Revenue (30d)</span>
+              <span class="value" id="airbnb-revenue-30d">$0.00</span>
+            </div>
+          </div>
+
+          <div class="settings-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="airbnb-auto-sync" checked>
+              Auto-sync availability
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" id="airbnb-auto-rates" checked>
+              Auto-push rate updates
+            </label>
+          </div>
+
+          <div class="action-buttons">
+            <button class="btn btn-secondary" onclick="testAirbnbConnection()">Test Connection</button>
+            <button class="btn btn-danger" onclick="disconnectOTA('airbnb')">Disconnect</button>
+          </div>
+        </div>
+
+        <div id="airbnb-disconnected" class="disconnected-state">
+          <p>Connect to Airbnb to automatically sync your calendar and bookings.</p>
+          <button class="btn btn-primary" onclick="connectAirbnb()">Connect Airbnb</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- BOOKING.COM -->
+    <div class="ota-card booking">
+      <div class="ota-header">
+        <div class="ota-logo">
+          <svg viewBox="0 0 24 24" width="32" height="32">
+            <path fill="currentColor" d="M12 0C5.37 0 0 5.37 0 12s5.37 12 12 12 12-5.37 12-12-5.37-12-12-12zm0 1.8c5.62 0 10.2 4.58 10.2 10.2s-4.58 10.2-10.2 10.2-10.2-4.58-10.2-10.2 4.58-10.2 10.2-10.2z"/>
+          </svg>
+        </div>
+        <div class="ota-info">
+          <h3>Booking.com</h3>
+          <p class="ota-status" id="booking-status">Not Connected</p>
+        </div>
+      </div>
+
+      <div class="ota-content">
+        <div id="booking-connected" class="connected-state hidden">
+          <div class="listing-info">
+            <p><strong>Property ID:</strong> <span id="booking-listing-id">-</span></p>
+            <p><strong>Status:</strong> <span id="booking-health" class="health-badge">Unknown</span></p>
+            <p><strong>Rating:</strong> <span id="booking-rating">-</span></p>
+            <p><strong>Reviews:</strong> <span id="booking-reviews">0</span></p>
+          </div>
+
+          <div class="sync-info">
+            <p><strong>Last Sync:</strong> <span id="booking-last-sync">Never</span></p>
+            <div class="sync-status" id="booking-sync-status">
+              <span class="status-indicator success"></span> All synced
+            </div>
+          </div>
+
+          <div class="ota-stats">
+            <div class="stat">
+              <span class="label">Bookings (30d)</span>
+              <span class="value" id="booking-bookings-30d">0</span>
+            </div>
+            <div class="stat">
+              <span class="label">Revenue (30d)</span>
+              <span class="value" id="booking-revenue-30d">$0.00</span>
+            </div>
+          </div>
+
+          <div class="settings-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="booking-auto-sync" checked>
+              Auto-sync availability
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" id="booking-auto-rates" checked>
+              Auto-push rate updates
+            </label>
+          </div>
+
+          <div class="action-buttons">
+            <button class="btn btn-secondary" onclick="testBookingConnection()">Test Connection</button>
+            <button class="btn btn-danger" onclick="disconnectOTA('booking')">Disconnect</button>
+          </div>
+        </div>
+
+        <div id="booking-disconnected" class="disconnected-state">
+          <p>Connect to Booking.com to automatically sync your calendar and bookings.</p>
+          <button class="btn btn-primary" onclick="connectBooking()">Connect Booking.com</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- VRBO -->
+    <div class="ota-card vrbo">
+      <div class="ota-header">
+        <div class="ota-logo">
+          <svg viewBox="0 0 24 24" width="32" height="32">
+            <path fill="currentColor" d="M12 0C5.37 0 0 5.37 0 12s5.37 12 12 12 12-5.37 12-12-5.37-12-12-12zm0 1.8c5.62 0 10.2 4.58 10.2 10.2s-4.58 10.2-10.2 10.2-10.2-4.58-10.2-10.2 4.58-10.2 10.2-10.2z"/>
+          </svg>
+        </div>
+        <div class="ota-info">
+          <h3>Vrbo</h3>
+          <p class="ota-status" id="vrbo-status">Not Connected</p>
+        </div>
+      </div>
+
+      <div class="ota-content">
+        <div id="vrbo-connected" class="connected-state hidden">
+          <div class="listing-info">
+            <p><strong>Rental ID:</strong> <span id="vrbo-listing-id">-</span></p>
+            <p><strong>Status:</strong> <span id="vrbo-health" class="health-badge">Unknown</span></p>
+            <p><strong>Rating:</strong> <span id="vrbo-rating">-</span></p>
+            <p><strong>Reviews:</strong> <span id="vrbo-reviews">0</span></p>
+          </div>
+
+          <div class="sync-info">
+            <p><strong>Last Sync:</strong> <span id="vrbo-last-sync">Never</span></p>
+            <div class="sync-status" id="vrbo-sync-status">
+              <span class="status-indicator success"></span> All synced
+            </div>
+          </div>
+
+          <div class="ota-stats">
+            <div class="stat">
+              <span class="label">Bookings (30d)</span>
+              <span class="value" id="vrbo-bookings-30d">0</span>
+            </div>
+            <div class="stat">
+              <span class="label">Revenue (30d)</span>
+              <span class="value" id="vrbo-revenue-30d">$0.00</span>
+            </div>
+          </div>
+
+          <div class="settings-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="vrbo-auto-sync" checked>
+              Auto-sync availability
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" id="vrbo-auto-rates" checked>
+              Auto-push rate updates
+            </label>
+          </div>
+
+          <div class="action-buttons">
+            <button class="btn btn-secondary" onclick="testVrboConnection()">Test Connection</button>
+            <button class="btn btn-danger" onclick="disconnectOTA('vrbo')">Disconnect</button>
+          </div>
+        </div>
+
+        <div id="vrbo-disconnected" class="disconnected-state">
+          <p>Connect to Vrbo to automatically sync your calendar and bookings.</p>
+          <button class="btn btn-primary" onclick="connectVrbo()">Connect Vrbo</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sync History & Logs -->
+  <div class="sync-logs-section">
+    <h3>Synchronization History</h3>
+    <div class="filters">
+      <select id="sync-filter-ota">
+        <option value="">All Platforms</option>
+        <option value="airbnb">Airbnb</option>
+        <option value="booking">Booking.com</option>
+        <option value="vrbo">Vrbo</option>
+      </select>
+      <select id="sync-filter-type">
+        <option value="">All Types</option>
+        <option value="availability">Availability</option>
+        <option value="booking-pull">Booking Pull</option>
+        <option value="rate-push">Rate Push</option>
+      </select>
+      <select id="sync-filter-status">
+        <option value="">All Status</option>
+        <option value="success">Success</option>
+        <option value="error">Error</option>
+      </select>
+    </div>
+    <table class="sync-logs-table">
+      <thead>
+        <tr>
+          <th>Timestamp</th>
+          <th>Platform</th>
+          <th>Type</th>
+          <th>Status</th>
+          <th>Message</th>
+        </tr>
+      </thead>
+      <tbody id="sync-logs-body">
+        <tr class="empty-state">
+          <td colspan="5">No sync history yet</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<style>
+.ota-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 24px;
+  margin: 30px 0;
+}
+
+.ota-card {
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  overflow: hidden;
+  background: white;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.ota-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background: #f9f9f9;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.ota-logo {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  border-radius: 6px;
+  color: #666;
+}
+
+.ota-info h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.ota-status {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: #666;
+}
+
+.ota-content {
+  padding: 20px;
+}
+
+.listing-info {
+  margin-bottom: 16px;
+}
+
+.listing-info p {
+  margin: 8px 0;
+  font-size: 14px;
+}
+
+.listing-info strong {
+  display: inline-block;
+  width: 100px;
+}
+
+.health-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  background: #e8f5e9;
+  color: #2e7d32;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.sync-info {
+  padding: 12px;
+  background: #f5f5f5;
+  border-radius: 6px;
+  margin-bottom: 16px;
+}
+
+.sync-info p {
+  margin: 8px 0;
+  font-size: 14px;
+}
+
+.sync-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.status-indicator {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #4caf50;
+}
+
+.status-indicator.error {
+  background: #f44336;
+}
+
+.ota-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin: 16px 0;
+}
+
+.stat {
+  text-align: center;
+}
+
+.stat .label {
+  display: block;
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 4px;
+}
+
+.stat .value {
+  display: block;
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+}
+
+.settings-group {
+  margin: 16px 0;
+  padding-top: 16px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.checkbox-label input {
+  cursor: pointer;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.action-buttons .btn {
+  flex: 1;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.revenue-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin: 20px 0;
+}
+
+.summary-card {
+  padding: 16px;
+  background: #f9f9f9;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+}
+
+.metric {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.metric .label {
+  font-size: 12px;
+  color: #666;
+  font-weight: 500;
+}
+
+.metric .value {
+  font-size: 24px;
+  font-weight: 600;
+  color: #333;
+}
+
+.sync-logs-section {
+  margin-top: 40px;
+  padding: 20px;
+  background: #f9f9f9;
+  border-radius: 8px;
+}
+
+.sync-logs-section h3 {
+  margin-top: 0;
+}
+
+.filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.filters select {
+  padding: 8px 12px;
+  border: 1px solid #d0d0d0;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.sync-logs-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.sync-logs-table thead {
+  background: #f5f5f5;
+}
+
+.sync-logs-table th {
+  padding: 12px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 14px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.sync-logs-table td {
+  padding: 12px;
+  border-bottom: 1px solid #e0e0e0;
+  font-size: 14px;
+}
+
+.sync-logs-table tbody tr:hover {
+  background: #f9f9f9;
+}
+
+.sync-logs-table .empty-state td {
+  text-align: center;
+  color: #999;
+  font-style: italic;
+}
+</style>
+
+<script>
+// Load OTA status and configuration
+async function loadOTAStatus() {
+  try {
+    const response = await fetch('/api/admin/ota?action=status');
+    const data = await response.json();
+
+    if (data.success) {
+      updateOTACards(data.listings);
+      updateRevenueMetrics(data.listings);
+    }
+  } catch (error) {
+    console.error('Failed to load OTA status:', error);
+  }
+}
+
+function updateOTACards(listings) {
+  ['airbnb', 'booking', 'vrbo'].forEach(ota => {
+    const listing = listings[ota];
+    if (listing.connected) {
+      showConnectedState(ota, listing);
+    } else {
+      showDisconnectedState(ota);
+    }
+  });
+}
+
+function showConnectedState(ota, listing) {
+  document.getElementById(`${ota}-connected`).classList.remove('hidden');
+  document.getElementById(`${ota}-disconnected`).classList.add('hidden');
+  document.getElementById(`${ota}-status`).textContent = 'Connected';
+  document.getElementById(`${ota}-listing-id`).textContent = listing.listingId || '-';
+  document.getElementById(`${ota}-health`).textContent = listing.status || 'Unknown';
+  document.getElementById(`${ota}-rating`).textContent = listing.rating ? listing.rating.toFixed(2) : '-';
+  document.getElementById(`${ota}-reviews`).textContent = listing.reviewCount || '0';
+  document.getElementById(`${ota}-last-sync`).textContent = listing.checkedAt ? new Date(listing.checkedAt).toLocaleString() : 'Never';
+}
+
+function showDisconnectedState(ota) {
+  document.getElementById(`${ota}-connected`).classList.add('hidden');
+  document.getElementById(`${ota}-disconnected`).classList.remove('hidden');
+  document.getElementById(`${ota}-status`).textContent = 'Not Connected';
+}
+
+function updateRevenueMetrics(listings) {
+  // Placeholder - would fetch actual booking data
+  let totalBookings = 0;
+  let totalRevenue = 0;
+
+  ['airbnb', 'booking', 'vrbo'].forEach(ota => {
+    const bookings = parseInt(document.getElementById(`${ota}-bookings-30d`).textContent) || 0;
+    totalBookings += bookings;
+  });
+
+  document.getElementById('ota-total-bookings').textContent = totalBookings;
+  document.getElementById('ota-total-revenue').textContent = '$' + totalRevenue.toFixed(2);
+}
+
+async function connectAirbnb() {
+  // Open OAuth flow or credential modal
+  alert('Airbnb connection flow would open here. OAuth redirect to Airbnb Partner Dashboard.');
+}
+
+async function connectBooking() {
+  alert('Booking.com connection flow would open here.');
+}
+
+async function connectVrbo() {
+  alert('Vrbo connection flow would open here.');
+}
+
+async function disconnectOTA(otaName) {
+  if (!confirm(`Are you sure you want to disconnect ${otaName}?`)) return;
+
+  try {
+    const response = await fetch(`/api/admin/ota?action=disconnect`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ otaName })
+    });
+
+    if (response.ok) {
+      alert(`${otaName} disconnected`);
+      loadOTAStatus();
+    }
+  } catch (error) {
+    console.error('Disconnect failed:', error);
+  }
+}
+
+async function testAirbnbConnection() {
+  alert('Testing Airbnb connection...');
+}
+
+async function testBookingConnection() {
+  alert('Testing Booking.com connection...');
+}
+
+async function testVrboConnection() {
+  alert('Testing Vrbo connection...');
+}
+
+// Load status on page load
+document.addEventListener('DOMContentLoaded', loadOTAStatus);
+</script>

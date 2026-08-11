@@ -1,0 +1,405 @@
+/* Pricing Intelligence Dashboard Styles */
+
+.pricing-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 2px solid var(--color-border, #e0e0e0);
+}
+
+.pricing-header h3 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--color-text-primary, #1a1a1a);
+}
+
+.pricing-toggle {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.toggle-switch {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  gap: 0.75rem;
+}
+
+.toggle-switch input[type="checkbox"] {
+  appearance: none;
+  width: 48px;
+  height: 28px;
+  background: var(--color-border, #ccc);
+  border-radius: 14px;
+  cursor: pointer;
+  transition: background 0.3s ease;
+  position: relative;
+}
+
+.toggle-switch input[type="checkbox"]::before {
+  content: '';
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  background: white;
+  border-radius: 50%;
+  top: 2px;
+  left: 2px;
+  transition: left 0.3s ease;
+}
+
+.toggle-switch input[type="checkbox"]:checked {
+  background: var(--color-primary, #2563eb);
+}
+
+.toggle-switch input[type="checkbox"]:checked::before {
+  left: 22px;
+}
+
+.toggle-label {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--color-text-primary, #1a1a1a);
+  white-space: nowrap;
+}
+
+/* Pricing Cards */
+.pricing-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.pricing-card {
+  background: var(--color-background-secondary, #f8f9fa);
+  border: 1px solid var(--color-border, #e0e0e0);
+  border-radius: 8px;
+  padding: 1.5rem;
+  transition: box-shadow 0.2s ease;
+}
+
+.pricing-card:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.card-label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--color-text-secondary, #666);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.5rem;
+}
+
+.card-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--color-text-primary, #1a1a1a);
+  margin-bottom: 1rem;
+}
+
+.pricing-input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--color-border, #ccc);
+  border-radius: 4px;
+  font-size: 0.9rem;
+  font-family: inherit;
+  transition: border-color 0.2s ease;
+}
+
+.pricing-input:focus {
+  outline: none;
+  border-color: var(--color-primary, #2563eb);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.pricing-input.small {
+  font-size: 0.85rem;
+  padding: 0.4rem 0.6rem;
+}
+
+/* Pricing Controls */
+.pricing-controls {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.pricing-controls input[type="date"] {
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--color-border, #ccc);
+  border-radius: 4px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  background: white;
+}
+
+.pricing-controls input[type="date"]:focus {
+  outline: none;
+  border-color: var(--color-primary, #2563eb);
+}
+
+.pricing-controls span {
+  font-weight: 500;
+  color: var(--color-text-secondary, #666);
+}
+
+/* Impact Card */
+.impact-card {
+  background: var(--color-background-secondary, #f8f9fa);
+  border-left: 4px solid var(--color-primary, #2563eb);
+  border-radius: 6px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.impact-card.positive {
+  border-left-color: #10b981;
+  background: rgba(16, 185, 129, 0.05);
+}
+
+.impact-card.negative {
+  border-left-color: #ef4444;
+  background: rgba(239, 68, 68, 0.05);
+}
+
+.impact-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text-secondary, #666);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.5rem;
+}
+
+.impact-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #10b981;
+  margin-bottom: 0.5rem;
+}
+
+.impact-card.negative .impact-value {
+  color: #ef4444;
+}
+
+.impact-detail {
+  font-size: 0.9rem;
+  color: var(--color-text-secondary, #666);
+}
+
+/* Pricing Table */
+.pricing-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1.5rem;
+  background: white;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.pricing-table thead {
+  background: var(--color-background-secondary, #f8f9fa);
+  border-bottom: 2px solid var(--color-border, #e0e0e0);
+}
+
+.pricing-table th {
+  padding: 1rem;
+  text-align: left;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text-secondary, #666);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.pricing-table td {
+  padding: 1rem;
+  border-bottom: 1px solid var(--color-border, #e0e0e0);
+  font-size: 0.95rem;
+  color: var(--color-text-primary, #1a1a1a);
+}
+
+.pricing-table tbody tr:hover {
+  background: var(--color-background-secondary, #f8f9fa);
+}
+
+.pricing-table td.positive {
+  color: #10b981;
+  font-weight: 600;
+}
+
+.pricing-table td.negative {
+  color: #ef4444;
+  font-weight: 600;
+}
+
+.pricing-table td.neutral {
+  color: var(--color-text-secondary, #666);
+}
+
+.confidence-badge {
+  display: inline-block;
+  background: var(--color-background-secondary, #f0f0f0);
+  border-radius: 4px;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text-secondary, #666);
+}
+
+/* Buttons */
+.btn {
+  padding: 0.6rem 1.5rem;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: var(--color-primary, #2563eb);
+  color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--color-primary-dark, #1d4ed8);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+}
+
+.btn-secondary {
+  background: var(--color-background-secondary, #e5e7eb);
+  color: var(--color-text-primary, #1a1a1a);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: #d1d5db;
+}
+
+.btn-mini {
+  padding: 0.4rem 0.8rem;
+  font-size: 0.8rem;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+
+.btn-apply {
+  background: #10b981;
+  color: white;
+}
+
+.btn-apply:hover:not(:disabled) {
+  background: #059669;
+}
+
+/* Pricing Actions */
+.pricing-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--color-border, #e0e0e0);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .pricing-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .pricing-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .pricing-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .pricing-controls input[type="date"],
+  .pricing-controls .btn-secondary {
+    width: 100%;
+  }
+
+  .pricing-controls span {
+    display: none;
+  }
+
+  .pricing-table {
+    font-size: 0.85rem;
+    overflow-x: auto;
+  }
+
+  .pricing-table th,
+  .pricing-table td {
+    padding: 0.75rem 0.5rem;
+  }
+
+  .pricing-actions {
+    flex-direction: column;
+  }
+
+  .btn,
+  .btn-primary {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+  .pricing-card {
+    background: var(--color-background-secondary, #1f2937);
+    border-color: var(--color-border, #374151);
+  }
+
+  .pricing-table {
+    background: var(--color-background-secondary, #1f2937);
+  }
+
+  .pricing-table thead {
+    background: var(--color-border, #374151);
+  }
+
+  .pricing-table th {
+    color: var(--color-text-secondary, #9ca3af);
+  }
+
+  .pricing-table td {
+    border-color: var(--color-border, #374151);
+  }
+
+  .pricing-controls input[type="date"] {
+    background: var(--color-background-secondary, #1f2937);
+    color: var(--color-text-primary, #f3f4f6);
+    border-color: var(--color-border, #374151);
+  }
+
+  .confidence-badge {
+    background: var(--color-background-secondary, #374151);
+    color: var(--color-text-secondary, #9ca3af);
+  }
+}

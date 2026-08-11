@@ -2,6 +2,7 @@ import '../css/tokens.css';
 import { initCore } from './core.js';
 import { confirmDialog, formDialog, alertDialog, withLoading } from './ui-dialogs.js';
 import { PACKAGES, formatUsd as formatUsdWhole } from './services-data.js';
+import { initPricingDashboard } from './pricing-dashboard.js';
 
 initCore();
 
@@ -86,6 +87,9 @@ async function loadDashboard() {
   checkOutEl.value = twoNightsLater.toISOString().slice(0, 10);
   checkInEl.classList.add('has-value');
   checkOutEl.classList.add('has-value');
+
+  // Initialize pricing dashboard
+  await initPricingDashboard(currentPark);
 }
 
 /* -- stats -- */
