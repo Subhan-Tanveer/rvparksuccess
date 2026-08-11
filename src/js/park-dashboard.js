@@ -110,6 +110,9 @@ async function loadDashboard() {
   // Initialize social media dashboard
   await initSocialDashboard(currentPark);
 
+  // Initialize competitive intelligence dashboard
+  await initializeCompetitiveIntelligenceDashboard();
+
   // Initialize booking rules dashboard
   initBookingRulesDashboard();
 }
