@@ -7,7 +7,10 @@
 import Stripe from 'stripe';
 import { requireSession } from './_lib/auth.js';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+if (!process.env.STRIPE_SECRET_KEY) {
+  console.error('STRIPE_SECRET_KEY is not set in environment variables');
+}
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_placeholder');
 
 // Prices in cents. Keep in sync with src/js/services-data.js (PACKAGES).
 // All are monthly subscriptions — no one-time setup fees.
