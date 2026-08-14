@@ -40,6 +40,15 @@
   .status-chip.is-canceled { background: rgba(217,60,46,0.12); color: #f0a89a; }
   .field-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: var(--sp-3); }
   @media (max-width: 720px) { .field-row-3 { grid-template-columns: 1fr; } }
+  /* Sites & Rates "Add Site" form: an even, balanced 4-up grid (Site Name,
+     Type, Sleeps, Nightly Rate) instead of the old field-row-3 + a lone
+     ad-hoc max-width:240px row for the rate field. auto-fit/minmax lets it
+     settle to 2x2 on narrower viewports and single-column on mobile. */
+  .field-row-4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: var(--sp-3); align-items: start; }
+  @media (max-width: 560px) { .field-row-4 { grid-template-columns: 1fr; } }
+  .field-row-4 .field-float { margin-bottom: 0; }
+  #addSiteForm { margin-bottom: var(--sp-4); }
+  #addSiteBtn { margin-top: var(--sp-1); }
   .booking-sites-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--sp-2); margin-top: var(--sp-3); }
   .booking-site-btn { text-align: left; padding: var(--sp-3); border-radius: var(--radius-md); border: 1px solid var(--border-glass); background: var(--surface-glass); cursor: pointer; transition: border-color 0.2s ease, background 0.2s ease; }
   .booking-site-btn:hover { border-color: var(--border-amber); background: var(--surface-glass-strong); }
@@ -52,6 +61,25 @@
   .stat-card .label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--cream-dim); }
   .stat-card .value { font-family: var(--font-mono); font-size: 1.75rem; font-weight: 700; color: var(--amber-light); margin-top: 4px; }
   .stat-card .sub { font-size: 0.8125rem; color: var(--cream-dim); margin-top: 2px; }
+
+  /* -- dashboard section headers: tokens.css's global .section-head is sized
+     for big marketing-page hero sections (clamp() up to 3.25rem) — fine for
+     index.html/packages.html, way too big for this dense admin UI. This
+     scoped override (specificity beats the bare/unscoped .section-head
+     rules some dashboard-module CSS files ship, e.g. analytics-dashboard.css
+     used to before it was rescoped to #analyticsDashboard) makes every
+     eyebrow+heading pair inside the dashboard a simple left-aligned vertical
+     stack with a dashboard-appropriate heading size. Modules that legitimately
+     need a different layout for their OWN inner card headers (analytics'
+     "Revenue Trend" + description on one line, Competitors' heading + "Add
+     Competitor" button) rescope their own rule with higher specificity
+     instead of relying on this one — see #analyticsDashboard .section-head
+     in analytics-dashboard.css and #competitors .ci-competitor-section
+     .section-head in competitive-intelligence.css. Do NOT edit tokens.css's
+     global .section-head — marketing pages must keep using it as-is. */
+  .admin-wrap .section-head { display: block; margin-bottom: var(--sp-3); max-width: none; }
+  .admin-wrap .section-head h2 { font-size: 1.375rem; margin: 4px 0 0; }
+  .admin-wrap .section-head h3 { margin: 4px 0 0; }
 
   /* -- dashboard sidebar nav (this page only — distinct from the site's
      public marketing nav in components.css) -- */
@@ -260,12 +288,12 @@
       <h2 style="font-size: 1.375rem;">Sites &amp; Rates</h2>
     </div>
     <form id="addSiteForm">
-      <div class="field-row-3">
-        <div class="field-float"><input id="sName" required><label for="sName">Site Name</label></div>
+      <div class="field-row-4">
+        <div class="field-float"><input id="sName" required placeholder=" "><label for="sName">Site Name</label></div>
         <div class="field-float"><input id="sType" required placeholder=" "><label for="sType">Type (e.g. RV — Full Hookup)</label></div>
-        <div class="field-float"><input id="sCapacity" type="number" min="1" required><label for="sCapacity">Sleeps Up To</label></div>
+        <div class="field-float"><input id="sCapacity" type="number" min="1" required placeholder=" "><label for="sCapacity">Sleeps Up To</label></div>
+        <div class="field-float"><input id="sRate" type="number" min="1" step="0.01" required placeholder=" "><label for="sRate">Nightly Rate ($)</label></div>
       </div>
-      <div class="field-float" style="max-width: 240px;"><input id="sRate" type="number" min="1" step="0.01" required><label for="sRate">Nightly Rate ($)</label></div>
       <button type="submit" class="btn btn-ghost" id="addSiteBtn"><span>Add Site</span></button>
       <div class="admin-alert" id="siteAlert"></div>
     </form>

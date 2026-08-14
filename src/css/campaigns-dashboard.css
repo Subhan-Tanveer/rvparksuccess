@@ -154,63 +154,12 @@
   font-size: 1.25rem;
 }
 
-/* Form Fields */
-.field-float {
-  position: relative;
-  display: grid;
-}
-
-.field-float input,
-.field-float textarea,
-.field-float select {
-  padding: 12px 16px;
-  border: 1px solid var(--border-glass);
-  border-radius: var(--radius-md);
-  background: var(--surface-glass);
-  color: var(--cream);
-  font-family: inherit;
-  font-size: 0.9375rem;
-  transition: border-color 0.2s ease;
-}
-
-.field-float input:focus,
-.field-float textarea:focus,
-.field-float select:focus {
-  outline: none;
-  border-color: var(--border-amber);
-  background: var(--surface-glass-strong);
-}
-
-.field-float input::placeholder,
-.field-float textarea::placeholder {
-  color: transparent;
-}
-
-.field-float label {
-  position: absolute;
-  top: 12px;
-  left: 16px;
-  font-size: 0.875rem;
-  color: var(--cream-dim);
-  pointer-events: none;
-  transition: all 0.2s ease;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.field-float input:focus ~ label,
-.field-float textarea:focus ~ label,
-.field-float select:focus ~ label,
-.field-float input:not(:placeholder-shown) ~ label,
-.field-float textarea:not(:placeholder-shown) ~ label,
-.field-float select:not(:placeholder-shown) ~ label {
-  top: -8px;
-  font-size: 0.75rem;
-  color: var(--amber-light);
-  background: var(--forest-light);
-  padding: 0 4px;
-  margin-left: 12px;
-}
+/* Form Fields — .field-float itself (layout, inputs, label, floating
+   behavior) is defined once, canonically, in components.css and used
+   as-is here so campaigns forms match every other dashboard module's
+   floating-label inputs instead of drifting with their own one-off
+   version (which previously collided with components.css's rule and
+   with social-dashboard.css's own separate duplicate). */
 
 /* Radio/Checkbox Labels */
 label {

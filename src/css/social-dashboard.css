@@ -337,58 +337,9 @@
   color: #7db7ff;
 }
 
-/* Form field styling */
-.field-float {
-  position: relative;
-  margin-bottom: var(--sp-2);
-}
-
-.field-float input,
-.field-float textarea,
-.field-float select {
-  width: 100%;
-  padding: var(--sp-2) var(--sp-3);
-  background: var(--surface-glass-strong);
-  border: 1px solid var(--border-glass);
-  border-radius: var(--radius-md);
-  color: var(--cream);
-  font-family: inherit;
-  font-size: 0.9375rem;
-  transition: all 0.2s ease;
-}
-
-.field-float input:focus,
-.field-float textarea:focus,
-.field-float select:focus {
-  outline: none;
-  border-color: var(--border-amber);
-  background: var(--surface-glass);
-}
-
-.field-float label {
-  position: absolute;
-  top: 50%;
-  left: var(--sp-3);
-  transform: translateY(-50%);
-  pointer-events: none;
-  color: var(--cream-dim);
-  font-size: 0.875rem;
-  transition: all 0.2s ease;
-  background: transparent;
-}
-
-.field-float input:focus ~ label,
-.field-float textarea:focus ~ label,
-.field-float select:focus ~ label,
-.field-float input:not(:placeholder-shown) ~ label,
-.field-float textarea:not(:placeholder-shown) ~ label,
-.field-float select:not(:placeholder-shown) ~ label {
-  top: -10px;
-  font-size: 0.75rem;
-  color: var(--amber-light);
-  background: var(--surface-glass-strong);
-  padding: 0 4px;
-}
+/* Form field styling — .field-float is defined once, canonically, in
+   components.css (shared with every other dashboard module) so social
+   forms don't drift with their own one-off floating-label version. */
 
 /* Animation for reveal effect */
 [data-reveal] {

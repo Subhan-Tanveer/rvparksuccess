@@ -179,13 +179,21 @@
   border: 1px solid var(--border-glass);
 }
 
-.ci-competitor-section .section-head {
+/* #competitors prefix bumps specificity above park-dashboard.html's
+   #gate .section-head base rule — this header intentionally stays a
+   row (heading + "Add Competitor" button) unlike other section-heads. */
+#competitors .ci-competitor-section .section-head {
   margin-bottom: var(--sp-3);
   display: flex;
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
   gap: var(--sp-2);
+}
+
+#competitors .ci-competitor-section .section-head h2 {
+  font-size: 1.375rem;
+  margin: 0;
 }
 
 .ci-competitor-table {

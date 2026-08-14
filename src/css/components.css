@@ -250,22 +250,31 @@ body { visibility: hidden; animation: pt-reveal-body 2.05s steps(1) forwards; }
 .testi-card p { font-size: 0.9375rem; line-height: 1.7; color: var(--cream-dim); }
 .testi-card .who { margin-top: var(--sp-3); font-size: 0.8125rem; color: var(--amber-light); font-weight: 600; }
 
-/* -- forms: floating label -- */
+/* -- forms: floating label --
+   Single source of truth for every .field-float on the site (marketing
+   forms and all park-dashboard.html modules alike). Supports input,
+   select AND textarea, and works with both the JS-driven .has-value
+   toggle (core.js initFloatingLabels — input/select) and the CSS-only
+   :not(:placeholder-shown) technique (works for textarea too, no JS
+   required, as long as the field has placeholder=" "). */
 .field-float { position: relative; margin-bottom: var(--sp-3); }
-.field-float input, .field-float select {
+.field-float input, .field-float select, .field-float textarea {
   width: 100%; background: rgba(245, 240, 232, 0.05); border: 1px solid var(--border-glass); border-radius: var(--radius-sm);
   padding: 22px 16px 10px; color: var(--cream); font-family: var(--font-body); font-size: 0.9375rem;
   transition: border-color 0.25s ease, background 0.25s ease;
 }
-.field-float input:focus, .field-float select:focus { outline: none; border-color: var(--amber); background: rgba(245, 240, 232, 0.08); }
+.field-float textarea { resize: vertical; min-height: 90px; }
+.field-float input:focus, .field-float select:focus, .field-float textarea:focus { outline: none; border-color: var(--amber); background: rgba(245, 240, 232, 0.08); }
 .field-float label {
   position: absolute; left: 16px; top: 17px; font-size: 0.9375rem; color: var(--cream-dim);
-  pointer-events: none; transition: transform 0.2s var(--ease-out), font-size 0.2s var(--ease-out), color 0.2s ease;
-  transform-origin: left top;
+  pointer-events: none; transition: transform 0.2s var(--ease-out), font-size 0.2s var(--ease-out), color 0.2s ease, background 0.2s ease;
+  transform-origin: left top; background: transparent; padding: 0 4px; margin-left: -4px; border-radius: 4px;
 }
-.field-float input:focus ~ label, .field-float input.has-value ~ label,
-.field-float select:focus ~ label, .field-float select.has-value ~ label {
+.field-float input:focus ~ label, .field-float input.has-value ~ label, .field-float input:not(:placeholder-shown) ~ label,
+.field-float select:focus ~ label, .field-float select.has-value ~ label, .field-float select:not(:placeholder-shown) ~ label,
+.field-float textarea:focus ~ label, .field-float textarea.has-value ~ label, .field-float textarea:not(:placeholder-shown) ~ label {
   transform: translateY(-9px) scale(0.78); color: var(--amber-light);
+  background: var(--surface-glass-strong);
 }
 .field-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-3); }
 @media (max-width: 640px) { .field-row-2 { grid-template-columns: 1fr; } }

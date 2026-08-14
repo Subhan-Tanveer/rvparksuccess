@@ -109,20 +109,24 @@
   background: var(--surface-glass);
 }
 
-.section-head {
+/* Scoped to #analyticsDashboard (the container this module renders into)
+   so this card-header flex-row never leaks onto the dashboard's other
+   top-level .section-head eyebrow/heading blocks (those get a vertical
+   stack from park-dashboard.html's #gate .section-head rule instead). */
+#analyticsDashboard .section-head {
   margin-bottom: var(--sp-4);
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
 }
 
-.section-head h3 {
+#analyticsDashboard .section-head h3 {
   font-size: 1.25rem;
   margin: 0 0 var(--sp-2) 0;
   color: var(--cream);
 }
 
-.section-head .sub {
+#analyticsDashboard .section-head .sub {
   font-size: 0.875rem;
   color: var(--cream-dim);
   margin: 0;
@@ -410,7 +414,7 @@ canvas {
     font-size: 0.8125rem;
   }
 
-  .section-head {
+  #analyticsDashboard .section-head {
     flex-direction: column;
     gap: var(--sp-1);
   }
