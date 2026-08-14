@@ -263,43 +263,12 @@
   justify-content: flex-end;
 }
 
-/* ========== Buttons ========== */
-
-.btn {
-  padding: 10px 20px;
-  border-radius: var(--radius-md);
-  border: none;
-  font-size: 0.9375rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.btn-primary {
-  background: var(--amber);
-  color: var(--surface-glass-strong);
-}
-
-.btn-primary:hover {
-  background: var(--amber-light);
-  box-shadow: 0 8px 20px rgba(255, 193, 7, 0.3);
-}
-
-.btn-secondary {
-  background: var(--surface-glass);
-  color: var(--cream);
-  border: 1px solid var(--border-glass);
-}
-
-.btn-secondary:hover {
-  background: var(--surface-glass-strong);
-  border-color: var(--border-amber);
-}
-
-.btn-sm {
-  padding: 6px 14px;
-  font-size: 0.8125rem;
-}
+/* Buttons: intentionally NOT redefined here — .btn/.btn-primary/.btn-secondary/
+   .btn-sm are global (see tokens.css) and shared with every other page. This
+   file used to shadow them with its own conflicting versions, and because
+   CSS files are loaded in a fixed order in park-dashboard.html, whichever
+   module's copy loaded last silently won and reskinned every button on the
+   whole dashboard (in this case with nearly-invisible text). */
 
 /* ========== Alert Boxes ========== */
 

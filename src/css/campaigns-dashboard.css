@@ -301,55 +301,12 @@ input[type="checkbox"] {
   color: #f0a89a;
 }
 
-/* Buttons */
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 10px 20px;
-  border: 1px solid var(--border-glass);
-  border-radius: var(--radius-md);
-  background: var(--surface-glass);
-  color: var(--cream);
-  font-size: 0.9375rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  text-decoration: none;
-  white-space: nowrap;
-}
-
-.btn:hover {
-  border-color: var(--border-amber);
-  background: var(--surface-glass-strong);
-}
-
-.btn-primary {
-  background: var(--amber);
-  border-color: var(--amber);
-  color: var(--black);
-  font-weight: 600;
-}
-
-.btn-primary:hover {
-  background: #d98500;
-  border-color: #d98500;
-}
-
-.btn-ghost {
-  background: transparent;
-  border-color: var(--border-glass);
-}
-
-.btn-ghost:hover {
-  background: var(--surface-glass);
-  border-color: var(--border-amber);
-}
-
-.btn-sm {
-  padding: 6px 12px;
-  font-size: 0.8125rem;
-}
+/* Buttons: intentionally NOT redefined here — .btn/.btn-primary/.btn-ghost/
+   .btn-sm are global (see tokens.css) and shared with every other page.
+   This file used to shadow them with its own conflicting versions, and
+   because CSS files are loaded in a fixed order in park-dashboard.html,
+   whichever module's copy loaded last silently won and reskinned every
+   button on the whole dashboard. */
 
 /* A/B Test Variant Cards */
 .variant-card {
