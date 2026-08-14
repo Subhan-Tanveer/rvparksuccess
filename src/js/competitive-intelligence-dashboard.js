@@ -10,7 +10,7 @@ async function initializeCompetitiveIntelligenceDashboard() {
 
   try {
     // Fetch dashboard summary data
-    const response = await fetch('/api/admin/competitive-intelligence?action=dashboard-summary');
+    const response = await fetch('/api/admin/ops?resource=competitive-intelligence&action=dashboard-summary');
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     dashboardData = await response.json();
 
@@ -263,7 +263,7 @@ function renderCompetitorTracking(container) {
     }
 
     try {
-      const response = await fetch('/api/admin/competitive-intelligence?action=add-competitor', {
+      const response = await fetch('/api/admin/ops?resource=competitive-intelligence&action=add-competitor', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'add-competitor', name, websiteUrl: url, location }),
@@ -291,7 +291,7 @@ function renderCompetitorTracking(container) {
 
 async function loadCompetitors() {
   try {
-    const response = await fetch('/api/admin/competitive-intelligence?action=competitors');
+    const response = await fetch('/api/admin/ops?resource=competitive-intelligence&action=competitors');
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const data = await response.json();
 
@@ -323,7 +323,7 @@ window.removeCompetitor = async function(competitorId) {
   if (!confirm('Remove this competitor from tracking?')) return;
 
   try {
-    const response = await fetch('/api/admin/competitive-intelligence', {
+    const response = await fetch('/api/admin/ops?resource=competitive-intelligence', {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ competitorId }),
@@ -445,7 +445,7 @@ async function loadOpportunities() {
   if (!grid) return;
 
   try {
-    const response = await fetch('/api/admin/competitive-intelligence?action=opportunities');
+    const response = await fetch('/api/admin/ops?resource=competitive-intelligence&action=opportunities');
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const data = await response.json();
 

@@ -201,15 +201,15 @@ async function loadData(container) {
     // Load all data in parallel
     const [forecast, seasonal, pace, underutilized, staffing, peak, trend, utilization, anomalies] =
       await Promise.all([
-        fetch('/api/admin/occupancy-forecasting?endpoint=forecast&days=90').then((r) => r.json()),
-        fetch('/api/admin/occupancy-forecasting?endpoint=seasonal-calendar&year=2026').then((r) => r.json()),
-        fetch('/api/admin/occupancy-forecasting?endpoint=booking-pace').then((r) => r.json()),
-        fetch('/api/admin/occupancy-forecasting?endpoint=underutilized').then((r) => r.json()),
-        fetch('/api/admin/occupancy-forecasting?endpoint=staffing-recommendations').then((r) => r.json()),
-        fetch('/api/admin/occupancy-forecasting?endpoint=peak-prediction').then((r) => r.json()),
-        fetch('/api/admin/occupancy-forecasting?endpoint=trend&days=365').then((r) => r.json()),
-        fetch('/api/admin/occupancy-forecasting?endpoint=capacity-utilization').then((r) => r.json()),
-        fetch('/api/admin/occupancy-forecasting?endpoint=anomalies').then((r) => r.json()),
+        fetch('/api/admin/ops?resource=occupancy-forecasting&endpoint=forecast&days=90').then((r) => r.json()),
+        fetch('/api/admin/ops?resource=occupancy-forecasting&endpoint=seasonal-calendar&year=2026').then((r) => r.json()),
+        fetch('/api/admin/ops?resource=occupancy-forecasting&endpoint=booking-pace').then((r) => r.json()),
+        fetch('/api/admin/ops?resource=occupancy-forecasting&endpoint=underutilized').then((r) => r.json()),
+        fetch('/api/admin/ops?resource=occupancy-forecasting&endpoint=staffing-recommendations').then((r) => r.json()),
+        fetch('/api/admin/ops?resource=occupancy-forecasting&endpoint=peak-prediction').then((r) => r.json()),
+        fetch('/api/admin/ops?resource=occupancy-forecasting&endpoint=trend&days=365').then((r) => r.json()),
+        fetch('/api/admin/ops?resource=occupancy-forecasting&endpoint=capacity-utilization').then((r) => r.json()),
+        fetch('/api/admin/ops?resource=occupancy-forecasting&endpoint=anomalies').then((r) => r.json()),
       ]);
 
     // Render sections

@@ -210,7 +210,7 @@ export class MLOptimizationDashboard {
   async loadModelStatus() {
     try {
       const resp = await fetch(
-        `/api/admin/ml-optimization/model-status?parkId=${this.parkId}&siteId=${this.selectedSiteId}`
+        `/api/admin/ops?resource=ml-optimization&endpoint=model-status&parkId=${this.parkId}&siteId=${this.selectedSiteId}`
       );
       const data = await resp.json();
 
@@ -270,7 +270,7 @@ export class MLOptimizationDashboard {
     try {
       const today = new Date().toISOString().split('T')[0];
       const resp = await fetch(
-        `/api/admin/ml-optimization/rate-prediction?siteId=${this.selectedSiteId}&date=${today}`
+        `/api/admin/ops?resource=ml-optimization&endpoint=rate-prediction&siteId=${this.selectedSiteId}&date=${today}`
       );
       const data = await resp.json();
 
@@ -305,7 +305,7 @@ export class MLOptimizationDashboard {
     for (const rate of rates) {
       try {
         const resp = await fetch(
-          `/api/admin/ml-optimization/occupancy-forecast?siteId=${this.selectedSiteId}&date=${new Date().toISOString().split('T')[0]}&rate=${rate}`
+          `/api/admin/ops?resource=ml-optimization&endpoint=occupancy-forecast&siteId=${this.selectedSiteId}&date=${new Date().toISOString().split('T')[0]}&rate=${rate}`
         );
         const data = await resp.json();
         occupancies.push(parseFloat(data.predicted_occupancy_percent) / 100);
@@ -402,7 +402,7 @@ export class MLOptimizationDashboard {
   async loadSeasonalRates(month) {
     try {
       const resp = await fetch(
-        `/api/admin/ml-optimization/seasonal-rates?siteId=${this.selectedSiteId}&month=${month}`
+        `/api/admin/ops?resource=ml-optimization&endpoint=seasonal-rates&siteId=${this.selectedSiteId}&month=${month}`
       );
       const data = await resp.json();
 
@@ -486,7 +486,7 @@ export class MLOptimizationDashboard {
    */
   async loadElasticity() {
     try {
-      const resp = await fetch(`/api/admin/ml-optimization/elasticity?siteId=${this.selectedSiteId}`);
+      const resp = await fetch(`/api/admin/ops?resource=ml-optimization&endpoint=elasticity&siteId=${this.selectedSiteId}`);
       const data = await resp.json();
 
       document.getElementById('mlElasticityValue').textContent = data.elasticity_coefficient;
@@ -502,7 +502,7 @@ export class MLOptimizationDashboard {
    */
   async loadPerformance() {
     try {
-      const resp = await fetch(`/api/admin/ml-optimization/performance?siteId=${this.selectedSiteId}&days=30`);
+      const resp = await fetch(`/api/admin/ops?resource=ml-optimization&endpoint=performance&siteId=${this.selectedSiteId}&days=30`);
       const data = await resp.json();
 
       document.getElementById('mlPerfAccuracy').textContent = data.mean_accuracy_error_percent ? `±${data.mean_accuracy_error_percent}%` : 'No data';
@@ -560,7 +560,7 @@ export class MLOptimizationDashboard {
 
     await withLoading(async () => {
       try {
-        const resp = await fetch('/api/admin/ml-optimization/train', {
+        const resp = await fetch('/api/admin/ops?resource=ml-optimization&endpoint=train', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ parkId: this.parkId, siteId: this.selectedSiteId }),

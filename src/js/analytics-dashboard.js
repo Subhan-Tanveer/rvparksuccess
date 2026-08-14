@@ -1,6 +1,6 @@
 // Advanced Analytics Dashboard — interactive KPI cards, charts, heatmap,
 // trends, forecasting, and guest segmentation for park staff. Loads data
-// from /api/admin/analytics, renders via vanilla DOM (no framework),
+// from /api/admin/features?resource=analytics, renders via vanilla DOM (no framework),
 // respects dark mode, and exports CSV for offline analysis.
 
 class AnalyticsDashboard {
@@ -262,7 +262,8 @@ class AnalyticsDashboard {
   }
 
   async fetchAnalytics(endpoint, params = {}) {
-    const url = new URL('/api/admin/analytics', window.location.origin);
+    const url = new URL('/api/admin/features', window.location.origin);
+    url.searchParams.append('resource', 'analytics');
     url.searchParams.append('endpoint', endpoint);
     url.searchParams.append('period', this.selectedPeriod);
     Object.entries(params).forEach(([key, value]) => {

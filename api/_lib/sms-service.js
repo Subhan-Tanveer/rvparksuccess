@@ -3,8 +3,8 @@
  * Handles all SMS communication with comprehensive error handling and rate limiting
  */
 
-const https = require('https');
-const querystring = require('querystring');
+import https from 'https';
+import querystring from 'querystring';
 
 class TwilioSMSService {
   constructor(accountSid, authToken) {
@@ -233,4 +233,4 @@ class TwilioSMSService {
   }
 }
 
-module.exports = TwilioSMSService;
+export default TwilioSMSService;

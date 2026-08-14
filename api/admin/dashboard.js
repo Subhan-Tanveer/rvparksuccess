@@ -8,13 +8,83 @@
 // limit.
 import Stripe from 'stripe';
 import { requireSession } from '../_lib/auth.js';
-import { getPark, getSitesForPark, getReservationsForPark, updateParkSettings, getParkStats, addPromoCode, removePromoCode, getWaitlistForPark, removeWaitlistEntry, getPayoutSummary, setParkStripeAccount, registerPark, getPropertiesForUser } from '../_lib/reservations-store.js';
+import { getPark, getSitesForPark, getReservationsForPark, updateParkSettings, getParkStats, addPromoCode, removePromoCode, getWaitlistForPark, removeWaitlistEntry, getPayoutSummary, setParkStripeAccount, registerPark, getPropertiesForUser, addSite, updateSite, deleteSite, addSeasonalRate, removeSeasonalRate, createStaffReservation } from '../_lib/reservations-store.js';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 export default async function handler(req, res) {
   const session = requireSession(req, res, { role: 'park-staff' });
   if (!session) return;
+
+  // resource: 'staff-booking' — lifted from the now-deleted
+  // api/admin/staff-booking.js. This is what the front desk uses for a
+  // phone or walk-in reservation.
+  if (req.method === 'POST' && req.body?.resource === 'staff-booking') {
+    const { siteId, checkIn, checkOut, guestName, guestEmail, guestPhone, paymentMethod, notes } = req.body || {};
+    try {
+      const reservation = await createStaffReservation({
+        parkId: session.parkId, siteId, checkIn, checkOut,
+        guestName, guestEmail, guestPhone, paymentMethod, notes,
+      });
+      return res.status(201).json({ reservation });
+    } catch (err) {
+      return res.status(400).json({ error: err.message });
+    }
+  }
+
+  // resource: 'site' / 'season' — lifted from the now-deleted
+  // api/admin/sites.js. The parkId always comes from the signed session,
+  // never from the request body — a staff member can never edit another
+  // park's sites, even if they tampered with the request.
+  if (req.method === 'POST' && req.body?.resource === 'season') {
+    const { siteId, label, startDate, endDate, nightlyRateCents } = req.body;
+    try {
+      const site = await addSeasonalRate(siteId, session.parkId, { label, startDate, endDate, nightlyRateCents });
+      return res.status(201).json({ site });
+    } catch (err) {
+      return res.status(400).json({ error: err.message });
+    }
+  }
+
+  if (req.method === 'DELETE' && req.body?.resource === 'season') {
+    const { siteId, seasonId } = req.body;
+    try {
+      const site = await removeSeasonalRate(siteId, session.parkId, seasonId);
+      return res.status(200).json({ site });
+    } catch (err) {
+      return res.status(400).json({ error: err.message });
+    }
+  }
+
+  if (req.method === 'POST' && req.body?.resource === 'site') {
+    const { name, type, capacity, nightlyRateCents } = req.body || {};
+    try {
+      const site = await addSite(session.parkId, { name, type, capacity, nightlyRateCents });
+      return res.status(201).json({ site });
+    } catch (err) {
+      return res.status(400).json({ error: err.message });
+    }
+  }
+
+  if (req.method === 'PUT' && req.body?.resource === 'site') {
+    const { id, name, type, capacity, nightlyRateCents } = req.body || {};
+    try {
+      const site = await updateSite(id, session.parkId, { name, type, capacity, nightlyRateCents });
+      return res.status(200).json({ site });
+    } catch (err) {
+      return res.status(400).json({ error: err.message });
+    }
+  }
+
+  if (req.method === 'DELETE' && req.body?.resource === 'site') {
+    const { id } = req.body || {};
+    try {
+      await deleteSite(id, session.parkId);
+      return res.status(200).json({ ok: true });
+    } catch (err) {
+      return res.status(400).json({ error: err.message });
+    }
+  }
 
   if (req.method === 'POST' && req.body?.resource === 'stripe-connect') {
     try {

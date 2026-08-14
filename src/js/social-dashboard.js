@@ -175,7 +175,7 @@ export async function initSocialDashboard(park) {
  */
 async function loadPlatforms() {
   try {
-    const res = await fetch('/api/admin/social/accounts', {
+    const res = await fetch('/api/admin/features?resource=social&action=accounts', {
       headers: {
         'X-Park-Id': currentPark.id,
         'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
@@ -263,7 +263,7 @@ async function handleConnectPlatform(platform) {
 
   try {
     await withLoading(async () => {
-      const res = await fetch('/api/admin/social/connect', {
+      const res = await fetch('/api/admin/features?resource=social&action=connect', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -296,7 +296,7 @@ async function handleDisconnectPlatform(platform) {
 
   try {
     await withLoading(async () => {
-      const res = await fetch('/api/admin/social/disconnect', {
+      const res = await fetch('/api/admin/features?resource=social&action=disconnect', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -321,7 +321,7 @@ async function handleDisconnectPlatform(platform) {
  */
 async function loadTemplates() {
   try {
-    const res = await fetch('/api/admin/social/captions', {
+    const res = await fetch('/api/admin/features?resource=social&action=captions', {
       headers: {
         'X-Park-Id': currentPark.id,
         'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
@@ -359,7 +359,7 @@ async function loadPlatformOptions() {
  */
 async function loadScheduledPosts() {
   try {
-    const res = await fetch('/api/admin/social/scheduled', {
+    const res = await fetch('/api/admin/features?resource=social&action=scheduled', {
       headers: {
         'X-Park-Id': currentPark.id,
         'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
@@ -427,7 +427,7 @@ async function loadPerformanceMetrics() {
     const platform = document.getElementById('performancePlatform').value || 'facebook';
     const days = document.getElementById('performanceDays').value || '30';
 
-    const res = await fetch(`/api/admin/social/performance?platform=${platform}&days=${days}`, {
+    const res = await fetch(`/api/admin/features?resource=social&action=performance&platform=${platform}&days=${days}`, {
       headers: {
         'X-Park-Id': currentPark.id,
         'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
@@ -514,7 +514,7 @@ function setupEventListeners() {
     }
 
     try {
-      const res = await fetch('/api/admin/social/generate-caption', {
+      const res = await fetch('/api/admin/features?resource=social&action=generate-caption', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -554,7 +554,7 @@ function setupEventListeners() {
 
     try {
       await withLoading(async () => {
-        const res = await fetch('/api/admin/social/post', {
+        const res = await fetch('/api/admin/features?resource=social&action=post', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -604,7 +604,7 @@ async function handleDeletePost(postId) {
 
   try {
     await withLoading(async () => {
-      const res = await fetch('/api/admin/social/post/delete', {
+      const res = await fetch('/api/admin/features?resource=social&action=delete-post', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

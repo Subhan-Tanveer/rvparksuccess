@@ -119,7 +119,7 @@ export function initBookingRulesDashboard() {
 
   async function refreshRules() {
     try {
-      const url = `/api/admin/booking-rules?parkId=${currentParkId}`;
+      const url = `/api/admin/ops?resource=booking-rules&action=rules&parkId=${currentParkId}`;
       const res = await fetch(url);
       rules = await res.json();
       renderRules();
@@ -382,13 +382,14 @@ export function initBookingRulesDashboard() {
         ruleConfig.weekends_only = dialog.querySelector('#configWeekendsOnly')?.checked || false;
       }
 
-      const url = ruleId ? `/api/admin/booking-rules/${ruleId}` : '/api/admin/booking-rules';
+      const url = '/api/admin/ops?resource=booking-rules&action=rules';
       const method = ruleId ? 'PATCH' : 'POST';
 
       const res = await fetch(url, {
         method,
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
+          ruleId,
           parkId: currentParkId,
           siteId: siteSelect.value || null,
           ruleType,
@@ -479,7 +480,7 @@ export function initBookingRulesDashboard() {
       }
 
       try {
-        const res = await fetch('/api/admin/booking-rules/validate', {
+        const res = await fetch('/api/admin/ops?resource=booking-rules&action=validate', {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
           body: JSON.stringify({
@@ -597,7 +598,7 @@ export function initBookingRulesDashboard() {
       }
 
       try {
-        const res = await fetch('/api/admin/booking-rules/blackout-dates', {
+        const res = await fetch('/api/admin/ops?resource=booking-rules&action=blackout-dates', {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
           body: JSON.stringify({
@@ -630,7 +631,7 @@ export function initBookingRulesDashboard() {
     try {
       const siteId = dialog.querySelector('#blackoutSiteSelect').value;
       const res = await fetch(
-        `/api/admin/booking-rules/blackout-dates?parkId=${currentParkId}&siteId=${siteId}`
+        `/api/admin/ops?resource=booking-rules&action=blackout-dates&parkId=${currentParkId}&siteId=${siteId}`
       );
       const blackouts = await res.json();
 
@@ -670,7 +671,11 @@ export function initBookingRulesDashboard() {
   window.deleteRule = async (ruleId) => {
     if (!confirm('Delete this rule?')) return;
     try {
-      const res = await fetch(`/api/admin/booking-rules/${ruleId}`, { method: 'DELETE' });
+      const res = await fetch('/api/admin/ops?resource=booking-rules&action=rules', {
+        method: 'DELETE',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ ruleId }),
+      });
       if (res.ok) {
         showAlert('Rule deleted', 'success');
         await refreshRules();
@@ -684,8 +689,12 @@ export function initBookingRulesDashboard() {
     if (!confirm('Delete this blackout period?')) return;
     try {
       const res = await fetch(
-        `/api/admin/booking-rules/blackout-dates/${blackoutId}`,
-        { method: 'DELETE' }
+        '/api/admin/ops?resource=booking-rules&action=blackout-dates',
+        {
+          method: 'DELETE',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ blackoutId }),
+        }
       );
       if (res.ok) {
         showAlert('Blackout deleted', 'success');

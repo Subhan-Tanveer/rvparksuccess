@@ -244,7 +244,7 @@ function attachEventListeners() {
   });
 
   document.getElementById('nextPageBtn').addEventListener('click', async () => {
-    const { guests } = await fetch(`/api/admin/crm?action=guests&page=${currentPage + 1}`).then(r => r.json());
+    const { guests } = await fetch(`/api/admin/features?resource=crm&action=guests&page=${currentPage + 1}`).then(r => r.json());
     if (guests.length > 0) {
       currentPage++;
       await loadGuestList();
@@ -270,7 +270,7 @@ function attachEventListeners() {
     if (!tagName) return;
 
     try {
-      const res = await fetch('/api/admin/crm?action=tag', {
+      const res = await fetch('/api/admin/features?resource=crm&action=tag', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ guestEmail: selectedGuestEmail, tagName }),
@@ -295,7 +295,7 @@ function attachEventListeners() {
     if (!noteText) return;
 
     try {
-      const res = await fetch('/api/admin/crm?action=note', {
+      const res = await fetch('/api/admin/features?resource=crm&action=note', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ guestEmail: selectedGuestEmail, noteText }),
@@ -330,7 +330,7 @@ function attachEventListeners() {
 
 async function loadGuestList() {
   try {
-    const res = await fetch(`/api/admin/crm?action=guests&page=${currentPage}`);
+    const res = await fetch(`/api/admin/features?resource=crm&action=guests&page=${currentPage}`);
     if (!res.ok) throw new Error('Failed to load guests');
 
     const { guests, total } = await res.json();
@@ -347,7 +347,7 @@ async function loadGuestList() {
 
 async function loadSegments() {
   try {
-    const res = await fetch('/api/admin/crm?action=segments');
+    const res = await fetch('/api/admin/features?resource=crm&action=segments');
     if (!res.ok) throw new Error('Failed to load segments');
 
     const { segments: data } = await res.json();
@@ -368,7 +368,7 @@ async function loadSegments() {
 
 async function loadAtRiskGuests() {
   try {
-    const res = await fetch('/api/admin/crm?action=at-risk&limit=20');
+    const res = await fetch('/api/admin/features?resource=crm&action=at-risk&limit=20');
     if (!res.ok) throw new Error('Failed to load at-risk guests');
 
     const { guests } = await res.json();
@@ -436,7 +436,7 @@ async function loadGuestDetail(email) {
   selectedGuestEmail = email;
 
   try {
-    const res = await fetch(`/api/admin/crm?action=guest&guestEmail=${encodeURIComponent(email)}`);
+    const res = await fetch(`/api/admin/features?resource=crm&action=guest&guestEmail=${encodeURIComponent(email)}`);
     if (!res.ok) throw new Error('Failed to load guest');
 
     const { history } = await res.json();
@@ -533,7 +533,7 @@ window.crmRemoveTag = async (tagId) => {
   if (!await confirmDialog('Remove Tag', 'Are you sure you want to remove this tag?')) return;
 
   try {
-    const res = await fetch(`/api/admin/crm?action=tag&tagId=${tagId}`, { method: 'DELETE' });
+    const res = await fetch(`/api/admin/features?resource=crm&action=tag&tagId=${tagId}`, { method: 'DELETE' });
     if (!res.ok) throw new Error('Failed to remove tag');
 
     await loadGuestDetail(selectedGuestEmail);

@@ -23,7 +23,7 @@ import {
   getBulkOperation,
   completeBulkOperation,
   logOperationAudit,
-  updateSiteRate,
+  updateSite,
 } from './reservations-store.js';
 
 /**
@@ -212,7 +212,7 @@ export async function bulkUpdateRates(userId, propertyIds, rateCard) {
       for (const site of sites) {
         if (rateCard[site.id]) {
           try {
-            await updateSiteRate(site.id, rateCard[site.id]);
+            await updateSite(site.id, parkId, { nightlyRateCents: rateCard[site.id] });
             await logOperationAudit(operationId, parkId, 'rate-update', 'success', `Site ${site.name}: ${rateCard[site.id]} cents`);
           } catch (siteErr) {
             failed++;

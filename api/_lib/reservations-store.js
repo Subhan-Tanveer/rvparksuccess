@@ -57,6 +57,14 @@ const pool = new Pool({
   ssl: connectionString && !/sslmode=/.test(connectionString) ? { rejectUnauthorized: false } : undefined,
 });
 
+// Exposed so route handlers that need the raw pool (e.g. to hand it to
+// api/_lib/social-media-manager.js functions, which take `pool` as their
+// first argument) can reuse this single connection pool instead of
+// opening a second one.
+export function getPool() {
+  return pool;
+}
+
 const BOOKING_FEE_CENTS = 150; // the platform fee charged per reservation, per the $1-2/booking model
 const PENDING_HOLD_MINUTES = 20; // how long a site is held while a guest is mid-checkout
 
@@ -705,7 +713,7 @@ function ensureSchema() {
   return schemaReady;
 }
 
-async function query(text, params) {
+export async function query(text, params) {
   await ensureSchema();
   return pool.query(text, params);
 }

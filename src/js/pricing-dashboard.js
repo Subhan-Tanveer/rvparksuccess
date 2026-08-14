@@ -19,7 +19,7 @@ export async function initPricingDashboard(park) {
 
   // Fetch pricing settings
   try {
-    const res = await fetch('/api/admin/pricing');
+    const res = await fetch('/api/admin/features?resource=pricing');
     if (res.ok) {
       const data = await res.json();
       currentPricingSettings = data.settings;
@@ -138,7 +138,7 @@ function renderPricingSettings(settings, park) {
 
 export async function toggleDynamicPricing() {
   try {
-    const res = await fetch('/api/admin/pricing', {
+    const res = await fetch('/api/admin/features?resource=pricing', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'toggleDynamicPricing' }),
@@ -184,7 +184,7 @@ export async function savePricingSettings() {
   }
 
   try {
-    const res = await fetch('/api/admin/pricing', {
+    const res = await fetch('/api/admin/features?resource=pricing', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -226,7 +226,7 @@ export async function calculateSuggestions() {
 
   await withLoading(async () => {
     try {
-      const res = await fetch('/api/admin/pricing', {
+      const res = await fetch('/api/admin/features?resource=pricing', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -358,7 +358,7 @@ export async function applySuggestion(siteId, date, suggestedRate, currentRate) 
 
   await withLoading(async () => {
     try {
-      const res = await fetch('/api/admin/pricing', {
+      const res = await fetch('/api/admin/features?resource=pricing', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -408,7 +408,7 @@ export async function applyAllSuggestions() {
   await withLoading(async () => {
     for (const suggestion of currentSuggestions) {
       try {
-        const res = await fetch('/api/admin/pricing', {
+        const res = await fetch('/api/admin/features?resource=pricing', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

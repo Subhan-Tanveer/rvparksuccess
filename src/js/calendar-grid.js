@@ -159,7 +159,7 @@ class CalendarGrid {
       const month = String(this.currentDate.getMonth() + 1).padStart(2, '0');
       const monthStr = `${year}-${month}`;
 
-      const res = await fetch(`/api/admin/calendar?parkId=${this.options.parkId}&month=${monthStr}`);
+      const res = await fetch(`/api/admin/ops?resource=calendar&parkId=${this.options.parkId}&month=${monthStr}`);
       if (!res.ok) throw new Error('Failed to load calendar data');
 
       const data = await res.json();
@@ -544,7 +544,7 @@ class CalendarGrid {
     const checkOutStr = checkOutDate.toISOString().split('T')[0];
 
     await withLoading(null, async () => {
-      const res = await fetch('/api/admin/calendar', {
+      const res = await fetch('/api/admin/ops?resource=calendar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -584,7 +584,7 @@ class CalendarGrid {
     if (!values) return;
 
     await withLoading(null, async () => {
-      const res = await fetch('/api/admin/calendar', {
+      const res = await fetch('/api/admin/ops?resource=calendar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -615,7 +615,7 @@ class CalendarGrid {
     if (!ok) return;
 
     await withLoading(null, async () => {
-      const res = await fetch('/api/admin/calendar', {
+      const res = await fetch('/api/admin/ops?resource=calendar', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -695,7 +695,7 @@ class CalendarGrid {
     const newCheckOutStr = newCheckOutDate.toISOString().split('T')[0];
 
     await withLoading(null, async () => {
-      const res = await fetch('/api/admin/calendar', {
+      const res = await fetch('/api/admin/ops?resource=calendar', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -737,7 +737,7 @@ class CalendarGrid {
     if (!ok) return;
 
     await withLoading(null, async () => {
-      const res = await fetch('/api/admin/calendar', {
+      const res = await fetch('/api/admin/ops?resource=calendar', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

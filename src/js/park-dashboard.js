@@ -189,7 +189,7 @@ document.getElementById('sitesTableBody').addEventListener('click', async (e) =>
     if (!values) return;
 
     await withLoading(addSeasonBtn, async () => {
-      const res = await fetch('/api/admin/sites', {
+      const res = await fetch('/api/admin/dashboard', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ resource: 'season', siteId: site.id, label: values.label, startDate: values.startDate, endDate: values.endDate, nightlyRateCents: Math.round(values.rate * 100) }),
@@ -205,7 +205,7 @@ document.getElementById('sitesTableBody').addEventListener('click', async (e) =>
     const ok = await confirmDialog({ title: 'Remove Seasonal Rate', message: 'Remove this seasonal rate?', confirmLabel: 'Remove', danger: true });
     if (!ok) return;
     await withLoading(removeSeasonBtn, async () => {
-      const res = await fetch('/api/admin/sites', {
+      const res = await fetch('/api/admin/dashboard', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ resource: 'season', siteId, seasonId }),
@@ -226,10 +226,10 @@ document.getElementById('sitesTableBody').addEventListener('click', async (e) =>
     if (!values) return;
 
     await withLoading(editBtn, async () => {
-      const res = await fetch('/api/admin/sites', {
+      const res = await fetch('/api/admin/dashboard', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: site.id, nightlyRateCents: Math.round(values.rate * 100) }),
+        body: JSON.stringify({ resource: 'site', id: site.id, nightlyRateCents: Math.round(values.rate * 100) }),
       });
       if (res.ok) loadDashboard();
       else siteAlertShow((await res.json()).error || 'Could not update site');
@@ -241,10 +241,10 @@ document.getElementById('sitesTableBody').addEventListener('click', async (e) =>
     const ok = await confirmDialog({ title: 'Delete Site', message: `Delete ${site.name}? This can't be undone.`, confirmLabel: 'Delete', danger: true });
     if (!ok) return;
     await withLoading(deleteBtn, async () => {
-      const res = await fetch('/api/admin/sites', {
+      const res = await fetch('/api/admin/dashboard', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: site.id }),
+        body: JSON.stringify({ resource: 'site', id: site.id }),
       });
       if (res.ok) loadDashboard();
       else siteAlertShow((await res.json()).error || 'Could not delete site');
@@ -269,10 +269,11 @@ addSiteForm.addEventListener('submit', async (e) => {
 
   await withLoading(addSiteBtn, async () => {
     try {
-      const res = await fetch('/api/admin/sites', {
+      const res = await fetch('/api/admin/dashboard', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          resource: 'site',
           name: document.getElementById('sName').value,
           type: document.getElementById('sType').value,
           capacity: document.getElementById('sCapacity').value,
@@ -340,10 +341,11 @@ bookingForm.addEventListener('submit', async (e) => {
 
   await withLoading(confirmBookingBtn, async () => {
     try {
-      const res = await fetch('/api/admin/staff-booking', {
+      const res = await fetch('/api/admin/dashboard', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          resource: 'staff-booking',
           siteId: selectedSiteId,
           checkIn: document.getElementById('bkCheckIn').value,
           checkOut: document.getElementById('bkCheckOut').value,

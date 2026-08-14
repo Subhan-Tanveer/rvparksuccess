@@ -8,7 +8,7 @@ const tbody = document.getElementById('parksTableBody');
 const emptyEl = document.getElementById('parksEmpty');
 
 async function loadParks() {
-  const res = await fetch('/api/admin/parks');
+  const res = await fetch('/api/admin/ops?resource=parks');
   if (res.status === 401) {
     window.location.href = 'admin-login.html';
     return;
@@ -45,7 +45,7 @@ createForm.addEventListener('submit', async (e) => {
   createBtn.disabled = true;
 
   try {
-    const res = await fetch('/api/admin/parks', {
+    const res = await fetch('/api/admin/ops?resource=parks', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

@@ -29,7 +29,7 @@ async function loadPortfolio() {
     withLoading(true);
 
     // Load properties
-    const portfolioRes = await fetch('/api/admin/multi-property?resource=portfolio');
+    const portfolioRes = await fetch('/api/admin/ops?resource=multi-property&sub=portfolio');
     if (portfolioRes.status === 401) {
       window.location.href = 'login.html';
       return;
@@ -52,14 +52,14 @@ async function loadPortfolio() {
     renderPortfolioOverview();
 
     // Load consolidated metrics
-    const metricsRes = await fetch('/api/admin/multi-property/consolidated-metrics?days=30');
+    const metricsRes = await fetch('/api/admin/ops?resource=multi-property&sub=consolidated-metrics&days=30');
     if (metricsRes.ok) {
       consolidatedMetrics = await metricsRes.json();
       renderConsolidatedMetrics();
     }
 
     // Load alerts
-    const alertsRes = await fetch('/api/admin/multi-property/alerts');
+    const alertsRes = await fetch('/api/admin/ops?resource=multi-property&sub=alerts');
     if (alertsRes.ok) {
       const alertsData = await alertsRes.json();
       renderAlerts(alertsData.alerts);
@@ -261,7 +261,7 @@ async function startBulkRateUpdate() {
       // For now, just apply a global rate
     });
 
-    const response = await fetch('/api/admin/multi-property/bulk-update-rates', {
+    const response = await fetch('/api/admin/ops?resource=multi-property&sub=bulk-update-rates', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -305,7 +305,7 @@ async function startBulkCampaign() {
   try {
     withLoading(true);
 
-    const response = await fetch('/api/admin/multi-property/bulk-campaign', {
+    const response = await fetch('/api/admin/ops?resource=multi-property&sub=bulk-campaign', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -353,7 +353,7 @@ async function startBulkMaintenance() {
   try {
     withLoading(true);
 
-    const response = await fetch('/api/admin/multi-property/bulk-maintenance', {
+    const response = await fetch('/api/admin/ops?resource=multi-property&sub=bulk-maintenance', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

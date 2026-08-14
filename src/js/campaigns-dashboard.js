@@ -46,7 +46,7 @@ export async function initCampaignsDashboard(park) {
 
 async function loadCampaigns() {
   try {
-    const res = await fetch(`/api/admin/campaigns?parkId=${currentPark.id}`);
+    const res = await fetch(`/api/admin/features?resource=campaigns&parkId=${currentPark.id}`);
     if (!res.ok) throw new Error(await res.text());
 
     campaigns = await res.json();
@@ -483,7 +483,7 @@ async function createCampaignFromWizard(modal) {
   }
 
   try {
-    const res = await fetch('/api/admin/campaigns', {
+    const res = await fetch('/api/admin/features?resource=campaigns', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -508,7 +508,7 @@ async function createCampaignFromWizard(modal) {
 
     // If A/B test enabled, set up variants
     if (modal.querySelector('#enableABTest').checked) {
-      const variantARes = await fetch(`/api/admin/campaigns/${campaign.id}/ab-test`, {
+      const variantARes = await fetch(`/api/admin/features?resource=campaigns&campaignId=${campaign.id}&action=ab-test`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -539,7 +539,7 @@ async function createCampaignFromWizard(modal) {
 
 async function openCampaignDetail(campaignId) {
   try {
-    const res = await fetch(`/api/admin/campaigns?campaignId=${campaignId}`);
+    const res = await fetch(`/api/admin/features?resource=campaigns&campaignId=${campaignId}`);
     if (!res.ok) throw new Error('Failed to load campaign');
 
     const campaign = await res.json();
@@ -686,7 +686,7 @@ function renderCampaignDetailModal(campaign) {
       if (ok) {
         try {
           await withLoading(executeBtn, async () => {
-            const res = await fetch(`/api/admin/campaigns/${campaign.id}/execute`, {
+            const res = await fetch(`/api/admin/features?resource=campaigns&campaignId=${campaign.id}&action=execute`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
             });
