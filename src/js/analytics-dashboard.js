@@ -104,7 +104,7 @@ class AnalyticsDashboard {
                   <th>Avg. Daily Rate</th>
                 </tr>
               </thead>
-              <tbody id="sitesTableBody">
+              <tbody id="analyticsSitesTableBody">
                 <tr><td colspan="4" class="analytics-empty">Loading...</td></tr>
               </tbody>
             </table>
@@ -344,7 +344,7 @@ class AnalyticsDashboard {
   }
 
   renderSitesTable() {
-    const tbody = document.getElementById('sitesTableBody');
+    const tbody = document.getElementById('analyticsSitesTableBody');
     if (!tbody) return;
 
     const sites = this.data.sites?.sites || [];
