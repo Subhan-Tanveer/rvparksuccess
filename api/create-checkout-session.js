@@ -64,6 +64,10 @@ export default async function handler(req, res) {
       });
     }
 
+    const successUrl = `${origin}/register-park.html?checkout=success`;
+    const cancelUrl = `${origin}/packages.html?checkout=canceled`;
+    console.log('Creating Stripe session:', { successUrl, cancelUrl, parkId: session.parkId, service: svcKey });
+
     // client_reference_id + metadata are how the webhook (see
     // api/reservations/webhook.js's 'subscription' mode branch) knows
     // which park to record this plan against once payment completes.
@@ -73,9 +77,10 @@ export default async function handler(req, res) {
       line_items: lineItems,
       client_reference_id: session.parkId,
       metadata: { type: 'subscription', service: svcKey },
-      success_url: `${origin}/register-park.html?checkout=success`,
-      cancel_url: `${origin}/packages.html?checkout=canceled`,
+      success_url: successUrl,
+      cancel_url: cancelUrl,
     });
+    console.log('Stripe session created:', { sessionId: checkoutSession.id, url: checkoutSession.url });
     res.status(200).json({ url: checkoutSession.url });
   } catch (err) {
     console.error('Stripe checkout session error:', err.message);
