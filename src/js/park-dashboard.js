@@ -39,14 +39,22 @@ function renderSubscriptionDetails(details) {
   }
 
   const loadingEl = document.getElementById('subscriptionLoading');
+  const canceledEl = document.getElementById('subscriptionCanceled');
   const detailsEl = document.getElementById('subscriptionDetails');
+  loadingEl.style.display = 'none';
+
+  if (details.status === 'canceled') {
+    detailsEl.style.display = 'none';
+    canceledEl.style.display = 'block';
+    return;
+  }
+  canceledEl.style.display = 'none';
 
   const pkg = PACKAGES.find((p) => p.key === currentPark.planKey);
   document.getElementById('subPlanName').textContent = pkg ? pkg.name : 'Unknown Plan';
   document.getElementById('subNextBilling').textContent = new Date(details.currentPeriodEnd * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   document.getElementById('subPaymentMethod').textContent = `Payment method: ${details.paymentMethodLast4 ? `••••${details.paymentMethodLast4}` : 'Not available'}`;
 
-  loadingEl.style.display = 'none';
   detailsEl.style.display = 'block';
 }
 
@@ -560,7 +568,7 @@ document.getElementById('updatePaymentBtn').addEventListener('click', async () =
 document.getElementById('cancelSubscriptionBtn').addEventListener('click', async () => {
   const ok = await confirmDialog({
     title: 'Cancel Subscription',
-    message: 'Are you sure? Your subscription will end immediately and you will lose access to premium features.',
+    message: 'Are you sure? Your billing will stop immediately and you\'ll need to pick a plan again to keep using the dashboard.',
     confirmLabel: 'Cancel Subscription', cancelLabel: 'Keep It', danger: true,
   });
   if (!ok) return;
