@@ -15,7 +15,15 @@ export const isTouch = window.matchMedia('(hover: none)').matches || window.inne
 /* ---------------------------------------------------------------- */
 function initSmoothScroll() {
   if (prefersReduced) return null;
-  const lenis = new Lenis({ duration: 1.1, smoothWheel: true });
+  // prevent: skip Lenis's global wheel hijack for any element (or ancestor)
+  // marked [data-lenis-prevent] — e.g. the dashboard sidebar, which has its
+  // own independent overflow-y:auto scroll and should scroll natively
+  // instead of being redirected into scrolling the main page.
+  const lenis = new Lenis({
+    duration: 1.1,
+    smoothWheel: true,
+    prevent: (node) => node.closest?.('[data-lenis-prevent]') != null,
+  });
   lenis.on('scroll', ScrollTrigger.update);
   gsap.ticker.add((time) => lenis.raf(time * 1000));
   gsap.ticker.lagSmoothing(0);
