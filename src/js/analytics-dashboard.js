@@ -284,17 +284,17 @@ class AnalyticsDashboard {
     // Revenue
     const totalRevenueCents = overview.revenue?.totalRevenueCents || 0;
     document.getElementById('kpiRevenue').textContent = this.formatCurrency(totalRevenueCents);
-    document.getElementById('kpiRevenueTrend').textContent = this.formatTrend(trends.revenueTrendPercent);
+    document.getElementById('kpiRevenueTrend').innerHTML = this.formatTrend(trends.revenueTrendPercent);
 
     // Occupancy
     const occupancyPercent = overview.occupancy?.occupancyPercent || 0;
     document.getElementById('kpiOccupancy').textContent = `${occupancyPercent}%`;
-    document.getElementById('kpiOccupancyTrend').textContent = this.formatTrend(trends.occupancyTrendPercent);
+    document.getElementById('kpiOccupancyTrend').innerHTML = this.formatTrend(trends.occupancyTrendPercent);
 
     // ADR
     const adrCents = overview.revenue?.adrCents || 0;
     document.getElementById('kpiAdr').textContent = this.formatCurrency(adrCents);
-    document.getElementById('kpiAdrTrend').textContent = this.formatTrend(trends.adrTrendPercent);
+    document.getElementById('kpiAdrTrend').innerHTML = this.formatTrend(trends.adrTrendPercent);
 
     // Repeat guests
     const repeatGuestPercent = overview.guests?.repeatGuestPercent || 0;

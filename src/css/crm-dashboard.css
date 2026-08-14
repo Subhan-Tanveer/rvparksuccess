@@ -1,4 +1,4 @@
-/* CRM Dashboard Styling */
+﻿/* CRM Dashboard Styling */
 
 .crm-wrapper {
   width: 100%;
@@ -141,7 +141,7 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: var(--surface);
+  color: var(--black);
 }
 
 .crm-tags-row {
@@ -162,7 +162,7 @@
 .crm-btn-small {
   padding: 6px 12px;
   background: var(--amber);
-  color: var(--surface);
+  color: var(--black);
   border: none;
   border-radius: var(--radius-md);
   font-size: 0.8125rem;
@@ -280,7 +280,7 @@
   border-radius: 50%;
   font-weight: 700;
   font-size: 1.25rem;
-  color: var(--surface);
+  color: var(--black);
 }
 
 .crm-risk-meta {

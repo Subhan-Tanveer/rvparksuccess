@@ -14,6 +14,68 @@ import { initializeOccupancyForecastingDashboard } from './occupancy-forecasting
 
 initCore();
 
+/* -- dashboard sidebar: scroll-spy highlight, smooth-scroll links,
+   off-canvas toggle on narrow viewports -- */
+function initDashboardSidebar() {
+  const sidebar = document.getElementById('dashSidebar');
+  const toggle = document.getElementById('dashSidebarToggle');
+  const backdrop = document.getElementById('dashSidebarBackdrop');
+  const links = Array.from(document.querySelectorAll('#dashSidebarNav a'));
+  if (!sidebar || !links.length) return;
+
+  const closeSidebar = () => {
+    sidebar.classList.remove('is-open');
+    backdrop.classList.remove('is-visible');
+    toggle?.setAttribute('aria-expanded', 'false');
+  };
+  const openSidebar = () => {
+    sidebar.classList.add('is-open');
+    backdrop.classList.add('is-visible');
+    toggle?.setAttribute('aria-expanded', 'true');
+  };
+
+  toggle?.addEventListener('click', () => {
+    if (sidebar.classList.contains('is-open')) closeSidebar();
+    else openSidebar();
+  });
+  backdrop?.addEventListener('click', closeSidebar);
+
+  links.forEach((link) => {
+    link.addEventListener('click', (e) => {
+      const id = link.getAttribute('href').slice(1);
+      const target = document.getElementById(id);
+      if (target) {
+        e.preventDefault();
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        history.replaceState(null, '', `#${id}`);
+      }
+      closeSidebar();
+    });
+  });
+
+  const sections = links
+    .map((link) => document.getElementById(link.getAttribute('href').slice(1)))
+    .filter(Boolean);
+  if (!sections.length) return;
+
+  const setActive = (id) => {
+    links.forEach((link) => link.classList.toggle('is-active', link.getAttribute('href') === `#${id}`));
+  };
+
+  const observer = new IntersectionObserver((entries) => {
+    // Pick the entry closest to the top of the viewport among those
+    // currently intersecting, so the highlighted link matches whatever
+    // section heading is nearest the top as the owner scrolls.
+    const visible = entries.filter((entry) => entry.isIntersecting);
+    if (!visible.length) return;
+    visible.sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+    setActive(visible[0].target.id);
+  }, { rootMargin: '-15% 0px -70% 0px', threshold: 0 });
+
+  sections.forEach((section) => observer.observe(section));
+}
+initDashboardSidebar();
+
 function formatUsd(cents) {
   return '$' + (cents / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }

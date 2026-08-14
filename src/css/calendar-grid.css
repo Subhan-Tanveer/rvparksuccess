@@ -113,11 +113,11 @@
   border-radius: 2px;
 }
 
-.legend-dot.available { background: var(--success-color, #2e9b54); }
-.legend-dot.booked { background: var(--info-color, #60a5fa); }
-.legend-dot.pending { background: var(--warning-color, #d97f2e); }
-.legend-dot.blocked { background: var(--gray-color, #6b7280); }
-.legend-dot.partial { background: var(--secondary-color, #f97316); }
+.legend-dot.available { background: var(--amber); }
+.legend-dot.booked { background: var(--brand-blue-light); }
+.legend-dot.pending { background: var(--brand-orange); }
+.legend-dot.blocked { background: rgba(245, 240, 232, 0.35); }
+.legend-dot.partial { background: #f97316; }
 
 /* Main grid container */
 .calendar-grid-container {

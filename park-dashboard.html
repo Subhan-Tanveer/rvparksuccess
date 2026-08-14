@@ -52,6 +52,60 @@
   .stat-card .label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--cream-dim); }
   .stat-card .value { font-family: var(--font-mono); font-size: 1.75rem; font-weight: 700; color: var(--amber-light); margin-top: 4px; }
   .stat-card .sub { font-size: 0.8125rem; color: var(--cream-dim); margin-top: 2px; }
+
+  /* -- dashboard sidebar nav (this page only — distinct from the site's
+     public marketing nav in components.css) -- */
+  .dash-sidebar-toggle {
+    display: none;
+    align-items: center; justify-content: center;
+    width: 40px; height: 40px; border-radius: var(--radius-sm);
+    background: var(--surface-glass); border: 1px solid var(--border-glass);
+    color: var(--cream); flex-direction: column; gap: 4px; flex-shrink: 0;
+  }
+  .dash-sidebar-toggle span { width: 18px; height: 2px; background: var(--cream); border-radius: 1px; }
+
+  .dash-sidebar {
+    position: fixed; top: 0; left: 0; bottom: 0; width: 250px; z-index: 150;
+    background: rgba(8, 12, 8, 0.9); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+    border-right: 1px solid var(--border-glass);
+    overflow-y: auto; -webkit-overflow-scrolling: touch;
+    padding: var(--sp-4) var(--sp-3);
+    transition: transform 0.35s var(--ease-out);
+  }
+  .dash-sidebar-brand {
+    display: flex; align-items: center; gap: 9px; padding: 0 var(--sp-2) var(--sp-3);
+    margin-bottom: var(--sp-2); border-bottom: 1px solid var(--border-glass);
+  }
+  .dash-sidebar-brand img { width: 30px; height: 30px; border-radius: 8px; background: #f5f5f4; padding: 3px; }
+  .dash-sidebar-brand span { font-family: var(--font-display); font-weight: 700; font-size: 0.9375rem; color: var(--cream); }
+  .dash-sidebar-title {
+    font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--cream-dim); padding: var(--sp-3) var(--sp-2) var(--sp-1);
+  }
+  .dash-sidebar-nav { display: flex; flex-direction: column; gap: 2px; }
+  .dash-sidebar-nav a {
+    display: block; padding: 9px 12px; border-radius: var(--radius-md);
+    font-size: 0.8125rem; font-weight: 600; color: var(--cream-dim);
+    border-left: 3px solid transparent; transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  }
+  .dash-sidebar-nav a:hover { background: var(--surface-glass); color: var(--cream); }
+  .dash-sidebar-nav a.is-active { background: rgba(46, 155, 84, 0.12); color: var(--amber-light); border-left-color: var(--amber); }
+
+  .dash-sidebar-backdrop {
+    display: none; position: fixed; inset: 0; z-index: 140; background: rgba(6, 9, 10, 0.6);
+    opacity: 0; visibility: hidden; transition: opacity 0.25s ease, visibility 0.25s ease;
+  }
+
+  @media (min-width: 901px) {
+    .admin-topbar, .admin-wrap { margin-left: 250px; }
+  }
+  @media (max-width: 900px) {
+    .dash-sidebar-toggle { display: inline-flex; }
+    .dash-sidebar { transform: translateX(-100%); box-shadow: 0 0 40px rgba(0,0,0,0.5); }
+    .dash-sidebar.is-open { transform: translateX(0); }
+    .dash-sidebar.is-open ~ .dash-sidebar-backdrop,
+    .dash-sidebar-backdrop.is-visible { display: block; opacity: 1; visibility: visible; }
+  }
 </style>
 </head>
 <body>
@@ -59,8 +113,41 @@
 <div class="cursor-dot"></div>
 <div class="cursor-ring"></div>
 
+<aside class="dash-sidebar" id="dashSidebar">
+  <div class="dash-sidebar-brand">
+    <img src="/images/logo/rvparksuccess-icon.png" alt="RVPark Success logo">
+    <span>Dashboard</span>
+  </div>
+  <p class="dash-sidebar-title">Jump to section</p>
+  <nav class="dash-sidebar-nav" id="dashSidebarNav">
+    <a href="#overview">Overview</a>
+    <a href="#billing">Billing</a>
+    <a href="#new-booking">New Booking</a>
+    <a href="#sites-rates">Sites &amp; Rates</a>
+    <a href="#pricing-intelligence">Pricing Intelligence</a>
+    <a href="#calendar-link">Calendar</a>
+    <a href="#reservations">Reservations</a>
+    <a href="#payouts">Payouts</a>
+    <a href="#waitlist">Waitlist</a>
+    <a href="#promo-codes">Promo Codes</a>
+    <a href="#park-settings">Park Settings</a>
+    <a href="#analytics">Advanced Analytics</a>
+    <a href="#competitors">Competitors</a>
+    <a href="#campaignsDashboard">Campaigns</a>
+    <a href="#socialDashboard">Social Media</a>
+    <a href="#bookingRulesDashboard">Booking Rules</a>
+    <a href="#ml-optimization">Rate Optimization</a>
+    <a href="#occupancy-forecasting">Occupancy Forecast</a>
+    <a href="#crm">CRM</a>
+  </nav>
+</aside>
+<div class="dash-sidebar-backdrop" id="dashSidebarBackdrop"></div>
+
 <div class="admin-topbar">
-  <a href="index.html" class="nav-brand"><span class="mark mark-logo"><img src="/images/logo/rvparksuccess-icon.png" alt="RVPark Success logo"></span><span class="name" id="parkNameHeading">Staff Dashboard</span></a>
+  <div style="display:flex; align-items:center; gap: var(--sp-2);">
+    <button type="button" class="dash-sidebar-toggle" id="dashSidebarToggle" aria-label="Toggle navigation" aria-expanded="false"><span></span><span></span><span></span></button>
+    <a href="index.html" class="nav-brand"><span class="mark mark-logo"><img src="/images/logo/rvparksuccess-icon.png" alt="RVPark Success logo"></span><span class="name" id="parkNameHeading">Staff Dashboard</span></a>
+  </div>
   <div style="display:flex; align-items:center; gap: var(--sp-3);">
     <span id="planBadge" style="font-size:0.8125rem; color: var(--amber-light); font-family: var(--font-mono);"></span>
     <button type="button" class="btn btn-ghost btn-sm" id="logoutBtn">Log Out</button>
@@ -70,7 +157,7 @@
 <div class="admin-wrap" id="gate" style="display:none;">
 
   <!-- At-a-glance stats -->
-  <div class="stats-grid" data-reveal>
+  <div class="stats-grid" id="overview" data-reveal>
     <div class="stat-card glass">
       <div class="label">Revenue Collected</div>
       <div class="value" id="statRevenue">$0</div>
@@ -91,7 +178,7 @@
   </div>
 
   <!-- Subscription Management -->
-  <div class="admin-section glass" data-reveal>
+  <div class="admin-section glass" id="billing" data-reveal>
     <div class="section-head" style="margin-bottom: var(--sp-3);">
       <p class="eyebrow">Billing</p>
       <h2 style="font-size: 1.375rem;">Subscription</h2>
@@ -126,7 +213,7 @@
   </div>
 
   <!-- New Booking: phone / walk-in reservations, same data as the public site -->
-  <div class="admin-section glass" data-reveal>
+  <div class="admin-section glass" id="new-booking" data-reveal>
     <div class="section-head" style="margin-bottom: var(--sp-3);">
       <p class="eyebrow">Phone or Walk-In</p>
       <h2 style="font-size: 1.375rem;">New Booking</h2>
@@ -160,7 +247,7 @@
   </div>
 
   <!-- Site management -->
-  <div class="admin-section glass" data-reveal>
+  <div class="admin-section glass" id="sites-rates" data-reveal>
     <div class="section-head" style="margin-bottom: var(--sp-3);">
       <p class="eyebrow">Your Inventory</p>
       <h2 style="font-size: 1.375rem;">Sites &amp; Rates</h2>
@@ -185,7 +272,7 @@
   </div>
 
   <!-- Pricing Intelligence -->
-  <div class="admin-section glass" data-reveal>
+  <div class="admin-section glass" id="pricing-intelligence" data-reveal>
     <div class="section-head" style="margin-bottom: var(--sp-3);">
       <p class="eyebrow">Revenue Optimization</p>
       <h2 style="font-size: 1.375rem;">Pricing Intelligence</h2>
@@ -196,7 +283,7 @@
   </div>
 
   <!-- Calendar Grid Link -->
-  <div class="admin-section glass" data-reveal style="padding: var(--sp-4);">
+  <div class="admin-section glass" id="calendar-link" data-reveal style="padding: var(--sp-4);">
     <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); flex-wrap: wrap;">
       <div>
         <p class="eyebrow">Quick Access</p>
@@ -208,7 +295,7 @@
   </div>
 
   <!-- Recent reservations -->
-  <div class="admin-section glass" data-reveal>
+  <div class="admin-section glass" id="reservations" data-reveal>
     <div class="section-head" style="margin-bottom: 0;">
       <p class="eyebrow">Recent Activity</p>
       <h2 style="font-size: 1.375rem;">Reservations</h2>
@@ -223,7 +310,7 @@
   </div>
 
   <!-- Payouts -->
-  <div class="admin-section glass" data-reveal>
+  <div class="admin-section glass" id="payouts" data-reveal>
     <div class="section-head" style="margin-bottom: var(--sp-3);">
       <p class="eyebrow">Money</p>
       <h2 style="font-size: 1.375rem;">Payouts</h2>
@@ -256,7 +343,7 @@
   </div>
 
   <!-- Waitlist -->
-  <div class="admin-section glass" data-reveal>
+  <div class="admin-section glass" id="waitlist" data-reveal>
     <div class="section-head" style="margin-bottom: var(--sp-3);">
       <p class="eyebrow">Sold Out Dates</p>
       <h2 style="font-size: 1.375rem;">Waitlist</h2>
@@ -271,7 +358,7 @@
   </div>
 
   <!-- Promo codes -->
-  <div class="admin-section glass" data-reveal>
+  <div class="admin-section glass" id="promo-codes" data-reveal>
     <div class="section-head" style="margin-bottom: var(--sp-3);">
       <p class="eyebrow">Marketing</p>
       <h2 style="font-size: 1.375rem;">Promo Codes</h2>
@@ -301,7 +388,7 @@
   </div>
 
   <!-- Park settings -->
-  <div class="admin-section glass" data-reveal>
+  <div class="admin-section glass" id="park-settings" data-reveal>
     <div class="section-head" style="margin-bottom: var(--sp-3);">
       <p class="eyebrow">Billing</p>
       <h2 style="font-size: 1.375rem;">Park Settings</h2>
@@ -318,7 +405,7 @@
   </div>
 
   <!-- Advanced Analytics Dashboard -->
-  <div class="admin-section glass" data-reveal>
+  <div class="admin-section glass" id="analytics" data-reveal>
     <div class="section-head" style="margin-bottom: var(--sp-3);">
       <p class="eyebrow">Business Intelligence</p>
       <h2 style="font-size: 1.375rem;">Advanced Analytics</h2>
@@ -327,7 +414,7 @@
   </div>
 
   <!-- Competitive Intelligence Dashboard -->
-  <div class="admin-section glass" data-reveal>
+  <div class="admin-section glass" id="competitors" data-reveal>
     <div class="section-head" style="margin-bottom: var(--sp-3);">
       <p class="eyebrow">Market Analysis</p>
       <h2 style="font-size: 1.375rem;">Competitive Pricing Intelligence</h2>
@@ -345,7 +432,7 @@
   <div id="bookingRulesDashboard"></div>
 
   <!-- ML Rate Optimization Dashboard -->
-  <div class="admin-section glass" data-reveal>
+  <div class="admin-section glass" id="ml-optimization" data-reveal>
     <div class="section-head" style="margin-bottom: var(--sp-3);">
       <p class="eyebrow">Revenue Optimization</p>
       <h2 style="font-size: 1.375rem;">AI-Powered Rate Optimization</h2>
@@ -354,7 +441,7 @@
   </div>
 
   <!-- Occupancy Forecasting Dashboard -->
-  <div class="admin-section glass" data-reveal>
+  <div class="admin-section glass" id="occupancy-forecasting" data-reveal>
     <div class="section-head" style="margin-bottom: var(--sp-3);">
       <p class="eyebrow">Forecasting & Planning</p>
       <h2 style="font-size: 1.375rem;">Occupancy Forecasting Engine</h2>
@@ -363,7 +450,7 @@
   </div>
 
   <!-- CRM Dashboard -->
-  <div class="admin-section glass" data-reveal>
+  <div class="admin-section glass" id="crm" data-reveal>
     <div class="section-head" style="margin-bottom: var(--sp-3);">
       <p class="eyebrow">Guest Management</p>
       <h2 style="font-size: 1.375rem;">CRM Dashboard</h2>

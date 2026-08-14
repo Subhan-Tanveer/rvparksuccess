@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Social Media Dashboard — Styling for multi-platform social management UI
  */
 
@@ -35,7 +35,7 @@
   border: 1px solid var(--border-glass);
   border-radius: var(--radius-md);
   padding: var(--sp-3);
-  color: var(--cream-light);
+  color: var(--cream);
   font-size: 0.9375rem;
   line-height: 1.5;
   resize: vertical;
@@ -214,7 +214,7 @@
 @media (prefers-color-scheme: dark) {
   #socialPostContent {
     background: rgba(255, 255, 255, 0.05);
-    color: var(--cream-light);
+    color: var(--cream);
   }
 
   #socialPostContent::placeholder {
@@ -262,7 +262,7 @@
   margin-top: var(--sp-3);
   font-size: 0.9375rem;
   line-height: 1.5;
-  color: var(--cream-light);
+  color: var(--cream);
 }
 
 .post-preview.facebook {
@@ -351,7 +351,7 @@
   background: var(--surface-glass-strong);
   border: 1px solid var(--border-glass);
   border-radius: var(--radius-md);
-  color: var(--cream-light);
+  color: var(--cream);
   font-family: inherit;
   font-size: 0.9375rem;
   transition: all 0.2s ease;

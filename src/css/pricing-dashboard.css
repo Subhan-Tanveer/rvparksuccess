@@ -1,4 +1,4 @@
-/* Pricing Intelligence Dashboard Styles */
+﻿/* Pricing Intelligence Dashboard Styles */
 
 .pricing-header {
   display: flex;
@@ -6,14 +6,14 @@
   align-items: center;
   margin-bottom: 2rem;
   padding-bottom: 1.5rem;
-  border-bottom: 2px solid var(--color-border, #e0e0e0);
+  border-bottom: 2px solid var(--border-glass);
 }
 
 .pricing-header h3 {
   margin: 0;
   font-size: 1.5rem;
   font-weight: 600;
-  color: var(--color-text-primary, #1a1a1a);
+  color: var(--cream);
 }
 
 .pricing-toggle {
@@ -33,7 +33,7 @@
   appearance: none;
   width: 48px;
   height: 28px;
-  background: var(--color-border, #ccc);
+  background: var(--border-glass);
   border-radius: 14px;
   cursor: pointer;
   transition: background 0.3s ease;
@@ -53,7 +53,7 @@
 }
 
 .toggle-switch input[type="checkbox"]:checked {
-  background: var(--color-primary, #2563eb);
+  background: var(--amber);
 }
 
 .toggle-switch input[type="checkbox"]:checked::before {
@@ -63,7 +63,7 @@
 .toggle-label {
   font-size: 0.95rem;
   font-weight: 500;
-  color: var(--color-text-primary, #1a1a1a);
+  color: var(--cream);
   white-space: nowrap;
 }
 
@@ -76,8 +76,8 @@
 }
 
 .pricing-card {
-  background: var(--color-background-secondary, #f8f9fa);
-  border: 1px solid var(--color-border, #e0e0e0);
+  background: var(--surface-glass);
+  border: 1px solid var(--border-glass);
   border-radius: 8px;
   padding: 1.5rem;
   transition: box-shadow 0.2s ease;
@@ -90,7 +90,7 @@
 .card-label {
   font-size: 0.85rem;
   font-weight: 500;
-  color: var(--color-text-secondary, #666);
+  color: var(--cream-dim);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin-bottom: 0.5rem;
@@ -99,24 +99,27 @@
 .card-value {
   font-size: 1.75rem;
   font-weight: 700;
-  color: var(--color-text-primary, #1a1a1a);
+  color: var(--cream);
   margin-bottom: 1rem;
 }
 
 .pricing-input {
   width: 100%;
   padding: 0.5rem 0.75rem;
-  border: 1px solid var(--color-border, #ccc);
+  background: rgba(245, 240, 232, 0.05);
+  color: var(--cream);
+  border: 1px solid var(--border-glass);
   border-radius: 4px;
   font-size: 0.9rem;
   font-family: inherit;
-  transition: border-color 0.2s ease;
+  transition: border-color 0.2s ease, background 0.2s ease;
 }
 
 .pricing-input:focus {
   outline: none;
-  border-color: var(--color-primary, #2563eb);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  border-color: var(--amber);
+  background: rgba(245, 240, 232, 0.08);
+  box-shadow: 0 0 0 3px rgba(46, 155, 84, 0.15);
 }
 
 .pricing-input.small {
@@ -135,27 +138,28 @@
 
 .pricing-controls input[type="date"] {
   padding: 0.6rem 0.75rem;
-  border: 1px solid var(--color-border, #ccc);
+  border: 1px solid var(--border-glass);
   border-radius: 4px;
   font-size: 0.95rem;
   font-family: inherit;
-  background: white;
+  background: rgba(245, 240, 232, 0.05);
+  color: var(--cream);
 }
 
 .pricing-controls input[type="date"]:focus {
   outline: none;
-  border-color: var(--color-primary, #2563eb);
+  border-color: var(--amber);
 }
 
 .pricing-controls span {
   font-weight: 500;
-  color: var(--color-text-secondary, #666);
+  color: var(--cream-dim);
 }
 
 /* Impact Card */
 .impact-card {
-  background: var(--color-background-secondary, #f8f9fa);
-  border-left: 4px solid var(--color-primary, #2563eb);
+  background: var(--surface-glass);
+  border-left: 4px solid var(--amber);
   border-radius: 6px;
   padding: 1.5rem;
   margin-bottom: 2rem;
@@ -174,7 +178,7 @@
 .impact-label {
   font-size: 0.85rem;
   font-weight: 600;
-  color: var(--color-text-secondary, #666);
+  color: var(--cream-dim);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin-bottom: 0.5rem;
@@ -193,7 +197,7 @@
 
 .impact-detail {
   font-size: 0.9rem;
-  color: var(--color-text-secondary, #666);
+  color: var(--cream-dim);
 }
 
 /* Pricing Table */
@@ -201,15 +205,15 @@
   width: 100%;
   border-collapse: collapse;
   margin-bottom: 1.5rem;
-  background: white;
+  background: var(--forest-light);
   border-radius: 6px;
   overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
 .pricing-table thead {
-  background: var(--color-background-secondary, #f8f9fa);
-  border-bottom: 2px solid var(--color-border, #e0e0e0);
+  background: var(--surface-glass);
+  border-bottom: 2px solid var(--border-glass);
 }
 
 .pricing-table th {
@@ -217,7 +221,7 @@
   text-align: left;
   font-size: 0.85rem;
   font-weight: 600;
-  color: var(--color-text-secondary, #666);
+  color: var(--cream-dim);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   white-space: nowrap;
@@ -225,13 +229,13 @@
 
 .pricing-table td {
   padding: 1rem;
-  border-bottom: 1px solid var(--color-border, #e0e0e0);
+  border-bottom: 1px solid var(--border-glass);
   font-size: 0.95rem;
-  color: var(--color-text-primary, #1a1a1a);
+  color: var(--cream);
 }
 
 .pricing-table tbody tr:hover {
-  background: var(--color-background-secondary, #f8f9fa);
+  background: var(--surface-glass);
 }
 
 .pricing-table td.positive {
@@ -245,17 +249,17 @@
 }
 
 .pricing-table td.neutral {
-  color: var(--color-text-secondary, #666);
+  color: var(--cream-dim);
 }
 
 .confidence-badge {
   display: inline-block;
-  background: var(--color-background-secondary, #f0f0f0);
+  background: var(--surface-glass);
   border-radius: 4px;
   padding: 0.25rem 0.75rem;
   font-size: 0.85rem;
   font-weight: 600;
-  color: var(--color-text-secondary, #666);
+  color: var(--cream-dim);
 }
 
 /* Buttons */
@@ -279,22 +283,22 @@
 }
 
 .btn-primary {
-  background: var(--color-primary, #2563eb);
+  background: var(--amber);
   color: white;
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: var(--color-primary-dark, #1d4ed8);
-  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+  background: var(--amber-dim);
+  box-shadow: 0 2px 8px rgba(46, 155, 84, 0.3);
 }
 
 .btn-secondary {
-  background: var(--color-background-secondary, #e5e7eb);
-  color: var(--color-text-primary, #1a1a1a);
+  background: var(--surface-glass);
+  color: var(--cream);
 }
 
 .btn-secondary:hover:not(:disabled) {
-  background: #d1d5db;
+  background: var(--surface-glass-strong);
 }
 
 .btn-mini {
@@ -319,7 +323,7 @@
   gap: 1rem;
   justify-content: flex-end;
   padding-top: 1.5rem;
-  border-top: 1px solid var(--color-border, #e0e0e0);
+  border-top: 1px solid var(--border-glass);
 }
 
 /* Responsive Design */
@@ -372,34 +376,34 @@
 /* Dark Mode Support */
 @media (prefers-color-scheme: dark) {
   .pricing-card {
-    background: var(--color-background-secondary, #1f2937);
-    border-color: var(--color-border, #374151);
+    background: var(--surface-glass);
+    border-color: var(--border-glass);
   }
 
   .pricing-table {
-    background: var(--color-background-secondary, #1f2937);
+    background: var(--surface-glass);
   }
 
   .pricing-table thead {
-    background: var(--color-border, #374151);
+    background: var(--border-glass);
   }
 
   .pricing-table th {
-    color: var(--color-text-secondary, #9ca3af);
+    color: var(--cream-dim);
   }
 
   .pricing-table td {
-    border-color: var(--color-border, #374151);
+    border-color: var(--border-glass);
   }
 
   .pricing-controls input[type="date"] {
-    background: var(--color-background-secondary, #1f2937);
-    color: var(--color-text-primary, #f3f4f6);
-    border-color: var(--color-border, #374151);
+    background: var(--surface-glass);
+    color: var(--cream);
+    border-color: var(--border-glass);
   }
 
   .confidence-badge {
-    background: var(--color-background-secondary, #374151);
-    color: var(--color-text-secondary, #9ca3af);
+    background: var(--surface-glass);
+    color: var(--cream-dim);
   }
 }

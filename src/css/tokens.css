@@ -4,6 +4,8 @@
    ============================================================ */
 
 :root {
+  color-scheme: dark;
+
   /* -- color: extracted from the RVParkSuccess logo (blue → teal → green → amber
      growth-bar gradient, RV + pine silhouette). --amber/--forest/--black variable
      NAMES are kept as-is on purpose (they're referenced everywhere in this file
