@@ -14,8 +14,8 @@ import { initializeOccupancyForecastingDashboard } from './occupancy-forecasting
 
 initCore();
 
-/* -- dashboard sidebar: scroll-spy highlight, smooth-scroll links,
-   off-canvas toggle on narrow viewports -- */
+/* -- dashboard sidebar: tab-style section switching, off-canvas toggle on
+   narrow viewports -- */
 function initDashboardSidebar() {
   const sidebar = document.getElementById('dashSidebar');
   const toggle = document.getElementById('dashSidebarToggle');
@@ -40,19 +40,6 @@ function initDashboardSidebar() {
   });
   backdrop?.addEventListener('click', closeSidebar);
 
-  links.forEach((link) => {
-    link.addEventListener('click', (e) => {
-      const id = link.getAttribute('href').slice(1);
-      const target = document.getElementById(id);
-      if (target) {
-        e.preventDefault();
-        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        history.replaceState(null, '', `#${id}`);
-      }
-      closeSidebar();
-    });
-  });
-
   const sections = links
     .map((link) => document.getElementById(link.getAttribute('href').slice(1)))
     .filter(Boolean);
@@ -62,17 +49,44 @@ function initDashboardSidebar() {
     links.forEach((link) => link.classList.toggle('is-active', link.getAttribute('href') === `#${id}`));
   };
 
-  const observer = new IntersectionObserver((entries) => {
-    // Pick the entry closest to the top of the viewport among those
-    // currently intersecting, so the highlighted link matches whatever
-    // section heading is nearest the top as the owner scrolls.
-    const visible = entries.filter((entry) => entry.isIntersecting);
-    if (!visible.length) return;
-    visible.sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
-    setActive(visible[0].target.id);
-  }, { rootMargin: '-15% 0px -70% 0px', threshold: 0 });
+  const scrollContentToTop = () => {
+    const scrollable = document.querySelector('.admin-wrap');
+    if (scrollable) scrollable.scrollTo(0, 0);
+    window.scrollTo(0, 0);
+  };
 
-  sections.forEach((section) => observer.observe(section));
+  const showSection = (id) => {
+    const target = document.getElementById(id);
+    if (!target) return false;
+    sections.forEach((section) => section.classList.toggle('is-active', section === target));
+    setActive(id);
+    scrollContentToTop();
+
+    // The "Advanced Analytics" section's canvases size themselves from
+    // their container's rendered width, which is 0 while display:none.
+    // Force a redraw now that the section is actually visible.
+    if (id === 'analytics' && window.__analyticsDashboard) {
+      window.__analyticsDashboard.redrawCharts();
+    }
+    return true;
+  };
+
+  links.forEach((link) => {
+    link.addEventListener('click', (e) => {
+      const id = link.getAttribute('href').slice(1);
+      e.preventDefault();
+      if (showSection(id)) {
+        history.replaceState(null, '', `#${id}`);
+      }
+      closeSidebar();
+    });
+  });
+
+  // Deep-link support: honor a bookmarked/shared #hash on load, otherwise
+  // default to the first section (Overview).
+  const initialId = location.hash.replace('#', '');
+  const hasInitial = initialId && sections.some((section) => section.id === initialId);
+  showSection(hasInitial ? initialId : sections[0].id);
 }
 initDashboardSidebar();
 
@@ -182,6 +196,10 @@ async function loadDashboard() {
   // Initialize analytics dashboard
   const analyticsDashboard = new AnalyticsDashboard('analyticsDashboard');
   await analyticsDashboard.init();
+  // Exposed so initDashboardSidebar() can force a chart redraw when the
+  // Advanced Analytics tab becomes visible (its canvases render at 0x0
+  // while the section is display:none).
+  window.__analyticsDashboard = analyticsDashboard;
 
   // Initialize campaigns dashboard
   await initCampaignsDashboard(currentPark);

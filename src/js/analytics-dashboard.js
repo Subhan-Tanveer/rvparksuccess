@@ -302,6 +302,17 @@ class AnalyticsDashboard {
     document.getElementById('kpiRepeatGuestsSub').textContent = `${overview.guests?.uniqueGuestCount || 0} unique guests`;
   }
 
+  // Re-draw the canvas-based charts using already-loaded data. The canvases
+  // are sized from their container's rendered width (canvas.offsetWidth),
+  // which is 0 while the analytics section is hidden (display:none) behind
+  // the dashboard's tab-style sidebar navigation. Call this after the
+  // "Advanced Analytics" tab is switched into view so the charts pick up
+  // their real width instead of staying stuck at 0x0.
+  redrawCharts() {
+    this.renderRevenueChart();
+    this.renderSourcesChart();
+  }
+
   renderRevenueChart() {
     const canvas = document.getElementById('revenueChart');
     if (!canvas) return;

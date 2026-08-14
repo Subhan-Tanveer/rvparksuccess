@@ -91,6 +91,13 @@
   .dash-sidebar-nav a:hover { background: var(--surface-glass); color: var(--cream); }
   .dash-sidebar-nav a.is-active { background: rgba(46, 155, 84, 0.12); color: var(--amber-light); border-left-color: var(--amber); }
 
+  /* -- dashboard tab-style sections: only the active section is shown,
+     the rest are hidden (JS toggles .is-active in park-dashboard.js).
+     Only the "hidden" state is forced here — the active section keeps
+     its own natural display (block, grid, etc. e.g. #overview's
+     .stats-grid) so we don't fight per-section layout rules. -- */
+  .dash-page:not(.is-active) { display: none; }
+
   .dash-sidebar-backdrop {
     display: none; position: fixed; inset: 0; z-index: 140; background: rgba(6, 9, 10, 0.6);
     opacity: 0; visibility: hidden; transition: opacity 0.25s ease, visibility 0.25s ease;
@@ -157,7 +164,7 @@
 <div class="admin-wrap" id="gate" style="display:none;">
 
   <!-- At-a-glance stats -->
-  <div class="stats-grid" id="overview" data-reveal>
+  <div class="stats-grid dash-page is-active" id="overview" data-reveal>
     <div class="stat-card glass">
       <div class="label">Revenue Collected</div>
       <div class="value" id="statRevenue">$0</div>
@@ -178,7 +185,7 @@
   </div>
 
   <!-- Subscription Management -->
-  <div class="admin-section glass" id="billing" data-reveal>
+  <div class="admin-section glass dash-page" id="billing" data-reveal>
     <div class="section-head" style="margin-bottom: var(--sp-3);">
       <p class="eyebrow">Billing</p>
       <h2 style="font-size: 1.375rem;">Subscription</h2>
@@ -213,7 +220,7 @@
   </div>
 
   <!-- New Booking: phone / walk-in reservations, same data as the public site -->
-  <div class="admin-section glass" id="new-booking" data-reveal>
+  <div class="admin-section glass dash-page" id="new-booking" data-reveal>
     <div class="section-head" style="margin-bottom: var(--sp-3);">
       <p class="eyebrow">Phone or Walk-In</p>
       <h2 style="font-size: 1.375rem;">New Booking</h2>
@@ -247,7 +254,7 @@
   </div>
 
   <!-- Site management -->
-  <div class="admin-section glass" id="sites-rates" data-reveal>
+  <div class="admin-section glass dash-page" id="sites-rates" data-reveal>
     <div class="section-head" style="margin-bottom: var(--sp-3);">
       <p class="eyebrow">Your Inventory</p>
       <h2 style="font-size: 1.375rem;">Sites &amp; Rates</h2>
@@ -272,7 +279,7 @@
   </div>
 
   <!-- Pricing Intelligence -->
-  <div class="admin-section glass" id="pricing-intelligence" data-reveal>
+  <div class="admin-section glass dash-page" id="pricing-intelligence" data-reveal>
     <div class="section-head" style="margin-bottom: var(--sp-3);">
       <p class="eyebrow">Revenue Optimization</p>
       <h2 style="font-size: 1.375rem;">Pricing Intelligence</h2>
@@ -283,7 +290,7 @@
   </div>
 
   <!-- Calendar Grid Link -->
-  <div class="admin-section glass" id="calendar-link" data-reveal style="padding: var(--sp-4);">
+  <div class="admin-section glass dash-page" id="calendar-link" data-reveal style="padding: var(--sp-4);">
     <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); flex-wrap: wrap;">
       <div>
         <p class="eyebrow">Quick Access</p>
@@ -295,7 +302,7 @@
   </div>
 
   <!-- Recent reservations -->
-  <div class="admin-section glass" id="reservations" data-reveal>
+  <div class="admin-section glass dash-page" id="reservations" data-reveal>
     <div class="section-head" style="margin-bottom: 0;">
       <p class="eyebrow">Recent Activity</p>
       <h2 style="font-size: 1.375rem;">Reservations</h2>
@@ -310,7 +317,7 @@
   </div>
 
   <!-- Payouts -->
-  <div class="admin-section glass" id="payouts" data-reveal>
+  <div class="admin-section glass dash-page" id="payouts" data-reveal>
     <div class="section-head" style="margin-bottom: var(--sp-3);">
       <p class="eyebrow">Money</p>
       <h2 style="font-size: 1.375rem;">Payouts</h2>
@@ -343,7 +350,7 @@
   </div>
 
   <!-- Waitlist -->
-  <div class="admin-section glass" id="waitlist" data-reveal>
+  <div class="admin-section glass dash-page" id="waitlist" data-reveal>
     <div class="section-head" style="margin-bottom: var(--sp-3);">
       <p class="eyebrow">Sold Out Dates</p>
       <h2 style="font-size: 1.375rem;">Waitlist</h2>
@@ -358,7 +365,7 @@
   </div>
 
   <!-- Promo codes -->
-  <div class="admin-section glass" id="promo-codes" data-reveal>
+  <div class="admin-section glass dash-page" id="promo-codes" data-reveal>
     <div class="section-head" style="margin-bottom: var(--sp-3);">
       <p class="eyebrow">Marketing</p>
       <h2 style="font-size: 1.375rem;">Promo Codes</h2>
@@ -388,7 +395,7 @@
   </div>
 
   <!-- Park settings -->
-  <div class="admin-section glass" id="park-settings" data-reveal>
+  <div class="admin-section glass dash-page" id="park-settings" data-reveal>
     <div class="section-head" style="margin-bottom: var(--sp-3);">
       <p class="eyebrow">Billing</p>
       <h2 style="font-size: 1.375rem;">Park Settings</h2>
@@ -405,7 +412,7 @@
   </div>
 
   <!-- Advanced Analytics Dashboard -->
-  <div class="admin-section glass" id="analytics" data-reveal>
+  <div class="admin-section glass dash-page" id="analytics" data-reveal>
     <div class="section-head" style="margin-bottom: var(--sp-3);">
       <p class="eyebrow">Business Intelligence</p>
       <h2 style="font-size: 1.375rem;">Advanced Analytics</h2>
@@ -414,7 +421,7 @@
   </div>
 
   <!-- Competitive Intelligence Dashboard -->
-  <div class="admin-section glass" id="competitors" data-reveal>
+  <div class="admin-section glass dash-page" id="competitors" data-reveal>
     <div class="section-head" style="margin-bottom: var(--sp-3);">
       <p class="eyebrow">Market Analysis</p>
       <h2 style="font-size: 1.375rem;">Competitive Pricing Intelligence</h2>
@@ -423,16 +430,16 @@
   </div>
 
   <!-- Campaigns Dashboard -->
-  <div id="campaignsDashboard"></div>
+  <div id="campaignsDashboard" class="dash-page"></div>
 
   <!-- Social Media Dashboard -->
-  <div id="socialDashboard"></div>
+  <div id="socialDashboard" class="dash-page"></div>
 
   <!-- Booking Rules Dashboard -->
-  <div id="bookingRulesDashboard"></div>
+  <div id="bookingRulesDashboard" class="dash-page"></div>
 
   <!-- ML Rate Optimization Dashboard -->
-  <div class="admin-section glass" id="ml-optimization" data-reveal>
+  <div class="admin-section glass dash-page" id="ml-optimization" data-reveal>
     <div class="section-head" style="margin-bottom: var(--sp-3);">
       <p class="eyebrow">Revenue Optimization</p>
       <h2 style="font-size: 1.375rem;">AI-Powered Rate Optimization</h2>
@@ -441,7 +448,7 @@
   </div>
 
   <!-- Occupancy Forecasting Dashboard -->
-  <div class="admin-section glass" id="occupancy-forecasting" data-reveal>
+  <div class="admin-section glass dash-page" id="occupancy-forecasting" data-reveal>
     <div class="section-head" style="margin-bottom: var(--sp-3);">
       <p class="eyebrow">Forecasting & Planning</p>
       <h2 style="font-size: 1.375rem;">Occupancy Forecasting Engine</h2>
@@ -450,7 +457,7 @@
   </div>
 
   <!-- CRM Dashboard -->
-  <div class="admin-section glass" id="crm" data-reveal>
+  <div class="admin-section glass dash-page" id="crm" data-reveal>
     <div class="section-head" style="margin-bottom: var(--sp-3);">
       <p class="eyebrow">Guest Management</p>
       <h2 style="font-size: 1.375rem;">CRM Dashboard</h2>
