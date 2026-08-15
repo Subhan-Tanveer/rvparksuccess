@@ -278,14 +278,14 @@ function attachEventListeners() {
 
       if (!res.ok) {
         const err = await res.json();
-        alertDialog('Error', err.error);
+        alertDialog({ title: 'Error', message: err.error });
         return;
       }
 
       tagInput.value = '';
       await loadGuestDetail(selectedGuestEmail);
     } catch (err) {
-      alertDialog('Error', err.message);
+      alertDialog({ title: 'Error', message: err.message });
     }
   });
 
@@ -303,14 +303,14 @@ function attachEventListeners() {
 
       if (!res.ok) {
         const err = await res.json();
-        alertDialog('Error', err.error);
+        alertDialog({ title: 'Error', message: err.error });
         return;
       }
 
       document.getElementById('newNoteText').value = '';
       await loadGuestDetail(selectedGuestEmail);
     } catch (err) {
-      alertDialog('Error', err.message);
+      alertDialog({ title: 'Error', message: err.message });
     }
   });
 
@@ -341,7 +341,7 @@ async function loadGuestList() {
     updatePaginationControls();
   } catch (err) {
     console.error('Error loading guests:', err);
-    alertDialog('Error', err.message);
+    alertDialog({ title: 'Error', message: err.message });
   }
 }
 
@@ -395,7 +395,7 @@ async function loadAtRiskGuests() {
     `).join('');
   } catch (err) {
     console.error('Error loading at-risk guests:', err);
-    alertDialog('Error', err.message);
+    alertDialog({ title: 'Error', message: err.message });
   }
 }
 
@@ -512,7 +512,7 @@ async function loadGuestDetail(email) {
 
   } catch (err) {
     console.error('Error loading guest detail:', err);
-    alertDialog('Error', err.message);
+    alertDialog({ title: 'Error', message: err.message });
   }
 }
 
@@ -538,6 +538,6 @@ window.crmRemoveTag = async (tagId) => {
 
     await loadGuestDetail(selectedGuestEmail);
   } catch (err) {
-    alertDialog('Error', err.message);
+    alertDialog({ title: 'Error', message: err.message });
   }
 };

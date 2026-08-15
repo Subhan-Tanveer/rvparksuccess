@@ -160,16 +160,13 @@ export async function toggleDynamicPricing() {
         label.textContent = `Dynamic Pricing ${data.park.dynamicPricingEnabled ? 'ON' : 'OFF'}`;
       }
 
-      alertDialog(
-        data.park.dynamicPricingEnabled
+      alertDialog({ title: 'Pricing Status Updated', message: data.park.dynamicPricingEnabled
           ? 'Dynamic pricing is now ENABLED. AI-suggested prices will be calculated for your dates.'
-          : 'Dynamic pricing is now DISABLED. You are using manual pricing.',
-        'Pricing Status Updated'
-      );
+          : 'Dynamic pricing is now DISABLED. You are using manual pricing.' });
     }
   } catch (err) {
     console.error('Failed to toggle pricing:', err);
-    alertDialog('Failed to update pricing status', 'Error');
+    alertDialog({ title: 'Error', message: 'Failed to update pricing status' });
   }
 }
 
@@ -179,7 +176,7 @@ export async function savePricingSettings() {
   const occupancyTarget = parseInt(document.getElementById('occupancyTargetInput')?.value || 85);
 
   if (minPrice >= maxPrice) {
-    alertDialog('Min price must be less than max price', 'Invalid Settings');
+    alertDialog({ title: 'Invalid Settings', message: 'Min price must be less than max price' });
     return;
   }
 
@@ -199,14 +196,14 @@ export async function savePricingSettings() {
       currentPricingSettings.minPriceCents = minPrice;
       currentPricingSettings.maxPriceCents = maxPrice;
       currentPricingSettings.occupancyTargetPercent = occupancyTarget;
-      alertDialog('Pricing settings saved successfully', 'Saved');
+      alertDialog({ title: 'Saved', message: 'Pricing settings saved successfully' });
     } else {
       const err = await res.json();
-      alertDialog(err.error || 'Failed to save settings', 'Error');
+      alertDialog({ title: 'Error', message: err.error || 'Failed to save settings' });
     }
   } catch (err) {
     console.error('Failed to save pricing settings:', err);
-    alertDialog('Failed to save settings', 'Error');
+    alertDialog({ title: 'Error', message: 'Failed to save settings' });
   }
 }
 
@@ -215,12 +212,12 @@ export async function calculateSuggestions() {
   const dateTo = document.getElementById('pricingDateTo')?.value;
 
   if (!dateFrom || !dateTo) {
-    alertDialog('Please select both start and end dates', 'Missing Dates');
+    alertDialog({ title: 'Missing Dates', message: 'Please select both start and end dates' });
     return;
   }
 
   if (new Date(dateTo) <= new Date(dateFrom)) {
-    alertDialog('End date must be after start date', 'Invalid Dates');
+    alertDialog({ title: 'Invalid Dates', message: 'End date must be after start date' });
     return;
   }
 
@@ -238,7 +235,7 @@ export async function calculateSuggestions() {
 
       if (!res.ok) {
         const err = await res.json();
-        alertDialog(err.error || 'Failed to calculate prices', 'Error');
+        alertDialog({ title: 'Error', message: err.error || 'Failed to calculate prices' });
         return;
       }
 
@@ -247,7 +244,7 @@ export async function calculateSuggestions() {
       renderSuggestions(data.suggestions, data.potentialImpact);
     } catch (err) {
       console.error('Failed to calculate suggestions:', err);
-      alertDialog('Failed to calculate prices', 'Error');
+      alertDialog({ title: 'Error', message: 'Failed to calculate prices' });
     }
   });
 }
@@ -377,21 +374,21 @@ export async function applySuggestion(siteId, date, suggestedRate, currentRate) 
         if (dateFromEl && dateToEl) {
           await calculateSuggestions();
         }
-        alertDialog('Price applied successfully', 'Applied');
+        alertDialog({ title: 'Applied', message: 'Price applied successfully' });
       } else {
         const err = await res.json();
-        alertDialog(err.error || 'Failed to apply price', 'Error');
+        alertDialog({ title: 'Error', message: err.error || 'Failed to apply price' });
       }
     } catch (err) {
       console.error('Failed to apply price:', err);
-      alertDialog('Failed to apply price', 'Error');
+      alertDialog({ title: 'Error', message: 'Failed to apply price' });
     }
   });
 }
 
 export async function applyAllSuggestions() {
   if (!currentSuggestions.length) {
-    alertDialog('No suggestions to apply', 'Nothing to Do');
+    alertDialog({ title: 'Nothing to Do', message: 'No suggestions to apply' });
     return;
   }
 
@@ -430,10 +427,7 @@ export async function applyAllSuggestions() {
       }
     }
 
-    alertDialog(
-      `Applied ${applied} price${applied !== 1 ? 's' : ''}${failed > 0 ? `. ${failed} failed.` : ''}`,
-      'Batch Apply Complete'
-    );
+    alertDialog({ title: 'Batch Apply Complete', message: `Applied ${applied} price${applied !== 1 ? 's' : ''}${failed > 0 ? `. ${failed} failed.` : ''}` });
 
     // Re-calculate to show updates
     const dateFromEl = document.getElementById('pricingDateFrom');

@@ -68,7 +68,7 @@ async function loadPortfolio() {
     renderPropertyGrid();
   } catch (err) {
     console.error('Portfolio load error:', err);
-    alertDialog('Error loading portfolio', err.message);
+    alertDialog({ title: 'Error loading portfolio', message: err.message });
   } finally {
     withLoading(false);
   }
@@ -241,7 +241,7 @@ function updateBulkOperationsUI() {
 async function startBulkRateUpdate() {
   const selectedIds = Array.from(selectedProperties);
   if (selectedIds.length === 0) {
-    alertDialog('No properties selected', 'Please select at least one property');
+    alertDialog({ title: 'No properties selected', message: 'Please select at least one property' });
     return;
   }
 
@@ -273,15 +273,15 @@ async function startBulkRateUpdate() {
     const data = await response.json();
     if (!response.ok) throw new Error(data.error);
 
-    alertDialog(
-      'Bulk Update Complete',
-      `Updated ${data.completed} properties, ${data.failed} failed`
-    );
+    alertDialog({
+      title: 'Bulk Update Complete',
+      message: `Updated ${data.completed} properties, ${data.failed} failed`,
+    });
 
     // Reload data
     loadPortfolio();
   } catch (err) {
-    alertDialog('Error', err.message);
+    alertDialog({ title: 'Error', message: err.message });
   } finally {
     withLoading(false);
   }
@@ -290,7 +290,7 @@ async function startBulkRateUpdate() {
 async function startBulkCampaign() {
   const selectedIds = Array.from(selectedProperties);
   if (selectedIds.length === 0) {
-    alertDialog('No properties selected', 'Please select at least one property');
+    alertDialog({ title: 'No properties selected', message: 'Please select at least one property' });
     return;
   }
 
@@ -321,15 +321,15 @@ async function startBulkCampaign() {
     const data = await response.json();
     if (!response.ok) throw new Error(data.error);
 
-    alertDialog(
-      'Campaign Sent',
-      `Promotion sent to ${data.completed} properties, ${data.failed} failed`
-    );
+    alertDialog({
+      title: 'Campaign Sent',
+      message: `Promotion sent to ${data.completed} properties, ${data.failed} failed`,
+    });
 
     // Reload data
     loadPortfolio();
   } catch (err) {
-    alertDialog('Error', err.message);
+    alertDialog({ title: 'Error', message: err.message });
   } finally {
     withLoading(false);
   }
@@ -338,7 +338,7 @@ async function startBulkCampaign() {
 async function startBulkMaintenance() {
   const selectedIds = Array.from(selectedProperties);
   if (selectedIds.length === 0) {
-    alertDialog('No properties selected', 'Please select at least one property');
+    alertDialog({ title: 'No properties selected', message: 'Please select at least one property' });
     return;
   }
 
@@ -368,15 +368,15 @@ async function startBulkMaintenance() {
     const data = await response.json();
     if (!response.ok) throw new Error(data.error);
 
-    alertDialog(
-      'Maintenance Scheduled',
-      `Dates blocked for ${data.completed} properties, ${data.failed} failed`
-    );
+    alertDialog({
+      title: 'Maintenance Scheduled',
+      message: `Dates blocked for ${data.completed} properties, ${data.failed} failed`,
+    });
 
     // Reload data
     loadPortfolio();
   } catch (err) {
-    alertDialog('Error', err.message);
+    alertDialog({ title: 'Error', message: err.message });
   } finally {
     withLoading(false);
   }

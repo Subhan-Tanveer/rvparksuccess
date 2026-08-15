@@ -279,11 +279,11 @@ async function handleConnectPlatform(platform) {
 
       if (!res.ok) throw new Error('Failed to connect account');
 
-      await alertDialog('Success', 'Social media account connected!');
+      await alertDialog({ title: 'Success', message: 'Social media account connected!' });
       await loadPlatforms();
     });
   } catch (err) {
-    await alertDialog('Error', err.message);
+    await alertDialog({ title: 'Error', message: err.message });
   }
 }
 
@@ -308,11 +308,11 @@ async function handleDisconnectPlatform(platform) {
 
       if (!res.ok) throw new Error('Failed to disconnect account');
 
-      await alertDialog('Success', 'Account disconnected');
+      await alertDialog({ title: 'Success', message: 'Account disconnected' });
       await loadPlatforms();
     });
   } catch (err) {
-    await alertDialog('Error', err.message);
+    await alertDialog({ title: 'Error', message: err.message });
   }
 }
 
@@ -509,7 +509,7 @@ function setupEventListeners() {
     e.preventDefault();
     const template = document.getElementById('socialPostTemplate').value;
     if (!template) {
-      await alertDialog('Error', 'Please select a caption template first');
+      await alertDialog({ title: 'Error', message: 'Please select a caption template first' });
       return;
     }
 
@@ -536,7 +536,7 @@ function setupEventListeners() {
       contentField.value = data.caption;
       contentField.dispatchEvent(new Event('input'));
     } catch (err) {
-      await alertDialog('Error', err.message);
+      await alertDialog({ title: 'Error', message: err.message });
     }
   });
 
@@ -549,7 +549,7 @@ function setupEventListeners() {
     const scheduledTime = document.getElementById('socialPostScheduleTime').value;
 
     if (!platform || !content) {
-      return alertDialog('Error', 'Platform and content are required');
+      return alertDialog({ title: 'Error', message: 'Platform and content are required' });
     }
 
     try {
@@ -573,12 +573,12 @@ function setupEventListeners() {
 
         form.reset();
         charCount.textContent = '0/280';
-        await alertDialog('Success', 'Post created!');
+        await alertDialog({ title: 'Success', message: 'Post created!' });
         await loadScheduledPosts();
         await loadPerformanceMetrics();
       });
     } catch (err) {
-      await alertDialog('Error', err.message);
+      await alertDialog({ title: 'Error', message: err.message });
     }
   });
 
@@ -592,7 +592,7 @@ function setupEventListeners() {
  */
 async function handleEditPost(postId) {
   // Implement edit UI
-  await alertDialog('Edit Post', 'Edit functionality coming soon');
+  await alertDialog({ title: 'Edit Post', message: 'Edit functionality coming soon' });
 }
 
 /**
@@ -616,10 +616,10 @@ async function handleDeletePost(postId) {
 
       if (!res.ok) throw new Error('Failed to delete post');
 
-      await alertDialog('Success', 'Post deleted');
+      await alertDialog({ title: 'Success', message: 'Post deleted' });
       await loadScheduledPosts();
     });
   } catch (err) {
-    await alertDialog('Error', err.message);
+    await alertDialog({ title: 'Error', message: err.message });
   }
 }
