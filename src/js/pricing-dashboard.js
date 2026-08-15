@@ -59,10 +59,10 @@ function renderPricingSettings(settings, park) {
         <input
           type="number"
           id="minPriceInput"
-          min="100"
-          step="100"
-          value="${settings.minPriceCents}"
-          placeholder="Min price in cents"
+          min="1"
+          step="0.01"
+          value="${(settings.minPriceCents / 100).toFixed(2)}"
+          placeholder="Min nightly rate ($)"
           class="pricing-input small"
         >
       </div>
@@ -72,10 +72,10 @@ function renderPricingSettings(settings, park) {
         <input
           type="number"
           id="maxPriceInput"
-          min="1000"
-          step="100"
-          value="${settings.maxPriceCents}"
-          placeholder="Max price in cents"
+          min="1"
+          step="0.01"
+          value="${(settings.maxPriceCents / 100).toFixed(2)}"
+          placeholder="Max nightly rate ($)"
           class="pricing-input small"
         >
       </div>
@@ -171,8 +171,11 @@ export async function toggleDynamicPricing() {
 }
 
 export async function savePricingSettings() {
-  const minPrice = parseInt(document.getElementById('minPriceInput')?.value || 2000);
-  const maxPrice = parseInt(document.getElementById('maxPriceInput')?.value || 50000);
+  const minPriceInputValue = document.getElementById('minPriceInput')?.value;
+  const maxPriceInputValue = document.getElementById('maxPriceInput')?.value;
+  // Inputs are dollars (matching every other rate field in the dashboard); convert to cents for the API.
+  const minPrice = minPriceInputValue ? Math.round(parseFloat(minPriceInputValue) * 100) : 2000;
+  const maxPrice = maxPriceInputValue ? Math.round(parseFloat(maxPriceInputValue) * 100) : 50000;
   const occupancyTarget = parseInt(document.getElementById('occupancyTargetInput')?.value || 85);
 
   if (minPrice >= maxPrice) {
