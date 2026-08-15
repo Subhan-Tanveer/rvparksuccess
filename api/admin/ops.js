@@ -15,6 +15,16 @@
 // toward the function limit.
 import { randomUUID } from 'crypto';
 import { requireSession } from '../_lib/auth.js';
+
+// reservations-store.js registers a custom Postgres type parser for DATE
+// columns (OID 1082) that returns them as plain 'YYYY-MM-DD' strings
+// rather than JS Date objects — so check_in/check_out come back as
+// strings already in the exact format callers below want, not Dates.
+// Handles both shapes defensively (mirrors mapBlockedDate's pattern in
+// reservations-store.js) in case that ever changes.
+function toDateStr(value) {
+  return value instanceof Date ? value.toISOString().split('T')[0] : value;
+}
 import {
   getPark,
   getSitesForPark,
@@ -297,8 +307,8 @@ async function calendarHandler(req, res) {
         guestName: r.guestName,
         guestPhone: r.guestPhone || null,
         guestEmail: r.guestEmail || null,
-        checkInDate: r.checkIn.toISOString().split('T')[0],
-        checkOutDate: r.checkOut.toISOString().split('T')[0],
+        checkInDate: toDateStr(r.checkIn),
+        checkOutDate: toDateStr(r.checkOut),
         totalCents: r.totalCents,
         status: r.status,
       }));
@@ -340,8 +350,8 @@ async function calendarHandler(req, res) {
           success: true,
           reservation: {
             id: reservation.id, siteId: reservation.siteId, guestName: reservation.guestName,
-            checkInDate: reservation.checkIn.toISOString().split('T')[0],
-            checkOutDate: reservation.checkOut.toISOString().split('T')[0],
+            checkInDate: toDateStr(reservation.checkIn),
+            checkOutDate: toDateStr(reservation.checkOut),
             totalCents: reservation.totalCents,
           },
         });
@@ -387,8 +397,8 @@ async function calendarHandler(req, res) {
           success: true,
           reservation: {
             id: updated.id, siteId: updated.siteId,
-            checkInDate: updated.checkIn.toISOString().split('T')[0],
-            checkOutDate: updated.checkOut.toISOString().split('T')[0],
+            checkInDate: toDateStr(updated.checkIn),
+            checkOutDate: toDateStr(updated.checkOut),
           },
         });
       }
