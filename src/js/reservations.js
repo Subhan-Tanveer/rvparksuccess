@@ -68,7 +68,7 @@ async function searchAvailability() {
     }
     renderResults(data.sites, checkIn, checkOut);
   } catch (err) {
-    resultsEl.innerHTML = `<div class="res-empty">Couldn't load availability right now${err.message ? ` — ${err.message}` : ''}. (Availability only works when running under \`vercel dev\` or once deployed — plain \`npm run dev\` has no serverless runtime.)</div>`;
+    resultsEl.innerHTML = `<div class="res-empty">Couldn't load availability right now${err.message ? ` — ${err.message}` : ''}. Please try again in a moment.</div>`;
     console.warn('Availability search failed:', err.message);
   } finally {
     searchBtn.disabled = false;
