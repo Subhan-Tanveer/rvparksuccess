@@ -1367,6 +1367,36 @@ export async function addSeasonalRate(siteId, parkId, { label, startDate, endDat
   return getSite(siteId);
 }
 
+// Applying a dynamic-pricing suggestion for a single date needs to actually
+// change what a guest pays that day — the only mechanism the booking flow
+// consults for a date-specific rate is a seasonal_rates row (see
+// rateForDate below). Upserts a one-day range for [dateOfStay, dateOfStay+1)
+// rather than inserting a duplicate every time the same date gets
+// re-applied.
+export async function applyDynamicPriceOverride(siteId, parkId, dateOfStay, nightlyRateCents) {
+  const siteExists = await query('SELECT 1 FROM sites WHERE id = $1 AND park_id = $2', [siteId, parkId]);
+  if (!siteExists.rows.length) throw new Error('Unknown site');
+
+  const startDate = dateOfStay;
+  const endDate = new Date(new Date(dateOfStay).getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+  const existing = await query(
+    `SELECT id FROM seasonal_rates WHERE site_id = $1 AND start_date = $2 AND end_date = $3 AND label = 'Dynamic Pricing'`,
+    [siteId, startDate, endDate]
+  );
+
+  if (existing.rows.length) {
+    await query('UPDATE seasonal_rates SET nightly_rate_cents = $2 WHERE id = $1', [existing.rows[0].id, Number(nightlyRateCents)]);
+  } else {
+    const id = `season-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    await query(
+      'INSERT INTO seasonal_rates (id, site_id, label, start_date, end_date, nightly_rate_cents) VALUES ($1,$2,$3,$4,$5,$6)',
+      [id, siteId, 'Dynamic Pricing', startDate, endDate, Number(nightlyRateCents)]
+    );
+  }
+  return getSite(siteId);
+}
+
 export async function removeSeasonalRate(siteId, parkId, seasonId) {
   const siteExists = await query('SELECT 1 FROM sites WHERE id = $1 AND park_id = $2', [siteId, parkId]);
   if (!siteExists.rows.length) throw new Error('Unknown site');

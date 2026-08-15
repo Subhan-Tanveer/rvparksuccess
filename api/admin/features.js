@@ -23,6 +23,7 @@ import {
   getPricingLog,
   logPricingChange,
   applyPricingChange,
+  applyDynamicPriceOverride,
   getCampaign,
   getCampaignsByPark,
   updateCampaign,
@@ -898,6 +899,11 @@ async function pricingHandler(req, res) {
       if (action === 'applyPrice') {
         const { siteId, dateOfStay, appliedRateCents } = payload;
         if (!siteId || !dateOfStay || !appliedRateCents) return res.status(400).json({ error: 'siteId, dateOfStay, and appliedRateCents required' });
+
+        // Actually change what a guest pays for this date — logging alone
+        // (below) is just an audit trail and was previously mistaken for
+        // being the real price change.
+        await applyDynamicPriceOverride(siteId, session.parkId, dateOfStay, appliedRateCents);
 
         const existingLogs = await getPricingLog(session.parkId, dateOfStay, dateOfStay);
         const existingLog = existingLogs.find((l) => l.siteId === siteId && l.dateOfStay === dateOfStay && l.status !== 'applied');
