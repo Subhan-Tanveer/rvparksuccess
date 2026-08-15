@@ -95,9 +95,13 @@ class CalendarGrid {
         </div>
 
         <div class="calendar-grid-container">
-          <div class="calendar-grid-scroll">
+          <div class="calendar-grid-scroll" id="calGridScrollWrap">
             <div class="calendar-day-headers" id="calDayHeaders"></div>
             <div class="calendar-grid-rows" id="calGridRows"></div>
+          </div>
+          <div class="calendar-month-view" id="calMonthView">
+            <div class="calendar-month-headers" id="calMonthHeaders"></div>
+            <div class="calendar-month-grid" id="calMonthGrid"></div>
           </div>
         </div>
 
@@ -193,8 +197,21 @@ class CalendarGrid {
 
   redraw() {
     this.updateMonthLabel();
-    this.drawDayHeaders();
-    this.drawGrid();
+
+    const scrollWrap = document.getElementById('calGridScrollWrap');
+    const monthView = document.getElementById('calMonthView');
+
+    if (this.options.viewMode === 'month') {
+      scrollWrap.style.display = 'none';
+      monthView.style.display = '';
+      this.drawMonthView();
+    } else {
+      scrollWrap.style.display = '';
+      monthView.style.display = 'none';
+      this.drawDayHeaders();
+      this.drawGrid();
+    }
+
     this.drawStats();
   }
 
@@ -231,6 +248,160 @@ class CalendarGrid {
       current.setDate(current.getDate() + 1);
     }
     return dates;
+  }
+
+  // ---- Month view (traditional wall-calendar layout) ----
+
+  getMonthWeeks() {
+    const year = this.currentDate.getFullYear();
+    const month = this.currentDate.getMonth();
+
+    const startDate = new Date(year, month, 1);
+    startDate.setDate(startDate.getDate() - startDate.getDay()); // back to Sunday
+
+    const endDate = new Date(year, month + 1, 0); // last day of month
+    endDate.setDate(endDate.getDate() + (6 - endDate.getDay())); // forward to Saturday
+
+    const weeks = [];
+    const current = new Date(startDate);
+    while (current <= endDate) {
+      const week = [];
+      for (let i = 0; i < 7; i++) {
+        week.push(new Date(current));
+        current.setDate(current.getDate() + 1);
+      }
+      weeks.push(week);
+    }
+    return weeks;
+  }
+
+  getDaySummary(sites, dateStr) {
+    const counts = { available: 0, booked: 0, pending: 0, partial: 0, blocked: 0 };
+    sites.forEach((site) => {
+      const status = this.getCellStatus(site.id, dateStr);
+      counts[status] = (counts[status] || 0) + 1;
+    });
+    return counts;
+  }
+
+  getDaySummaryHtml(counts) {
+    const order = ['available', 'booked', 'pending', 'partial', 'blocked'];
+    const parts = order
+      .filter((status) => counts[status] > 0)
+      .map((status) => `<span class="calendar-month-dot ${status}"><span class="dot"></span>${counts[status]}</span>`)
+      .join('');
+    return parts || '<span class="calendar-month-day-empty">—</span>';
+  }
+
+  drawMonthView() {
+    const weeks = this.getMonthWeeks();
+    const currentMonth = this.currentDate.getMonth();
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const siteFilter = document.getElementById('calSiteFilter').value;
+    const statusFilter = document.getElementById('calStatusFilter').value;
+    const sites = siteFilter ? this.sites.filter((s) => s.id === siteFilter) : this.sites;
+
+    const dow = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    document.getElementById('calMonthHeaders').innerHTML = dow
+      .map((d) => `<div class="calendar-month-header-cell">${d}</div>`)
+      .join('');
+
+    let html = '';
+    weeks.forEach((week) => {
+      html += '<div class="calendar-month-week">';
+      week.forEach((date) => {
+        const dateStr = date.toISOString().split('T')[0];
+        const isOtherMonth = date.getMonth() !== currentMonth;
+        const isToday = date.toDateString() === today.toDateString();
+        const counts = this.getDaySummary(sites, dateStr);
+        const matchesStatusFilter = !statusFilter || counts[statusFilter] > 0;
+
+        const classes = [
+          'calendar-month-day',
+          isOtherMonth ? 'is-other-month' : '',
+          isToday ? 'is-today' : '',
+          !matchesStatusFilter ? 'is-filtered-out' : '',
+        ].filter(Boolean).join(' ');
+
+        html += `
+          <div class="${classes}" data-date="${dateStr}">
+            <div class="calendar-month-day-number">${date.getDate()}</div>
+            <div class="calendar-month-day-summary">${this.getDaySummaryHtml(counts)}</div>
+          </div>
+        `;
+      });
+      html += '</div>';
+    });
+
+    document.getElementById('calMonthGrid').innerHTML = html;
+
+    document.querySelectorAll('.calendar-month-day').forEach((box) => {
+      box.addEventListener('click', () => this.showDayDetail(box.dataset.date));
+    });
+  }
+
+  showDayDetail(dateStr) {
+    const siteFilter = document.getElementById('calSiteFilter').value;
+    const sites = siteFilter ? this.sites.filter((s) => s.id === siteFilter) : this.sites;
+    const dateObj = new Date(dateStr + 'T00:00:00');
+    const dateLabel = dateObj.toLocaleDateString('en-US', {
+      weekday: 'long',
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric',
+    });
+
+    const rows = sites.map((site) => {
+      const status = this.getCellStatus(site.id, dateStr);
+      const reservation = this.getReservationForCell(site.id, dateStr);
+
+      let detail = '';
+      if (status === 'available') {
+        detail = `<button type="button" class="btn btn-ghost btn-sm" data-action="quick-book" data-site="${site.id}">Quick Book</button>`;
+      } else if (status === 'blocked') {
+        detail = `<button type="button" class="btn btn-ghost btn-sm" data-action="unblock" data-site="${site.id}">Unblock</button>`;
+      } else if (reservation) {
+        detail = `
+          <span>${reservation.guestName}</span>
+          <button type="button" class="btn btn-ghost btn-sm" data-action="view-details" data-site="${site.id}">Details</button>
+        `;
+      }
+
+      return `
+        <div class="calendar-day-detail-row">
+          <div class="calendar-day-detail-site">
+            <span class="calendar-cell ${status} calendar-day-detail-chip"></span>
+            <strong>${site.name}</strong>
+            <span class="calendar-site-name-meta">&nbsp;${site.type}</span>
+          </div>
+          <div class="calendar-day-detail-actions">${detail}</div>
+        </div>
+      `;
+    }).join('');
+
+    const dialogContent = document.getElementById('calDialogContent');
+    dialogContent.innerHTML = `
+      <div class="calendar-dialog-title">${dateLabel}</div>
+      <div class="calendar-day-detail-list">${rows}</div>
+      <div class="calendar-dialog-buttons">
+        <button type="button" class="btn btn-ghost" onclick="document.getElementById('calDialog').classList.remove('is-visible');">Close</button>
+      </div>
+    `;
+
+    dialogContent.querySelectorAll('[data-action]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const action = btn.dataset.action;
+        const siteId = btn.dataset.site;
+        this.hideDialog();
+        if (action === 'quick-book') this.quickBookDialog(siteId, dateStr);
+        else if (action === 'unblock') this.unblockDate(siteId, dateStr);
+        else if (action === 'view-details') this.showReservationDetails(siteId, dateStr);
+      });
+    });
+
+    document.getElementById('calDialog').classList.add('is-visible');
   }
 
   drawDayHeaders() {
