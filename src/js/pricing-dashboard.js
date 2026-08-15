@@ -349,10 +349,10 @@ function renderSuggestions(suggestions, potentialImpact) {
 }
 
 export async function applySuggestion(siteId, date, suggestedRate, currentRate) {
-  const confirmed = await confirmDialog(
-    `Apply ${formatUsd(suggestedRate)} for ${new Date(date).toLocaleDateString()} (currently ${formatUsd(currentRate)})?`,
-    'Apply Price'
-  );
+  const confirmed = await confirmDialog({
+    title: 'Apply Price',
+    message: `Apply ${formatUsd(suggestedRate)} for ${new Date(date).toLocaleDateString()} (currently ${formatUsd(currentRate)})?`,
+  });
 
   if (!confirmed) return;
 
@@ -395,10 +395,10 @@ export async function applyAllSuggestions() {
     return;
   }
 
-  const confirmed = await confirmDialog(
-    `Apply ${currentSuggestions.length} price suggestions? This will update rates for the next 30 days.`,
-    'Apply All Suggestions'
-  );
+  const confirmed = await confirmDialog({
+    title: 'Apply All Suggestions',
+    message: `Apply ${currentSuggestions.length} price suggestions? This will update rates for the next 30 days.`,
+  });
 
   if (!confirmed) return;
 

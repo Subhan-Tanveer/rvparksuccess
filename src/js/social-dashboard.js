@@ -291,7 +291,7 @@ async function handleConnectPlatform(platform) {
  * Handle platform disconnection
  */
 async function handleDisconnectPlatform(platform) {
-  const confirm = await confirmDialog(`Disconnect ${platform}?`, 'This cannot be undone.');
+  const confirm = await confirmDialog({ title: `Disconnect ${platform}?`, message: 'This cannot be undone.' });
   if (!confirm) return;
 
   try {
@@ -599,7 +599,7 @@ async function handleEditPost(postId) {
  * Handle delete post
  */
 async function handleDeletePost(postId) {
-  const confirm = await confirmDialog('Delete Post?', 'Scheduled posts can be deleted, but published posts cannot.');
+  const confirm = await confirmDialog({ title: 'Delete Post?', message: 'Scheduled posts can be deleted, but published posts cannot.' });
   if (!confirm) return;
 
   try {

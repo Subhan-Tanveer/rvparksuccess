@@ -231,28 +231,24 @@ export function calculatePricesForDateRange({
 }
 
 // Analyze pricing impact: what if we followed these suggestions?
-export function analyzePricingImpact(reservations, suggestedPrices) {
-  if (!reservations.length) return { potentialRevenueCents: 0, percentageGain: 0 };
+// Projects revenue impact across every night in the suggested-prices set —
+// i.e. "if all this available inventory sold at the suggested rate instead
+// of the current rate." Deliberately NOT limited to nights that already
+// have a reservation: for a date range with few or no existing bookings
+// (the common case when an owner is checking suggestions before they
+// happen), that would report $0/0% even when every suggested rate is
+// higher than current, which reads as broken rather than "nothing booked
+// yet in this range." Bookings that do exist are still reflected, since
+// the site's current rate is what they were charged.
+export function analyzePricingImpact(suggestedPrices) {
+  if (!suggestedPrices.length) return { potentialRevenueCents: 0, percentageGain: 0 };
 
   let currentRevenueTotal = 0;
   let potentialRevenueTotal = 0;
 
-  for (const res of reservations) {
-    currentRevenueTotal += res.subtotalCents;
-
-    // Calculate potential with suggested prices
-    let potentialSubtotal = 0;
-    const current = new Date(res.checkIn);
-    const checkOut = new Date(res.checkOut);
-
-    while (current < checkOut) {
-      const dateStr = current.toISOString().split('T')[0];
-      const suggestion = suggestedPrices.find((p) => p.date === dateStr && p.siteId === res.siteId);
-      potentialSubtotal += suggestion ? suggestion.suggestedCents : (res.subtotalCents / res.nights);
-      current.setDate(current.getDate() + 1);
-    }
-
-    potentialRevenueTotal += potentialSubtotal;
+  for (const suggestion of suggestedPrices) {
+    currentRevenueTotal += suggestion.currentRate;
+    potentialRevenueTotal += suggestion.suggestedRate;
   }
 
   const potentialRevenueCents = potentialRevenueTotal - currentRevenueTotal;

@@ -530,7 +530,7 @@ window.crmViewGuest = async (email) => {
 };
 
 window.crmRemoveTag = async (tagId) => {
-  if (!await confirmDialog('Remove Tag', 'Are you sure you want to remove this tag?')) return;
+  if (!await confirmDialog({ title: 'Remove Tag', message: 'Are you sure you want to remove this tag?' })) return;
 
   try {
     const res = await fetch(`/api/admin/features?resource=crm&action=tag&tagId=${tagId}`, { method: 'DELETE' });

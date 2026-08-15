@@ -885,12 +885,7 @@ async function pricingHandler(req, res) {
 
         let potentialImpact = null;
         if (includeRecommendations) {
-          const relevantReservations = reservations.filter((r) => {
-            const resStart = new Date(r.checkIn);
-            const resEnd = new Date(r.checkOut);
-            return resStart < new Date(dateRange.end) && resEnd > new Date(dateRange.start);
-          });
-          potentialImpact = analyzePricingImpact(relevantReservations, suggestions);
+          potentialImpact = analyzePricingImpact(suggestions);
         }
 
         return res.status(200).json({ suggestions, potentialImpact, occupancyByDate: maxOccupancyByDate });
