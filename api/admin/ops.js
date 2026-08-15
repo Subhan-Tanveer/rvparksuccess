@@ -298,8 +298,8 @@ async function calendarHandler(req, res) {
         guestName: r.guestName,
         guestPhone: r.guestPhone || null,
         guestEmail: r.guestEmail || null,
-        checkInDate: r.checkInDate.toISOString().split('T')[0],
-        checkOutDate: r.checkOutDate.toISOString().split('T')[0],
+        checkInDate: r.checkIn.toISOString().split('T')[0],
+        checkOutDate: r.checkOut.toISOString().split('T')[0],
         totalCents: r.totalCents,
         status: r.status,
       }));
@@ -341,8 +341,8 @@ async function calendarHandler(req, res) {
           success: true,
           reservation: {
             id: reservation.id, siteId: reservation.siteId, guestName: reservation.guestName,
-            checkInDate: reservation.checkInDate.toISOString().split('T')[0],
-            checkOutDate: reservation.checkOutDate.toISOString().split('T')[0],
+            checkInDate: reservation.checkIn.toISOString().split('T')[0],
+            checkOutDate: reservation.checkOut.toISOString().split('T')[0],
             totalCents: reservation.totalCents,
           },
         });
@@ -388,8 +388,8 @@ async function calendarHandler(req, res) {
           success: true,
           reservation: {
             id: updated.id, siteId: updated.siteId,
-            checkInDate: updated.checkInDate.toISOString().split('T')[0],
-            checkOutDate: updated.checkOutDate.toISOString().split('T')[0],
+            checkInDate: updated.checkIn.toISOString().split('T')[0],
+            checkOutDate: updated.checkOut.toISOString().split('T')[0],
           },
         });
       }
