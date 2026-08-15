@@ -170,13 +170,26 @@ export function formDialog({ title, fields, submitLabel = 'Save', cancelLabel = 
  * success or failure — callers still catch/report errors themselves.
  */
 export async function withLoading(btn, fn) {
-  if (!btn || btn.classList.contains('is-loading')) return undefined;
-  btn.classList.add('is-loading');
-  btn.disabled = true;
+  // Tolerate withLoading(fn) — called with just the async work and no
+  // button to disable. Several dashboard modules call it this way; without
+  // this, `btn` silently becomes the function itself and btn.classList
+  // throws before `fn` ever runs.
+  if (typeof btn === 'function' && fn === undefined) {
+    fn = btn;
+    btn = null;
+  }
+  if (!fn) return undefined;
+  if (btn) {
+    if (btn.classList.contains('is-loading')) return undefined;
+    btn.classList.add('is-loading');
+    btn.disabled = true;
+  }
   try {
     return await fn();
   } finally {
-    btn.classList.remove('is-loading');
-    btn.disabled = false;
+    if (btn) {
+      btn.classList.remove('is-loading');
+      btn.disabled = false;
+    }
   }
 }
