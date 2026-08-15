@@ -18,7 +18,6 @@ import { requireSession } from '../_lib/auth.js';
 import {
   getPark,
   getSitesForPark,
-  getReservationsForPark,
   getReservationsForParkInRange,
   getBlockedDatesForPark,
   createReservation,
@@ -289,7 +288,7 @@ async function calendarHandler(req, res) {
       endDate.setDate(0);
 
       const sites = await getSitesForPark(parkId);
-      const reservations = await getReservationsForPark(parkId, startDate, endDate);
+      const reservations = await getReservationsForParkInRange(parkId, startDate, endDate);
       const blockedDates = await getBlockedDatesForPark(parkId, startDate, endDate);
 
       const formattedReservations = reservations.map((r) => ({
