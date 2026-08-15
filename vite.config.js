@@ -21,6 +21,8 @@ export default defineConfig({
         adminLogin: resolve(__dirname, 'admin-login.html'),
         adminDashboard: resolve(__dirname, 'admin-dashboard.html'),
         parkDashboard: resolve(__dirname, 'park-dashboard.html'),
+        calendarGrid: resolve(__dirname, 'calendar-grid.html'),
+        portfolioDashboard: resolve(__dirname, 'portfolio-dashboard.html'),
       },
     },
   },
