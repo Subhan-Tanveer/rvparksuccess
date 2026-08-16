@@ -11,6 +11,10 @@ let comparisonTimeframe = 30;
 async function initializeCompetitiveIntelligenceDashboard() {
   const container = document.getElementById('competitiveIntelligenceDashboard');
   if (!container) return;
+  // This runs again after add/remove-competitor to refresh the view — clear
+  // out the previous render first, or every section (Market Overview,
+  // Competitors, Price Comparison, etc.) doubles up on top of itself.
+  container.innerHTML = '';
 
   try {
     // Fetch dashboard summary data
