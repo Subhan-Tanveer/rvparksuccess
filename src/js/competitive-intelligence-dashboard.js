@@ -195,15 +195,15 @@ function renderCompetitorTracking(container) {
   formDiv.style.display = 'none';
   formDiv.innerHTML = `
     <div class="field-float">
-      <input id="compName" type="text" required placeholder="Competitor name">
+      <input id="compName" type="text" required placeholder=" ">
       <label for="compName">Competitor Name</label>
     </div>
     <div class="field-float">
-      <input id="compUrl" type="url" required placeholder="https://example.com">
+      <input id="compUrl" type="url" required placeholder=" ">
       <label for="compUrl">Website URL</label>
     </div>
     <div class="field-float">
-      <input id="compLocation" type="text" placeholder="City, State">
+      <input id="compLocation" type="text" placeholder=" ">
       <label for="compLocation">Location (optional)</label>
     </div>
     <div style="display: flex; gap: var(--sp-2); flex-wrap: wrap;">

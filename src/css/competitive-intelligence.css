@@ -253,6 +253,12 @@
 }
 
 .ci-empty-state {
+  /* Spans every column of a parent grid (e.g. .ci-opportunities-grid) so
+     text-align: center actually centers across the full card width —
+     without this, a single empty-state div only occupies that grid's
+     first auto-fill column, leaving the rest of the row blank and making
+     "centered" text look pinned to the left. */
+  grid-column: 1 / -1;
   text-align: center;
   padding: var(--sp-6) var(--sp-4);
   color: var(--cream-dim);
