@@ -504,13 +504,14 @@ class CalendarGrid {
     const reservation = this.getReservationForCell(siteId, dateStr);
     if (!reservation) return 'available';
 
+    // Reflects the reservation's actual status — consistent across every
+    // night of the stay. Previously this colored only the first night
+    // "partial" and every other night "booked", which made one ordinary
+    // confirmed reservation render as two different colors and looked
+    // like a deposit/payment issue that didn't exist.
     if (reservation.status === 'pending') return 'pending';
-
-    // Check if this is the start of a multi-night reservation
-    const checkInDate = reservation.checkInDate;
-    const isFirstNight = checkInDate === dateStr;
-
-    return isFirstNight ? 'partial' : 'booked';
+    if (reservation.status === 'confirmed-deposit') return 'partial';
+    return 'booked';
   }
 
   getReservationForCell(siteId, dateStr) {
