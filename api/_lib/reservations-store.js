@@ -981,6 +981,16 @@ export async function getAvailableSites(parkId, checkIn, checkOut, promoCode = n
   const nights = nightsBetween(checkIn, checkOut);
   const sites = await loadSitesWithSeasons('park_id = $1', [parkId]);
 
+  // Release abandoned checkouts back into availability — siteIsStillAvailable()
+  // only runs this cleanup for one site during an actual booking attempt, so a
+  // guest who abandons Stripe mid-checkout left a 'pending' row that a plain
+  // search would otherwise treat as blocking forever, well past its 20-minute
+  // hold window.
+  await query(
+    `UPDATE reservations SET status = 'canceled' WHERE park_id = $1 AND status = 'pending' AND hold_expires_at < now()`,
+    [parkId]
+  );
+
   const activeRes = await query(
     `SELECT site_id, check_in, check_out FROM reservations
      WHERE park_id = $1 AND status = ANY($2::text[]) AND check_in < $4 AND check_out > $3`,
