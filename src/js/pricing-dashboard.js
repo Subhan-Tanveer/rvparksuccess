@@ -51,6 +51,11 @@ function renderPricingSettings(settings, park) {
         </label>
       </div>
     </div>
+    <p class="pricing-note" style="margin: -0.5rem 0 1rem; font-size: 0.875rem; color: var(--cream-dim, #999);">
+      ${settings.dynamicPricingEnabled
+        ? 'Every night, sites with enough booking history (3+ stays) get confidently-suggested rates applied automatically, within your Min/Max and steered by your Occupancy Target below. Lower-confidence suggestions are logged for you to review instead of applied automatically.'
+        : 'Turn this on to have rates for the next 30 days adjust automatically overnight, within your Min/Max below. You can still calculate and apply suggestions manually either way.'}
+    </p>
 
     <div class="pricing-cards">
       <div class="pricing-card">

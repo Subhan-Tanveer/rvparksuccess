@@ -82,11 +82,16 @@ function getWindowMultiplier(daysUntilArrival) {
   return 1.25; // Last-minute premium (0-3 days)
 }
 
-// Determine occupancy-based multiplier
-function getOccupancyMultiplier(occupancyPercent) {
-  if (occupancyPercent > 90) return DEFAULT_CONFIG.occupancyMultiplier.veryHigh;
-  if (occupancyPercent > 80) return DEFAULT_CONFIG.occupancyMultiplier.high;
-  if (occupancyPercent > 50) return DEFAULT_CONFIG.occupancyMultiplier.medium;
+// Determine occupancy-based multiplier — tiers are relative to the park's
+// own occupancy target, not a fixed 80%, so a park aiming for 60% starts
+// raising prices earlier (they're comfortable being fuller), and one
+// aiming for 95% only raises once nearly sold out. Previously this used a
+// hardcoded 80/90/50 split and ignored occupancyTargetPercent entirely,
+// which was the only reason that dashboard setting didn't do anything.
+function getOccupancyMultiplier(occupancyPercent, targetPercent = DEFAULT_CONFIG.occupancyThreshold) {
+  if (occupancyPercent >= targetPercent + 10) return DEFAULT_CONFIG.occupancyMultiplier.veryHigh;
+  if (occupancyPercent >= targetPercent) return DEFAULT_CONFIG.occupancyMultiplier.high;
+  if (occupancyPercent >= targetPercent - 30) return DEFAULT_CONFIG.occupancyMultiplier.medium;
   return DEFAULT_CONFIG.occupancyMultiplier.low;
 }
 
@@ -127,6 +132,7 @@ export function calculatePrice({
   siteModifier = 1.0,
   peakDateRanges = [],
   historicalData = null,
+  occupancyTargetPercent = DEFAULT_CONFIG.occupancyThreshold,
 }) {
   if (!baseRateCents || baseRateCents <= 0) {
     throw new Error('Base rate must be positive');
@@ -142,8 +148,9 @@ export function calculatePrice({
   // Apply multipliers in sequence
   let priceMultiplier = 1.0;
 
-  // Occupancy multiplier (current occupancy on that date)
-  const occupancyMult = getOccupancyMultiplier(siteOccupancyPercent);
+  // Occupancy multiplier (current occupancy on that date, relative to the
+  // park's own occupancy target)
+  const occupancyMult = getOccupancyMultiplier(siteOccupancyPercent, occupancyTargetPercent);
   priceMultiplier *= occupancyMult;
 
   // Booking window multiplier (how far in advance)
@@ -175,7 +182,7 @@ export function calculatePrice({
 
   const reasoning = {
     baseRate: `$${(baseRateCents / 100).toFixed(2)}`,
-    occupancyFactor: `${siteOccupancyPercent}% occupancy → ${(occupancyMult * 100).toFixed(0)}%`,
+    occupancyFactor: `${siteOccupancyPercent}% occupancy vs ${occupancyTargetPercent}% target → ${(occupancyMult * 100).toFixed(0)}%`,
     bookingWindow: `${daysUntilArrival} days out → ${(windowMult * 100).toFixed(0)}%`,
     seasonality: `${seasonMult >= DEFAULT_CONFIG.seasonMultiplier.peak ? 'peak' : seasonMult >= DEFAULT_CONFIG.seasonMultiplier.shoulder ? 'shoulder' : 'off-season'} season → ${(seasonMult * 100).toFixed(0)}%`,
     dayOfWeek: `${['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][checkIn.getDay()]} → ${(dayMult * 100).toFixed(0)}%`,

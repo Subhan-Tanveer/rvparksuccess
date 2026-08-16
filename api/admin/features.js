@@ -14,7 +14,6 @@ import {
   getPark,
   getSitesForPark,
   getReservationsForParkInRange,
-  getReservationsForPark,
   getPeakDateRanges,
   updatePricingSettings,
   updateSiteModifier,
@@ -65,7 +64,8 @@ import {
   resumeCampaign,
   CAMPAIGN_TYPES,
 } from '../_lib/campaign-engine.js';
-import { calculatePrice, analyzePricingImpact } from '../_lib/pricing-engine.js';
+import { analyzePricingImpact } from '../_lib/pricing-engine.js';
+import { computePriceSuggestionsForPark } from '../_lib/dynamic-pricing.js';
 import {
   getSocialAccounts,
   connectSocialAccount,
@@ -826,69 +826,19 @@ async function pricingHandler(req, res) {
         const { dateRange, includeRecommendations = true } = payload;
         if (!dateRange || !dateRange.start || !dateRange.end) return res.status(400).json({ error: 'Date range required: { start, end }' });
 
-        const sites = await getSitesForPark(session.parkId);
-        const reservations = await getReservationsForPark(session.parkId);
-        const peakRanges = await getPeakDateRanges(session.parkId);
+        // Shared with the nightly auto-apply cron (api/_lib/dynamic-pricing.js)
+        // so the two paths always compute the same numbers for the same inputs.
+        const { suggestions } = await computePriceSuggestionsForPark(session.parkId, dateRange.start, dateRange.end);
 
         const occupancyByDate = {};
-        for (const r of reservations) {
-          if (r.status !== 'confirmed' && r.status !== 'confirmed-deposit') continue;
-          let current = new Date(r.checkIn);
-          const checkOut = new Date(r.checkOut);
-          while (current < checkOut) {
-            const dateStr = current.toISOString().split('T')[0];
-            occupancyByDate[dateStr] = (occupancyByDate[dateStr] || 0) + 1;
-            current.setDate(current.getDate() + 1);
-          }
-        }
-
-        const maxOccupancyByDate = {};
-        for (const [dateStr, bookedCount] of Object.entries(occupancyByDate)) {
-          const occupancyPercent = (bookedCount / sites.length) * 100;
-          maxOccupancyByDate[dateStr] = Math.min(100, occupancyPercent);
-        }
-
-        const suggestions = [];
-        for (const site of sites) {
-          const current = new Date(dateRange.start);
-          while (current < new Date(dateRange.end)) {
-            const dateStr = current.toISOString().split('T')[0];
-            const occupancyPercent = maxOccupancyByDate[dateStr] || 50;
-
-            const pricing = calculatePrice({
-              baseRateCents: site.nightlyRateCents,
-              checkInDate: dateStr,
-              siteOccupancyPercent: occupancyPercent,
-              siteModifier: site.priceModifier,
-              peakDateRanges: peakRanges.map((p) => ({ startDate: p.startDate, endDate: p.endDate })),
-            });
-
-            let suggestedCents = pricing.suggestedCents;
-            if (suggestedCents < park.minPriceCents) suggestedCents = park.minPriceCents;
-            if (suggestedCents > park.maxPriceCents) suggestedCents = park.maxPriceCents;
-
-            suggestions.push({
-              siteId: site.id,
-              siteName: site.name,
-              date: dateStr,
-              occupancyPercent: Math.round(occupancyPercent),
-              currentRate: site.nightlyRateCents,
-              suggestedRate: suggestedCents,
-              multiplier: pricing.priceMultiplier,
-              confidence: pricing.confidence,
-              reasoning: pricing.reasoning,
-            });
-
-            current.setDate(current.getDate() + 1);
-          }
-        }
+        for (const s of suggestions) occupancyByDate[s.date] = s.occupancyPercent;
 
         let potentialImpact = null;
         if (includeRecommendations) {
           potentialImpact = analyzePricingImpact(suggestions);
         }
 
-        return res.status(200).json({ suggestions, potentialImpact, occupancyByDate: maxOccupancyByDate });
+        return res.status(200).json({ suggestions, potentialImpact, occupancyByDate });
       }
 
       if (action === 'applyPrice') {
