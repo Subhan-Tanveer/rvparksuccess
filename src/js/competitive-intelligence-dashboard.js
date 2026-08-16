@@ -1,6 +1,8 @@
 // Competitive Intelligence Dashboard — UI for market positioning, competitor tracking, price recommendations
 // Renders market overview, competitor list, price comparisons, trends, and opportunities
 
+import { openAddCompetitorModal } from './competitor-map-modal.js';
+
 let dashboardData = null;
 let comparisonTimeframe = 30;
 
@@ -188,31 +190,6 @@ function renderCompetitorTracking(container) {
   `;
   section.appendChild(heading);
 
-  // Add competitor form (hidden by default)
-  const formDiv = document.createElement('div');
-  formDiv.id = 'addCompetitorForm';
-  formDiv.className = 'ci-add-competitor-form';
-  formDiv.style.display = 'none';
-  formDiv.innerHTML = `
-    <div class="field-float">
-      <input id="compName" type="text" required placeholder=" ">
-      <label for="compName">Competitor Name</label>
-    </div>
-    <div class="field-float">
-      <input id="compUrl" type="url" required placeholder=" ">
-      <label for="compUrl">Website URL</label>
-    </div>
-    <div class="field-float">
-      <input id="compLocation" type="text" placeholder=" ">
-      <label for="compLocation">Location (optional)</label>
-    </div>
-    <div style="display: flex; gap: var(--sp-2); flex-wrap: wrap;">
-      <button class="btn btn-primary btn-sm" id="submitCompetitor"><span>Add</span></button>
-      <button class="btn btn-ghost btn-sm" id="cancelCompetitor"><span>Cancel</span></button>
-    </div>
-  `;
-  section.appendChild(formDiv);
-
   // Competitors table
   const table = document.createElement('table');
   table.className = 'ci-competitor-table';
@@ -244,45 +221,9 @@ function renderCompetitorTracking(container) {
   container.appendChild(section);
 
   // Event handlers
-  document.getElementById('addCompetitorBtn').addEventListener('click', () => {
-    formDiv.style.display = 'block';
-  });
-
-  document.getElementById('cancelCompetitor').addEventListener('click', () => {
-    formDiv.style.display = 'none';
-  });
-
-  document.getElementById('submitCompetitor').addEventListener('click', async () => {
-    const name = document.getElementById('compName').value.trim();
-    const url = document.getElementById('compUrl').value.trim();
-    const location = document.getElementById('compLocation').value.trim();
-
-    if (!name || !url) {
-      alert('Competitor name and URL are required');
-      return;
-    }
-
-    try {
-      const response = await fetch('/api/admin/ops?resource=competitive-intelligence&action=add-competitor', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'add-competitor', name, websiteUrl: url, location }),
-      });
-
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-      // Reset form and refresh
-      formDiv.style.display = 'none';
-      document.getElementById('compName').value = '';
-      document.getElementById('compUrl').value = '';
-      document.getElementById('compLocation').value = '';
-
-      // Refresh dashboard
-      initializeCompetitiveIntelligenceDashboard();
-    } catch (err) {
-      console.error('Failed to add competitor:', err);
-      alert('Failed to add competitor. Please try again.');
-    }
+  document.getElementById('addCompetitorBtn').addEventListener('click', async () => {
+    const added = await openAddCompetitorModal();
+    if (added) initializeCompetitiveIntelligenceDashboard();
   });
 
   // Load competitors

@@ -269,24 +269,181 @@
 }
 
 /* ============================================================ */
-/* Add Competitor Modal / Form */
+/* Add Competitor Modal — Google Map + Places search             */
 /* ============================================================ */
 
-.ci-add-competitor-form {
-  display: grid;
-  grid-template-columns: 1fr;
+.ci-map-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  background: rgba(8, 12, 8, 0.75);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--sp-3);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.25s ease, visibility 0.25s ease;
+}
+
+.ci-map-backdrop.is-open {
+  opacity: 1;
+  visibility: visible;
+}
+
+.ci-map-modal {
+  width: 100%;
+  max-width: 860px;
+  max-height: 90vh;
+  overflow-y: auto;
+  border-radius: var(--radius-lg);
+  padding: var(--sp-4) var(--sp-5) var(--sp-5);
+  background: var(--forest-light);
+  border: 1px solid var(--border-amber);
+  transform: scale(0.96) translateY(10px);
+  transition: transform 0.3s var(--ease-spring);
+}
+
+.ci-map-backdrop.is-open .ci-map-modal {
+  transform: scale(1) translateY(0);
+}
+
+.ci-map-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--sp-3);
+}
+
+.ci-map-modal-head h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  color: var(--cream);
+}
+
+.ci-map-close {
+  background: transparent;
+  border: none;
+  color: var(--cream-dim);
+  font-size: 1.75rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 4px;
+}
+
+.ci-map-close:hover {
+  color: var(--cream);
+}
+
+.ci-map-toolbar {
+  display: flex;
+  align-items: center;
   gap: var(--sp-3);
-  margin-top: var(--sp-3);
-  padding-top: var(--sp-3);
-  border-top: 1px solid var(--border-glass);
+  flex-wrap: wrap;
+  margin-bottom: var(--sp-3);
 }
 
-.ci-add-competitor-form .field-float {
-  margin-bottom: var(--sp-2);
+.ci-map-search-wrap {
+  flex: 1 1 240px;
 }
 
-.ci-add-competitor-form .btn {
-  margin-top: var(--sp-2);
+.ci-map-search-wrap input {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-glass);
+  background: var(--surface-glass-strong);
+  color: var(--cream);
+  font-size: 0.9375rem;
+}
+
+.ci-map-search-wrap input:focus {
+  outline: none;
+  border-color: var(--amber);
+}
+
+.ci-map-link-btn {
+  background: transparent;
+  border: none;
+  color: var(--amber-light);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  padding: 0;
+}
+
+.ci-map-link-btn:hover {
+  text-decoration: underline;
+}
+
+.ci-map-error {
+  margin-bottom: var(--sp-3);
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--radius-md);
+  background: var(--ci-danger-alpha);
+  border: 1px solid rgba(217, 60, 46, 0.4);
+  color: #f0a89a;
+  font-size: 0.875rem;
+}
+
+.ci-map-canvas-wrap {
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 1px solid var(--border-glass);
+}
+
+.ci-map-canvas {
+  width: 100%;
+  height: 420px;
+  background: var(--surface-glass-strong);
+}
+
+.ci-map-manual-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  padding-top: var(--sp-2);
+}
+
+/* Google's autocomplete dropdown renders in a body-level .pac-container —
+   restyle it to match the dark theme instead of Google's default white box. */
+.pac-container {
+  background: var(--forest-light);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-md);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  font-family: inherit;
+}
+
+.pac-item {
+  color: var(--cream-dim);
+  border-color: var(--border-glass);
+  padding: 8px 10px;
+}
+
+.pac-item:hover {
+  background: var(--surface-glass-strong);
+}
+
+.pac-item-query {
+  color: var(--cream);
+}
+
+.pac-icon {
+  filter: invert(1) grayscale(1);
+}
+
+@media (max-width: 640px) {
+  .ci-map-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .ci-map-canvas {
+    height: 300px;
+  }
 }
 
 /* ============================================================ */

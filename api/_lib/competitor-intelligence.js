@@ -351,9 +351,9 @@ export async function identifyPricingOpportunities(parkId) {
     .sort((a, b) => Math.abs(b.estimatedRevenueImpactMonth) - Math.abs(a.estimatedRevenueImpactMonth));
 }
 
-export async function addCompetitorForPark(parkId, { name, websiteUrl, location }) {
+export async function addCompetitorForPark(parkId, { name, websiteUrl, location, address, googleMapsUrl, placeId, lat, lng }) {
   const { addCompetitor } = await import('./reservations-store.js');
-  return addCompetitor(parkId, { name, websiteUrl, location });
+  return addCompetitor(parkId, { name, websiteUrl, location, address, googleMapsUrl, placeId, lat, lng });
 }
 
 export async function removeCompetitorForPark(parkId, competitorId) {

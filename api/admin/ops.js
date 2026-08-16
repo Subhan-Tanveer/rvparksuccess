@@ -1216,9 +1216,9 @@ async function competitiveIntelligenceHandler(req, res) {
     const { action, ...payload } = req.body || {};
     try {
       if (action === 'add-competitor') {
-        const { name, websiteUrl, location } = payload;
-        if (!name || !websiteUrl) return res.status(400).json({ error: 'Competitor name and website URL are required' });
-        const competitor = await addCompetitorForPark(session.parkId, { name, websiteUrl, location });
+        const { name, websiteUrl, location, address, googleMapsUrl, placeId, lat, lng } = payload;
+        if (!name) return res.status(400).json({ error: 'Competitor name is required' });
+        const competitor = await addCompetitorForPark(session.parkId, { name, websiteUrl, location, address, googleMapsUrl, placeId, lat, lng });
         return res.status(201).json({ competitor, message: 'Competitor added successfully' });
       }
 

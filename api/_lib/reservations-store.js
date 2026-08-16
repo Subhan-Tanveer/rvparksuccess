@@ -468,7 +468,7 @@ function ensureSchema() {
         id TEXT PRIMARY KEY,
         park_id TEXT NOT NULL REFERENCES parks(id) ON DELETE CASCADE,
         name TEXT NOT NULL,
-        website_url TEXT NOT NULL,
+        website_url TEXT,
         location TEXT,
         scrape_enabled BOOLEAN NOT NULL DEFAULT true,
         last_scraped TIMESTAMPTZ,
@@ -476,6 +476,12 @@ function ensureSchema() {
       );
       CREATE INDEX IF NOT EXISTS idx_competitors_park ON competitors(park_id);
       CREATE UNIQUE INDEX IF NOT EXISTS idx_competitors_unique ON competitors(park_id, website_url);
+      ALTER TABLE competitors ALTER COLUMN website_url DROP NOT NULL;
+      ALTER TABLE competitors ADD COLUMN IF NOT EXISTS address TEXT;
+      ALTER TABLE competitors ADD COLUMN IF NOT EXISTS google_maps_url TEXT;
+      ALTER TABLE competitors ADD COLUMN IF NOT EXISTS place_id TEXT;
+      ALTER TABLE competitors ADD COLUMN IF NOT EXISTS lat DOUBLE PRECISION;
+      ALTER TABLE competitors ADD COLUMN IF NOT EXISTS lng DOUBLE PRECISION;
 
       CREATE TABLE IF NOT EXISTS competitor_pricing (
         id TEXT PRIMARY KEY,
@@ -2567,6 +2573,11 @@ function mapCompetitor(row) {
     name: row.name,
     websiteUrl: row.website_url,
     location: row.location,
+    address: row.address,
+    googleMapsUrl: row.google_maps_url,
+    placeId: row.place_id,
+    lat: row.lat !== null && row.lat !== undefined ? Number(row.lat) : null,
+    lng: row.lng !== null && row.lng !== undefined ? Number(row.lng) : null,
     scrapeEnabled: row.scrape_enabled,
     lastScraped: row.last_scraped ? row.last_scraped.toISOString() : null,
     createdAt: row.created_at.toISOString(),
@@ -2614,15 +2625,16 @@ function mapPricingSuggestion(row) {
   };
 }
 
-export async function addCompetitor(parkId, { name, websiteUrl, location }) {
-  if (!name || !websiteUrl) throw new Error('Competitor name and URL are required');
+export async function addCompetitor(parkId, { name, websiteUrl, location, address, googleMapsUrl, placeId, lat, lng }) {
+  if (!name) throw new Error('Competitor name is required');
   const parkExists = await query('SELECT 1 FROM parks WHERE id = $1', [parkId]);
   if (!parkExists.rows.length) throw new Error('Unknown park');
 
   const id = `comp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   const res = await query(
-    'INSERT INTO competitors (id, park_id, name, website_url, location) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-    [id, parkId, name, websiteUrl, location || null]
+    `INSERT INTO competitors (id, park_id, name, website_url, location, address, google_maps_url, place_id, lat, lng)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
+    [id, parkId, name, websiteUrl || null, location || null, address || null, googleMapsUrl || null, placeId || null, lat ?? null, lng ?? null]
   );
   return mapCompetitor(res.rows[0]);
 }
