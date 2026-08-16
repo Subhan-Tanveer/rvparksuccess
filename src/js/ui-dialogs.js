@@ -59,6 +59,42 @@ export function alertDialog({ title, message, okLabel = 'OK' }) {
   });
 }
 
+/**
+ * Read-only detail popup — like alertDialog, but takes pre-built HTML
+ * (label/value rows, links, etc.) instead of a single message string, and
+ * renders wider to fit that content. Resolves when dismissed.
+ */
+export function detailDialog({ title, bodyHtml, okLabel = 'Close' }) {
+  ensureDialogRoot();
+  return new Promise((resolve) => {
+    titleEl.textContent = title;
+    bodyEl.innerHTML = bodyHtml;
+    errorEl.classList.remove('is-visible');
+    actionsEl.innerHTML = '';
+    backdrop.querySelector('.dlg-modal').classList.add('is-wide');
+
+    const okBtn = document.createElement('button');
+    okBtn.type = 'button';
+    okBtn.className = 'btn btn-primary';
+    okBtn.textContent = okLabel;
+    actionsEl.append(okBtn);
+
+    const cleanup = () => {
+      closeDialog();
+      backdrop.querySelector('.dlg-modal').classList.remove('is-wide');
+      document.removeEventListener('keydown', onKey);
+      resolve();
+    };
+    const onKey = (e) => { if (e.key === 'Escape' || e.key === 'Enter') cleanup(); };
+
+    okBtn.onclick = cleanup;
+    backdrop.onclick = (e) => { if (e.target === backdrop) cleanup(); };
+    document.addEventListener('keydown', onKey);
+    openDialog();
+    okBtn.focus();
+  });
+}
+
 /** Themed replacement for window.confirm(). Resolves true/false. */
 export function confirmDialog({ title, message, confirmLabel = 'Confirm', cancelLabel = 'Cancel', danger = false }) {
   ensureDialogRoot();

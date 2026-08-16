@@ -327,6 +327,14 @@ body { visibility: hidden; animation: pt-reveal-body 2.05s steps(1) forwards; }
 .dlg-backdrop.is-open { opacity: 1; visibility: visible; }
 .dlg-modal { width: 100%; max-width: 420px; border-radius: var(--radius-lg); padding: var(--sp-5); background: var(--forest-light); border: 1px solid var(--border-amber); transform: scale(0.94) translateY(10px); transition: transform 0.3s var(--ease-spring); }
 .dlg-backdrop.is-open .dlg-modal { transform: scale(1) translateY(0); }
+.dlg-modal.is-wide { max-width: 560px; max-height: 85vh; overflow-y: auto; text-align: left; }
+
+.dlg-detail-row { display: flex; gap: var(--sp-3); padding: 10px 0; border-bottom: 1px solid var(--border-glass); }
+.dlg-detail-row:last-child { border-bottom: none; }
+.dlg-detail-label { flex: 0 0 140px; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--cream-dim); padding-top: 2px; }
+.dlg-detail-value { flex: 1; font-size: 0.9375rem; color: var(--cream); word-break: break-word; }
+.dlg-detail-value a { color: var(--amber-light); text-decoration: none; }
+.dlg-detail-value a:hover { text-decoration: underline; }
 .dlg-title { font-size: 1.125rem; font-weight: 700; color: var(--cream); margin-bottom: var(--sp-2); }
 .dlg-message { font-size: 0.9375rem; color: var(--cream-dim); line-height: 1.55; margin-bottom: var(--sp-3); }
 .dlg-error { display: none; margin-bottom: var(--sp-3); padding: var(--sp-2) var(--sp-3); border-radius: var(--radius-md); background: rgba(217,60,46,0.1); border: 1px solid rgba(217,60,46,0.4); color: #f0a89a; font-size: 0.875rem; }

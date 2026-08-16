@@ -220,6 +220,15 @@
   vertical-align: middle;
 }
 
+.ci-competitor-table .ci-competitor-row {
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.ci-competitor-table .ci-competitor-row:hover {
+  background: var(--surface-glass-strong);
+}
+
 .ci-competitor-table .comp-name {
   font-weight: 600;
 }

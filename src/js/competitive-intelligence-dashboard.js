@@ -2,8 +2,10 @@
 // Renders market overview, competitor list, price comparisons, trends, and opportunities
 
 import { openAddCompetitorModal } from './competitor-map-modal.js';
+import { detailDialog } from './ui-dialogs.js';
 
 let dashboardData = null;
+let competitorsCache = [];
 let comparisonTimeframe = 30;
 
 async function initializeCompetitiveIntelligenceDashboard() {
@@ -239,19 +241,21 @@ async function loadCompetitors() {
     const tbody = document.getElementById('competitorsTableBody');
     if (!tbody) return;
 
-    if (!data.competitors || data.competitors.length === 0) {
+    competitorsCache = data.competitors || [];
+
+    if (competitorsCache.length === 0) {
       tbody.innerHTML = '<tr><td colspan="5" class="ci-empty-state">No competitors tracked yet.</td></tr>';
       return;
     }
 
-    tbody.innerHTML = data.competitors.map((comp) => `
-      <tr>
+    tbody.innerHTML = competitorsCache.map((comp) => `
+      <tr class="ci-competitor-row" onclick="showCompetitorDetails('${comp.id}')">
         <td class="comp-name">${escapeHtml(comp.name)}</td>
         <td class="comp-rate">—</td>
         <td class="comp-status">Monitoring</td>
         <td class="comp-status">${comp.lastScraped ? new Date(comp.lastScraped).toLocaleDateString() : 'Not yet'}</td>
         <td>
-          <button class="action-btn" onclick="removeCompetitor('${comp.id}')">Remove</button>
+          <button class="action-btn" onclick="event.stopPropagation(); removeCompetitor('${comp.id}')">Remove</button>
         </td>
       </tr>
     `).join('');
@@ -259,6 +263,33 @@ async function loadCompetitors() {
     console.error('Failed to load competitors:', err);
   }
 }
+
+function detailRow(label, valueHtml) {
+  if (!valueHtml) return '';
+  return `<div class="dlg-detail-row"><div class="dlg-detail-label">${label}</div><div class="dlg-detail-value">${valueHtml}</div></div>`;
+}
+
+window.showCompetitorDetails = function(competitorId) {
+  const comp = competitorsCache.find((c) => c.id === competitorId);
+  if (!comp) return;
+
+  const html = [
+    detailRow('Name', escapeHtml(comp.name)),
+    detailRow('Address', comp.address ? escapeHtml(comp.address) : (comp.location ? escapeHtml(comp.location) : '')),
+    detailRow('Website', comp.websiteUrl ? `<a href="${escapeHtml(comp.websiteUrl)}" target="_blank" rel="noopener">${escapeHtml(comp.websiteUrl)}</a>` : ''),
+    detailRow('Google Maps', comp.googleMapsUrl ? `<a href="${escapeHtml(comp.googleMapsUrl)}" target="_blank" rel="noopener">View on Google Maps</a>` : ''),
+    detailRow('Coordinates', comp.lat != null && comp.lng != null ? `${comp.lat.toFixed(5)}, ${comp.lng.toFixed(5)}` : ''),
+    detailRow('Google Place ID', comp.placeId ? escapeHtml(comp.placeId) : ''),
+    detailRow('Tracking Status', comp.scrapeEnabled ? 'Monitoring' : 'Paused'),
+    detailRow('Last Scraped', comp.lastScraped ? new Date(comp.lastScraped).toLocaleString() : 'Not yet'),
+    detailRow('Added', comp.createdAt ? new Date(comp.createdAt).toLocaleDateString() : ''),
+  ].filter(Boolean).join('');
+
+  detailDialog({
+    title: comp.name,
+    bodyHtml: html || '<p class="dlg-message">No additional details available for this competitor.</p>',
+  });
+};
 
 window.removeCompetitor = async function(competitorId) {
   if (!confirm('Remove this competitor from tracking?')) return;
