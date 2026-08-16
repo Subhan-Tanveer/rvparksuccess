@@ -118,7 +118,7 @@ class AnalyticsDashboard {
             <p class="sub">Revenue by booking source</p>
           </div>
           <div class="sources-grid">
-            <canvas id="sourcesChart" height="80"></canvas>
+            <div class="sources-chart-wrap"><canvas id="sourcesChart"></canvas></div>
             <table class="source-details">
               <thead>
                 <tr>
@@ -376,16 +376,17 @@ class AnalyticsDashboard {
       return;
     }
 
-    // Pie chart
-    this.drawPieChart(canvas, sources, {
-      colors: ['#4fc072', '#3a7fb0', '#157a72', '#d97f2e'],
-    });
+    const colors = ['#4fc072', '#3a7fb0', '#157a72', '#d97f2e'];
 
-    // Table
+    // Pie chart
+    this.drawPieChart(canvas, sources, { colors });
+
+    // Table — a colored dot per row ties each source back to its slice,
+    // since color is otherwise the only thing connecting chart and table.
     tbody.innerHTML = sources
-      .map((src) => `
+      .map((src, i) => `
         <tr>
-          <td>${this.escapeHtml(src.source)}</td>
+          <td><span class="source-legend-dot" style="background:${colors[i % colors.length]}"></span>${this.escapeHtml(src.source)}</td>
           <td>${src.bookingCount}</td>
           <td>${src.bookingPercent}%</td>
           <td>${this.formatCurrency(src.totalRevenueCents)}</td>

@@ -233,9 +233,37 @@ canvas {
 /* ---- Sources Grid ---- */
 .sources-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--sp-4);
-  align-items: start;
+  grid-template-columns: minmax(200px, 260px) 1fr;
+  gap: var(--sp-5);
+  align-items: center;
+}
+
+.sources-chart-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 220px;
+}
+
+.sources-chart-wrap canvas {
+  width: 220px;
+  height: 220px;
+}
+
+.source-legend-dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+@media (max-width: 640px) {
+  .sources-grid {
+    grid-template-columns: 1fr;
+    justify-items: center;
+  }
 }
 
 .source-details {
