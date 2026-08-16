@@ -115,6 +115,7 @@ function ensureSchema() {
       ALTER TABLE parks ADD COLUMN IF NOT EXISTS booking_listing_id TEXT;
       ALTER TABLE parks ADD COLUMN IF NOT EXISTS vrbo_listing_id TEXT;
       ALTER TABLE parks ADD COLUMN IF NOT EXISTS ota_integration_enabled BOOLEAN NOT NULL DEFAULT false;
+      ALTER TABLE parks ADD COLUMN IF NOT EXISTS ghl_crm_url TEXT;
 
       CREATE TABLE IF NOT EXISTS sites (
         id TEXT PRIMARY KEY,
@@ -747,6 +748,7 @@ function mapPark(row, promoCodes = []) {
     bookingListingId: row.booking_listing_id,
     vrboListingId: row.vrbo_listing_id,
     otaIntegrationEnabled: row.ota_integration_enabled || false,
+    ghlCrmUrl: row.ghl_crm_url,
     createdAt: row.created_at.toISOString(),
     promoCodes: promoCodes.map(mapPromo),
   };
@@ -1302,6 +1304,12 @@ export async function removePromoCode(parkId, promoId) {
 }
 
 // Safe for the super-admin dashboard to display — strips the password hash.
+export async function setParkGhlCrmUrl(parkId, ghlCrmUrl) {
+  const res = await query('UPDATE parks SET ghl_crm_url = $2 WHERE id = $1 RETURNING *', [parkId, ghlCrmUrl || null]);
+  if (!res.rows.length) throw new Error('Unknown park');
+  return mapPark(res.rows[0]);
+}
+
 export async function listParksForAdmin() {
   const parksRes = await query('SELECT * FROM parks');
   const sitesRes = await query('SELECT park_id FROM sites');

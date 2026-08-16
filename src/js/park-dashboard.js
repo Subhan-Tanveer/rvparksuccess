@@ -5,9 +5,11 @@ import { PACKAGES, formatUsd as formatUsdWhole } from './services-data.js';
 import { initPricingDashboard } from './pricing-dashboard.js';
 import { initCrmDashboard } from './crm-dashboard.js';
 import AnalyticsDashboard from './analytics-dashboard.js';
-import { initCampaignsDashboard } from './campaigns-dashboard.js';
-import { initSocialDashboard } from './social-dashboard.js';
-import { initializeCompetitiveIntelligenceDashboard } from './competitive-intelligence-dashboard.js';
+// Campaigns, Social Media, and Competitors are intentionally not wired into
+// the dashboard nav — Growth/Maximum plans now get that via the Marketing
+// CRM (GoHighLevel) tab below instead. The modules themselves are still on
+// disk (campaigns-dashboard.js, social-dashboard.js,
+// competitive-intelligence-dashboard.js) in case we bring them back.
 import { initBookingRulesDashboard } from './booking-rules-dashboard.js';
 import { initMLOptimizationDashboard } from './ml-optimization-dashboard.js';
 import { initializeOccupancyForecastingDashboard } from './occupancy-forecasting-dashboard.js';
@@ -201,14 +203,7 @@ async function loadDashboard() {
   // while the section is display:none).
   window.__analyticsDashboard = analyticsDashboard;
 
-  // Initialize campaigns dashboard
-  await initCampaignsDashboard(currentPark);
-
-  // Initialize social media dashboard
-  await initSocialDashboard(currentPark);
-
-  // Initialize competitive intelligence dashboard
-  await initializeCompetitiveIntelligenceDashboard();
+  renderGhlCrmTab(currentPark);
 
   // Initialize booking rules dashboard
   initBookingRulesDashboard();
@@ -218,6 +213,49 @@ async function loadDashboard() {
 
   // Initialize occupancy forecasting dashboard
   await initializeOccupancyForecastingDashboard();
+}
+
+/* -- Marketing CRM (GoHighLevel) tab — Growth/Maximum plans only -- */
+const CRM_ELIGIBLE_PLAN_KEYS = ['growth', 'maximum'];
+
+function renderGhlCrmTab(park) {
+  const navLink = document.getElementById('navGhlCrm');
+  const box = document.getElementById('ghlCrmBox');
+  if (!navLink || !box) return;
+
+  if (!CRM_ELIGIBLE_PLAN_KEYS.includes(park.planKey)) {
+    navLink.style.display = 'none';
+    return;
+  }
+  navLink.style.display = '';
+
+  // Only http(s) is a safe navigation target for a link built from
+  // admin-supplied text — javascript: or data: URLs would execute on click.
+  let isSafeUrl = false;
+  try { isSafeUrl = ['http:', 'https:'].includes(new URL(park.ghlCrmUrl).protocol); } catch { /* not a valid absolute URL */ }
+
+  if (park.ghlCrmUrl && isSafeUrl) {
+    box.innerHTML = `
+      <p class="sub" style="margin-bottom: var(--sp-3);">Your CRM is ready — send SMS/email campaigns, run AI agents, and manage your social media all in one place.</p>
+    `;
+    // Built via DOM APIs, not string-concatenated HTML — ghlCrmUrl is
+    // admin-supplied but still untrusted at render time. setAttribute()
+    // can't be broken out of the way a template-literal href="${...}"
+    // could (a stray `"` in the URL would otherwise inject attributes).
+    const link = document.createElement('a');
+    link.className = 'btn btn-primary';
+    link.target = '_blank';
+    link.rel = 'noopener';
+    link.href = park.ghlCrmUrl;
+    const label = document.createElement('span');
+    label.textContent = 'Open Your CRM';
+    link.appendChild(label);
+    box.appendChild(link);
+  } else {
+    box.innerHTML = `
+      <p class="sub">Your CRM is being set up and will be available soon. We'll email you access details once it's ready.</p>
+    `;
+  }
 }
 
 /* -- stats -- */

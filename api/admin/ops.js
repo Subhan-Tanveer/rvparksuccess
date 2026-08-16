@@ -54,6 +54,7 @@ import {
   getCompetitorsForPark,
   createPark,
   listParksForAdmin,
+  setParkGhlCrmUrl,
   query as dbQuery,
 } from '../_lib/reservations-store.js';
 import {
@@ -1507,6 +1508,18 @@ async function parksHandler(req, res) {
     }
   }
 
-  res.setHeader('Allow', 'GET, POST');
+  if (req.method === 'PUT') {
+    const { parkId, ghlCrmUrl } = req.body || {};
+    if (!parkId) return res.status(400).json({ error: 'parkId is required' });
+    try {
+      const park = await setParkGhlCrmUrl(parkId, ghlCrmUrl);
+      const { passwordHash, ...safePark } = park;
+      return res.status(200).json({ park: safePark });
+    } catch (err) {
+      return res.status(400).json({ error: err.message });
+    }
+  }
+
+  res.setHeader('Allow', 'GET, POST, PUT');
   res.status(405).json({ error: 'Method not allowed' });
 }
