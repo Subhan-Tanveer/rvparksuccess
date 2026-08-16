@@ -192,9 +192,15 @@ export function openAddCompetitorModal() {
         }
 
         const autocomplete = new maps.places.Autocomplete(searchInput, {
-          fields: ['name', 'formatted_address', 'geometry', 'place_id', 'website', 'url'],
+          // Basic Data only (name/address/location/place_id) — available on every
+          // Places billing tier. Contact Data (website/url) is requested
+          // separately below so an unprovisioned tier can't blank out the
+          // whole result (Google fails the *entire* Details call, not just
+          // the unsupported field, when a requested field isn't authorized).
+          fields: ['name', 'formatted_address', 'geometry', 'place_id'],
         });
         autocomplete.bindTo('bounds', map);
+        const placesService = new maps.places.PlacesService(map);
 
         autocomplete.addListener('place_changed', () => {
           clearError();
@@ -213,13 +219,25 @@ export function openAddCompetitorModal() {
             name: place.name,
             address: place.formatted_address || '',
             location: place.formatted_address || '',
-            websiteUrl: place.website || '',
-            googleMapsUrl: place.url || '',
+            websiteUrl: '',
+            googleMapsUrl: '',
             placeId: place.place_id || '',
             lat: place.geometry.location.lat(),
             lng: place.geometry.location.lng(),
           };
           addBtn.disabled = false;
+
+          // Best-effort: fill in website/Google Maps URL if this project's
+          // Places tier supports Contact Data. Failure here doesn't block
+          // adding the competitor — those fields just stay blank.
+          if (place.place_id) {
+            placesService.getDetails({ placeId: place.place_id, fields: ['website', 'url'] }, (details, status) => {
+              if (status === maps.places.PlacesServiceStatus.OK && details && selectedPlace?.placeId === place.place_id) {
+                selectedPlace.websiteUrl = details.website || '';
+                selectedPlace.googleMapsUrl = details.url || '';
+              }
+            });
+          }
         });
       })
       .catch((err) => {
