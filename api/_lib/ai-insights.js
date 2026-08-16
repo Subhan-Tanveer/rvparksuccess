@@ -5,7 +5,7 @@
 // analytics-engine); this only narrates results that already exist, it
 // never generates the numbers itself.
 const BASE_URL = process.env.BAZAARLINK_BASE_URL || 'https://api.bazaarlink.ai/v1';
-const MODEL = process.env.BAZAARLINK_MODEL || 'meta-llama/llama-3.1-8b-instruct:free';
+const MODEL = process.env.BAZAARLINK_MODEL || 'deepseek/deepseek-v4-flash:free';
 
 export async function generateNarrative(systemPrompt, userPrompt) {
   const apiKey = process.env.BAZAARLINK_API_KEY;
