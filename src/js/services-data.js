@@ -8,6 +8,23 @@
 
 export const PACKAGES = [
   {
+    key: 'website-booking',
+    level: 4,
+    name: 'Website & Booking System',
+    monthly: 30000,
+    commitment: 'Month-to-month',
+    startHere: true,
+    badgeLabel: 'Start Here — No Commitment',
+    tagline: 'The easy way in — a real website and working reservation system, cancel anytime.',
+    features: [
+      'Custom website built for your park',
+      'Integrated guest booking system',
+      'Mobile responsive and SEO optimized',
+      'Monthly support and updates',
+    ],
+    note: 'No contract, no risk — cancel anytime. Most parks start here, see real bookings come in, then move up to Foundation or Growth once they\'re ready to grow faster.',
+  },
+  {
     key: 'foundation',
     level: 1,
     name: 'Foundation',
@@ -55,21 +72,6 @@ export const PACKAGES = [
       'Full occupancy optimization',
     ],
     note: 'Seasonal flexibility available — pause in your slow months and resume when your busy season starts. No penalties.',
-  },
-  {
-    key: 'website-booking',
-    level: 4,
-    name: 'Website & Booking System',
-    monthly: 30000,
-    commitment: 'Month-to-month',
-    tagline: 'Custom plan: modern website with integrated booking system',
-    features: [
-      'Custom website built for your park',
-      'Integrated guest booking system',
-      'Mobile responsive and SEO optimized',
-      'Monthly support and updates',
-    ],
-    note: 'Flexible month-to-month billing — cancel anytime with no penalties.',
   },
 ];
 

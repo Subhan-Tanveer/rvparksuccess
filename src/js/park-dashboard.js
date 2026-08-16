@@ -169,6 +169,7 @@ async function loadDashboard() {
   renderSites(currentSites);
   renderReservations(data.reservations);
   renderStats(data.stats);
+  renderUpgradeNudge(currentPark, data.stats);
   document.getElementById('stTaxRate').value = currentPark.taxRatePercent ?? 0;
   document.getElementById('stTaxRate').classList.add('has-value');
   document.getElementById('stDepositPercent').value = currentPark.depositPercent ?? 0;
@@ -252,6 +253,36 @@ function renderGhlCrmTab(park) {
       <p class="sub">Your CRM is being set up and will be available soon. We'll email you access details once it's ready.</p>
     `;
   }
+}
+
+/* -- upgrade nudge: entry-plan owners who already have real bookings get
+   pointed at the paid marketing tiers instead of us hoping they notice
+   packages.html on their own -- */
+const UPGRADE_NUDGE_BOOKING_THRESHOLD = 3;
+
+function renderUpgradeNudge(park, stats) {
+  const el = document.getElementById('upgradeNudge');
+  if (!el) return;
+
+  const dismissKey = `rvps_upgrade_nudge_dismissed_${park.id}`;
+  const eligible = park.planKey === 'website-booking' && (stats.totalReservations || 0) >= UPGRADE_NUDGE_BOOKING_THRESHOLD;
+  if (!eligible || localStorage.getItem(dismissKey)) {
+    el.style.display = 'none';
+    return;
+  }
+
+  el.innerHTML = `
+    <p>You're getting real bookings — ${stats.totalReservations} so far. Ready to add marketing and grow faster?</p>
+    <div class="upgrade-nudge-actions">
+      <a href="packages.html" class="btn btn-primary btn-sm"><span>See Growth Plans</span></a>
+      <button type="button" class="upgrade-nudge-dismiss" aria-label="Dismiss">&times;</button>
+    </div>
+  `;
+  el.style.display = 'flex';
+  el.querySelector('.upgrade-nudge-dismiss').addEventListener('click', () => {
+    localStorage.setItem(dismissKey, '1');
+    el.style.display = 'none';
+  });
 }
 
 /* -- stats -- */

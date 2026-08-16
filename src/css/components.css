@@ -148,11 +148,21 @@ body { visibility: hidden; animation: pt-reveal-body 2.05s steps(1) forwards; }
 .tilt-card:hover::before { opacity: 1; }
 
 /* -- package cards -- */
-.package-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-4); }
-@media (max-width: 1000px) { .package-grid { grid-template-columns: 1fr; max-width: 460px; margin: 0 auto; } }
+.package-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--sp-4); }
+@media (max-width: 1280px) { .package-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 640px) { .package-grid { grid-template-columns: 1fr; max-width: 460px; margin: 0 auto; } }
 .package-card { padding: var(--sp-5) var(--sp-4); display: flex; flex-direction: column; }
 .package-card.is-featured { border-color: var(--border-amber); background: linear-gradient(160deg, rgba(46, 155, 84,0.09), var(--forest-light)); }
 .package-card .badge-pop { align-self: flex-start; margin-bottom: var(--sp-2); padding: 5px 14px; border-radius: var(--radius-pill); background: var(--amber); color: var(--black); font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+.package-card.is-start-here { border-color: rgba(58, 127, 176, 0.5); }
+.package-card .badge-pop.is-start-here { background: #3a7fb0; color: #f5f0e8; }
+.package-card .package-commitment.is-no-commitment { color: var(--amber-light); border-color: var(--border-amber); font-weight: 600; }
+
+/* ---- Dashboard upgrade nudge (entry-plan owners with real bookings) ---- */
+.upgrade-nudge { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); flex-wrap: wrap; padding: var(--sp-3) var(--sp-4); margin-bottom: var(--sp-4); border-radius: var(--radius-md); background: linear-gradient(120deg, rgba(58,127,176,0.15), rgba(46,155,84,0.08)); border: 1px solid rgba(58,127,176,0.4); }
+.upgrade-nudge p { margin: 0; font-size: 0.9375rem; }
+.upgrade-nudge .upgrade-nudge-actions { display: flex; align-items: center; gap: var(--sp-2); flex-shrink: 0; }
+.upgrade-nudge-dismiss { background: none; border: none; color: var(--cream-dim); cursor: pointer; font-size: 1.25rem; line-height: 1; padding: 0 4px; }
 .package-card .package-level { font-family: var(--font-mono); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--amber-light); margin-bottom: 4px; }
 .package-card .package-tagline { font-size: 0.875rem; color: var(--cream-dim); margin-bottom: var(--sp-3); line-height: 1.5; }
 .package-card .package-commitment { display: inline-flex; align-self: flex-start; padding: 4px 12px; border-radius: var(--radius-pill); background: var(--surface-glass); border: 1px solid var(--border-glass); font-size: 0.75rem; color: var(--cream-dim); margin-bottom: var(--sp-3); }
@@ -328,6 +338,13 @@ body { visibility: hidden; animation: pt-reveal-body 2.05s steps(1) forwards; }
 .dlg-modal { width: 100%; max-width: 420px; border-radius: var(--radius-lg); padding: var(--sp-5); background: var(--forest-light); border: 1px solid var(--border-amber); transform: scale(0.94) translateY(10px); transition: transform 0.3s var(--ease-spring); }
 .dlg-backdrop.is-open .dlg-modal { transform: scale(1) translateY(0); }
 .dlg-modal.is-wide { max-width: 560px; max-height: 85vh; overflow-y: auto; text-align: left; }
+
+/* ---- AI Insight card — shared by Rate Optimization / Analytics / Occupancy Forecast ---- */
+.ai-insight-card { margin: var(--sp-3) 0; padding: var(--sp-3) var(--sp-4); border-radius: var(--radius-md); background: var(--surface-glass); border: 1px solid var(--border-glass); }
+.ai-insight-head { display: flex; align-items: center; gap: var(--sp-2); }
+.ai-insight-badge { font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.06em; color: var(--amber-light); border: 1px solid var(--border-amber); border-radius: var(--radius-pill); padding: 2px 8px; }
+.ai-insight-body { margin-top: var(--sp-2); font-size: 0.9375rem; color: var(--cream-dim); line-height: 1.55; }
+.ai-insight-body.is-error { color: #f0a89a; }
 
 .dlg-detail-row { display: flex; gap: var(--sp-3); padding: 10px 0; border-bottom: 1px solid var(--border-glass); }
 .dlg-detail-row:last-child { border-bottom: none; }

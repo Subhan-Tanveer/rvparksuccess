@@ -17,11 +17,12 @@ const CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-line
 const packageGrid = document.getElementById('packageGrid');
 if (packageGrid) {
   packageGrid.innerHTML = PACKAGES.map((p) => `
-    <div class="tilt-card package-card${p.featured ? ' is-featured' : ''}">
+    <div class="tilt-card package-card${p.featured ? ' is-featured' : ''}${p.startHere ? ' is-start-here' : ''}">
       ${p.featured ? '<span class="badge-pop">Most Popular</span>' : ''}
-      <div class="package-level">Level ${p.level} — ${p.name}</div>
+      ${p.startHere ? `<span class="badge-pop is-start-here">${p.badgeLabel}</span>` : ''}
+      <div class="package-level">${p.startHere ? p.name : `Level ${p.level} — ${p.name}`}</div>
       <div class="price">${formatUsd(p.monthly)}<span>/month</span></div>
-      <div class="package-commitment">${p.commitment}${p.noStartupFee ? ' · No startup fee' : ''}</div>
+      <div class="package-commitment${p.startHere ? ' is-no-commitment' : ''}">${p.commitment}${p.noStartupFee ? ' · No startup fee' : ''}</div>
       <p class="package-tagline">${p.tagline}</p>
       ${p.includesPrior ? `<p class="includes-prior">${p.includesPrior}</p>` : ''}
       <ul>${p.features.map((f) => `<li>${CHECK}<span>${f}</span></li>`).join('')}</ul>
