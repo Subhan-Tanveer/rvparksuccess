@@ -3,12 +3,11 @@ import { initCore } from './core.js';
 import { confirmDialog, formDialog, alertDialog, withLoading } from './ui-dialogs.js';
 import { PACKAGES, formatUsd as formatUsdWhole } from './services-data.js';
 import { initPricingDashboard } from './pricing-dashboard.js';
-import { initCrmDashboard } from './crm-dashboard.js';
 import AnalyticsDashboard from './analytics-dashboard.js';
-// Campaigns, Social Media, and Competitors are intentionally not wired into
-// the dashboard nav — Growth/Maximum plans now get that via the Marketing
-// CRM (GoHighLevel) tab below instead. The modules themselves are still on
-// disk (campaigns-dashboard.js, social-dashboard.js,
+// CRM, Campaigns, Social Media, and Competitors are intentionally not wired
+// into the dashboard nav — the Marketing CRM (GoHighLevel) tab below covers
+// this for Growth/Maximum plans instead. The modules themselves are still
+// on disk (crm-dashboard.js, campaigns-dashboard.js, social-dashboard.js,
 // competitive-intelligence-dashboard.js) in case we bring them back.
 import { initBookingRulesDashboard } from './booking-rules-dashboard.js';
 import { initMLOptimizationDashboard } from './ml-optimization-dashboard.js';
@@ -191,9 +190,6 @@ async function loadDashboard() {
 
   // Initialize pricing dashboard
   await initPricingDashboard(currentPark);
-
-  // Initialize CRM dashboard
-  await initCrmDashboard(currentPark);
 
   // Initialize analytics dashboard
   const analyticsDashboard = new AnalyticsDashboard('analyticsDashboard');
