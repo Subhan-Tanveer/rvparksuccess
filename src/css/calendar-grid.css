@@ -483,6 +483,37 @@
 .calendar-month-dot.blocked .dot { background: rgba(245, 240, 232, 0.35); }
 .calendar-month-dot.partial .dot { background: #f97316; }
 
+/* Named, colored event bars inside a month-view day box (one per
+   occupied/blocked site) — same status colors as everywhere else in this
+   calendar, no red anywhere. */
+.calendar-month-day-tags {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.calendar-month-day-tag {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--black);
+}
+
+.calendar-month-day-tag.booked { background: var(--brand-blue-light); }
+.calendar-month-day-tag.pending { background: var(--brand-orange); }
+.calendar-month-day-tag.partial { background: #f97316; }
+.calendar-month-day-tag.blocked { background: rgba(245, 240, 232, 0.35); color: var(--cream); }
+
+.calendar-month-day-more {
+  font-size: 0.625rem;
+  color: var(--cream-dim);
+  padding: 0 2px;
+}
+
 /* Day detail dialog (opened by clicking a month-view day box) */
 .calendar-day-detail-list {
   display: flex;

@@ -284,13 +284,35 @@ class CalendarGrid {
     return counts;
   }
 
-  getDaySummaryHtml(counts) {
-    const order = ['available', 'booked', 'pending', 'partial', 'blocked'];
-    const parts = order
-      .filter((status) => counts[status] > 0)
-      .map((status) => `<span class="calendar-month-dot ${status}"><span class="dot"></span>${counts[status]}</span>`)
+  // Named, colored tag per occupied/blocked site for a day — available
+  // sites get no tag (nothing to show), matching how most calendar apps
+  // only render a bar for something actually happening that day. Caps
+  // visible tags so a park with many sites doesn't blow out the box height;
+  // the rest collapse into a "+N more" that still opens the full day detail.
+  getDayTagsHtml(sites, dateStr) {
+    const MAX_VISIBLE = 3;
+    const tags = [];
+    sites.forEach((site) => {
+      const status = this.getCellStatus(site.id, dateStr);
+      if (status === 'available') return;
+      const reservation = this.getReservationForCell(site.id, dateStr);
+      const label = status === 'blocked' ? 'Blocked' : (reservation?.guestName || site.name);
+      tags.push({ status, label });
+    });
+    if (!tags.length) return '';
+    const visible = tags.slice(0, MAX_VISIBLE);
+    const hiddenCount = tags.length - visible.length;
+    const rows = visible
+      .map((t) => `<div class="calendar-month-day-tag ${t.status}">${this.escapeHtml(t.label)}</div>`)
       .join('');
-    return parts || '<span class="calendar-month-day-empty">—</span>';
+    const more = hiddenCount > 0 ? `<div class="calendar-month-day-more">+${hiddenCount} more</div>` : '';
+    return rows + more;
+  }
+
+  escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
   }
 
   drawMonthView() {
@@ -328,7 +350,7 @@ class CalendarGrid {
         html += `
           <div class="${classes}" data-date="${dateStr}">
             <div class="calendar-month-day-number">${date.getDate()}</div>
-            <div class="calendar-month-day-summary">${this.getDaySummaryHtml(counts)}</div>
+            <div class="calendar-month-day-tags">${this.getDayTagsHtml(sites, dateStr)}</div>
           </div>
         `;
       });
@@ -359,7 +381,10 @@ class CalendarGrid {
 
       let detail = '';
       if (status === 'available') {
-        detail = `<button type="button" class="btn btn-ghost btn-sm" data-action="quick-book" data-site="${site.id}">Quick Book</button>`;
+        detail = `
+          <button type="button" class="btn btn-ghost btn-sm" data-action="quick-book" data-site="${site.id}">Quick Book</button>
+          <button type="button" class="btn btn-ghost btn-sm" data-action="block" data-site="${site.id}">Block</button>
+        `;
       } else if (status === 'blocked') {
         detail = `<button type="button" class="btn btn-ghost btn-sm" data-action="unblock" data-site="${site.id}">Unblock</button>`;
       } else if (reservation) {
@@ -396,6 +421,7 @@ class CalendarGrid {
         const siteId = btn.dataset.site;
         this.hideDialog();
         if (action === 'quick-book') this.quickBookDialog(siteId, dateStr);
+        else if (action === 'block') this.blockDateDialog(siteId, dateStr);
         else if (action === 'unblock') this.unblockDate(siteId, dateStr);
         else if (action === 'view-details') this.showReservationDetails(siteId, dateStr);
       });
