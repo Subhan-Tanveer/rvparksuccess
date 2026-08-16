@@ -28,6 +28,7 @@ function toDateStr(value) {
 import {
   getPark,
   getSitesForPark,
+  getReservationsForPark,
   getReservationsForParkInRange,
   getBlockedDatesForPark,
   createReservation,
@@ -821,7 +822,7 @@ async function occGet(res, endpoint, query, park) {
   switch (endpoint) {
     case 'forecast': return occForecast(res, parkId, parseInt(days, 10));
     case 'seasonal-calendar': return occSeasonalCalendar(res, parkId, parseInt(year, 10));
-    case 'booking-pace': return occBookingPace(res, siteId, date);
+    case 'booking-pace': return occBookingPace(res, park.id, siteId, date);
     case 'trend': return occTrend(res, parkId, parseInt(days, 10));
     case 'underutilized': return occUnderutilized(res, parkId);
     case 'confidence': return occConfidence(res, parkId, date);
@@ -921,12 +922,18 @@ async function occSeasonalCalendar(res, parkId, year) {
   }
 }
 
-async function occBookingPace(res, siteId, targetDate) {
+async function occBookingPace(res, parkId, siteId, targetDate) {
   try {
-    if (!siteId || !targetDate) return res.status(400).json({ error: 'Missing siteId or date' });
-    const pace = getBookingPaceIndex([], targetDate);
+    // The dashboard's overview widget calls this with no siteId/date at all
+    // (a park-wide pace check), so both are optional rather than required —
+    // default the date to 30 days out, matching how far ahead "pace"
+    // normally gets checked.
+    const resolvedDate = targetDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const allReservations = await getReservationsForPark(parkId);
+    const reservations = siteId ? allReservations.filter((r) => r.siteId === siteId) : allReservations;
+    const pace = getBookingPaceIndex(reservations, resolvedDate);
     return res.json({
-      siteId, targetDate, bookingPaceIndex: pace,
+      siteId: siteId || null, targetDate: resolvedDate, bookingPaceIndex: pace,
       interpretation: pace >= 120 ? 'Faster than normal pace' : pace >= 90 ? 'Normal pace' : pace >= 70 ? 'Slower than normal pace' : 'Much slower than normal',
       expectedDaysBooked: Math.round(40 * (pace / 100)),
     });

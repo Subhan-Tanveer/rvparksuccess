@@ -555,7 +555,7 @@ class AnalyticsDashboard {
   drawPieChart(canvas, data, opts = {}) {
     const ctx = canvas.getContext('2d');
     const { colors } = opts;
-    const w = canvas.offsetWidth;
+    const w = canvas.offsetWidth || 250;
     const h = canvas.offsetHeight || 250;
 
     canvas.width = w * 2;
@@ -564,7 +564,11 @@ class AnalyticsDashboard {
 
     const centerX = w / 2;
     const centerY = h / 2;
-    const radius = Math.min(w, h) / 2 - 20;
+    // Canvas can still be 0-width the instant this runs (e.g. its tab/section
+    // isn't visible yet, so it has no laid-out size) even with the fallback
+    // above kicking in for a fully-detached canvas — clamp so a small or
+    // momentarily-invisible container never produces a negative radius.
+    const radius = Math.max(Math.min(w, h) / 2 - 20, 10);
 
     let currentAngle = -Math.PI / 2;
     const total = data.reduce((sum, d) => sum + d.bookingCount, 0);
