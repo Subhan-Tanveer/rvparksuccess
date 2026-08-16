@@ -191,9 +191,12 @@ export function calculateDailyRevenue(reservations, startDate, endDate) {
   const start = new Date(startDate);
   const end = new Date(endDate);
 
-  // Initialize all days to 0
+  // Initialize all days to 0 — end date is inclusive (it's "today", not an
+  // exclusive upper bound), otherwise a check-in on the very last day of
+  // the range (the most common case: someone booking for a same-day or
+  // near-term stay) has no bucket to land in at all.
   const cursor = new Date(start);
-  while (cursor < end) {
+  while (cursor <= end) {
     const dateStr = cursor.toISOString().split('T')[0];
     dailyRevenue[dateStr] = 0;
     cursor.setDate(cursor.getDate() + 1);
@@ -202,7 +205,7 @@ export function calculateDailyRevenue(reservations, startDate, endDate) {
   // Distribute revenue across check-in dates
   for (const res of confirmed) {
     const checkInDate = res.checkIn;
-    if (checkInDate >= startDate && checkInDate < endDate) {
+    if (checkInDate >= startDate && checkInDate <= endDate) {
       const perNightCents = res.subtotalCents / res.nights;
       dailyRevenue[checkInDate] = (dailyRevenue[checkInDate] || 0) + Math.round(perNightCents);
     }
@@ -311,9 +314,10 @@ export function calculateOccupancyHeatmap(reservations, sites, startDate, endDat
   for (const site of sites) {
     const siteRow = { siteId: site.id, siteName: site.name, dates: {} };
 
-    // For each day, check if this site is booked
+    // For each day, check if this site is booked — end date inclusive,
+    // same reasoning as calculateDailyRevenue above.
     const cursor = new Date(start);
-    while (cursor < end) {
+    while (cursor <= end) {
       const dateStr = cursor.toISOString().split('T')[0];
       const nextDay = new Date(cursor.getTime() + 24 * 60 * 60 * 1000);
 
