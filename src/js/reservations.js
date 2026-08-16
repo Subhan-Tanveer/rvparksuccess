@@ -6,6 +6,12 @@ initCore();
 
 const PARK_ID = new URLSearchParams(location.search).get('park');
 
+// Known once either a logged-in guest's session resolves, or they type an
+// email into the booking form — lets the availability search recognize
+// "this is my own still-pending hold" instead of showing a site as taken
+// just because the same guest is retrying after an abandoned checkout.
+let knownGuestEmail = '';
+
 function formatUsd(cents) {
   return '$' + (cents / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
@@ -56,6 +62,7 @@ async function searchAvailability() {
 
   try {
     const params = new URLSearchParams({ park: PARK_ID, checkIn, checkOut });
+    if (knownGuestEmail) params.set('guestEmail', knownGuestEmail);
     const res = await fetch(`/api/reservations/availability?${params}`);
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
@@ -161,7 +168,21 @@ enforceGuestIdleTimeout().then((wentIdle) => {
     document.querySelectorAll('#guestForm .field-float').forEach((field) => {
       if (field.querySelector('input')?.value) field.classList.add('has-value');
     });
+
+    // Now that we know who's searching, re-run the search so a site only
+    // this guest is holding (mid-checkout, or an abandoned one they're
+    // retrying) shows up as available to them instead of "taken."
+    if (data.guest.email && data.guest.email !== knownGuestEmail) {
+      knownGuestEmail = data.guest.email;
+      searchAvailability();
+    }
   }).catch(() => {});
+});
+
+// An anonymous guest typing their own email is also enough to recognize
+// their own hold on the next search/promo-check within this page session.
+document.getElementById('guestEmail').addEventListener('change', (e) => {
+  knownGuestEmail = e.target.value.trim();
 });
 
 /* -- guest details modal + checkout -- */
@@ -207,6 +228,7 @@ document.getElementById('applyPromoBtn').addEventListener('click', async () => {
 
   try {
     const params = new URLSearchParams({ park: PARK_ID, checkIn: checkInEl.value, checkOut: checkOutEl.value, promo: code });
+    if (knownGuestEmail) params.set('guestEmail', knownGuestEmail);
     const res = await fetch(`/api/reservations/availability?${params}`);
     const data = await res.json();
     const site = data.sites?.find((s) => s.id === selectedSiteId);

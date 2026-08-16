@@ -24,7 +24,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { park: parkId, checkIn, checkOut, promo } = req.query;
+  const { park: parkId, checkIn, checkOut, promo, guestEmail } = req.query;
   if (!parkId || !checkIn || !checkOut) {
     return res.status(400).json({ error: 'park, checkIn, and checkOut are required' });
   }
@@ -36,6 +36,6 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'checkOut must be after checkIn' });
   }
 
-  const sites = await getAvailableSites(parkId, checkIn, checkOut, promo || null);
+  const sites = await getAvailableSites(parkId, checkIn, checkOut, promo || null, guestEmail || null);
   res.status(200).json({ park, checkIn, checkOut, sites });
 }

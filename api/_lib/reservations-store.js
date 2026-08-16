@@ -974,7 +974,7 @@ async function loadSitesWithSeasons(whereClause, params) {
   return sitesRes.rows.map((row) => mapSite(row, seasonsRes.rows.filter((s) => s.site_id === row.id)));
 }
 
-export async function getAvailableSites(parkId, checkIn, checkOut, promoCode = null) {
+export async function getAvailableSites(parkId, checkIn, checkOut, promoCode = null, guestEmail = null) {
   if (!checkIn || !checkOut || new Date(checkOut) <= new Date(checkIn)) return [];
   const park = await getPark(parkId);
   if (!park) return [];
@@ -991,10 +991,15 @@ export async function getAvailableSites(parkId, checkIn, checkOut, promoCode = n
     [parkId]
   );
 
+  // Same self-recognition as siteIsStillAvailable(): a guest's own pending
+  // hold (still mid-checkout, or abandoned but not yet expired) shouldn't
+  // make a site look unavailable in search results to that same guest —
+  // only to everyone else.
   const activeRes = await query(
     `SELECT site_id, check_in, check_out FROM reservations
-     WHERE park_id = $1 AND status = ANY($2::text[]) AND check_in < $4 AND check_out > $3`,
-    [parkId, ACTIVE_STATUSES, checkIn, checkOut]
+     WHERE park_id = $1 AND status = ANY($2::text[]) AND check_in < $4 AND check_out > $3
+       AND NOT (status = 'pending' AND lower(guest_email) = lower($5))`,
+    [parkId, ACTIVE_STATUSES, checkIn, checkOut, guestEmail || '']
   );
   const blockedSiteIds = new Set(activeRes.rows.map((r) => r.site_id));
 
@@ -1062,7 +1067,7 @@ async function withSiteLock(siteId, fn) {
   }
 }
 
-async function siteIsStillAvailable(client, siteId, checkIn, checkOut) {
+async function siteIsStillAvailable(client, siteId, checkIn, checkOut, guestEmail = null) {
   // Opportunistically expire stale pending holds for this site before
   // checking — otherwise a hold nobody ever paid for would block the site
   // forever, the same "expired holds don't count" behavior the in-memory
@@ -1071,9 +1076,14 @@ async function siteIsStillAvailable(client, siteId, checkIn, checkOut) {
     `UPDATE reservations SET status = 'canceled' WHERE site_id = $1 AND status = 'pending' AND hold_expires_at < now()`,
     [siteId]
   );
+  // A guest's own still-pending hold (e.g. they closed the Stripe tab and
+  // came back) never blocks that same guest — only someone else's active
+  // reservation, or their own already-CONFIRMED one, does.
   const overlap = await client.query(
-    `SELECT 1 FROM reservations WHERE site_id = $1 AND status = ANY($2::text[]) AND check_in < $4 AND check_out > $3 LIMIT 1`,
-    [siteId, ACTIVE_STATUSES, checkIn, checkOut]
+    `SELECT 1 FROM reservations
+     WHERE site_id = $1 AND status = ANY($2::text[]) AND check_in < $4 AND check_out > $3
+       AND NOT (status = 'pending' AND lower(guest_email) = lower($5)) LIMIT 1`,
+    [siteId, ACTIVE_STATUSES, checkIn, checkOut, guestEmail || '']
   );
   return overlap.rows.length === 0;
 }
@@ -1087,9 +1097,17 @@ export async function createPendingReservation({ parkId, siteId, checkIn, checkO
   if (nights < 1) throw new Error('Invalid date range');
 
   return withSiteLock(siteId, async (client) => {
-    if (!(await siteIsStillAvailable(client, siteId, checkIn, checkOut))) {
+    if (!(await siteIsStillAvailable(client, siteId, checkIn, checkOut, guestEmail))) {
       throw new Error('Site is no longer available for those dates');
     }
+
+    // This fresh attempt supersedes any of this guest's own still-pending
+    // holds on this site — avoids leaving duplicate abandoned-checkout rows
+    // behind every time the same guest retries.
+    await client.query(
+      `UPDATE reservations SET status = 'canceled' WHERE site_id = $1 AND status = 'pending' AND lower(guest_email) = lower($2)`,
+      [siteId, guestEmail || '']
+    );
 
     const subtotalCents = computeSubtotalCents(site, checkIn, checkOut);
     const pricing = priceStay(park, subtotalCents, promoCode);
