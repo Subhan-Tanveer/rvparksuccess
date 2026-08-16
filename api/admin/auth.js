@@ -4,7 +4,7 @@
 // 12 serverless functions per deployment — these three were small enough
 // to share one file without hurting readability.
 import { createSessionCookie, clearSessionCookie } from '../_lib/auth.js';
-import { verifyParkLogin, signupOwnerAccount } from '../_lib/reservations-store.js';
+import { verifyParkLogin, signupOwnerAccount, verifyAdminLogin } from '../_lib/reservations-store.js';
 
 // Where an owner should land after logging in/signing up, based on how
 // far through onboarding they are: no plan yet -> pick one; plan but no
@@ -24,13 +24,24 @@ export default async function handler(req, res) {
   const { action } = req.body || {};
 
   if (action === 'super-login') {
-    const { password } = req.body;
+    const { email, password } = req.body;
+
+    // Named admin account (email supplied) — the normal path once accounts
+    // exist. Falls through to the shared master password below when email
+    // is left blank, so the original bootstrap/recovery login still works.
+    if (email) {
+      const admin = await verifyAdminLogin(email, password);
+      if (!admin) return res.status(401).json({ error: 'Incorrect email or password' });
+      res.setHeader('Set-Cookie', createSessionCookie({ role: 'super-admin', adminId: admin.id, adminName: admin.name }));
+      return res.status(200).json({ ok: true, adminName: admin.name });
+    }
+
     const expected = process.env.SUPER_ADMIN_PASSWORD;
     if (!expected) return res.status(500).json({ error: 'SUPER_ADMIN_PASSWORD is not configured — see README' });
     if (!password || password !== expected) return res.status(401).json({ error: 'Incorrect password' });
 
-    res.setHeader('Set-Cookie', createSessionCookie({ role: 'super-admin' }));
-    return res.status(200).json({ ok: true });
+    res.setHeader('Set-Cookie', createSessionCookie({ role: 'super-admin', adminName: 'Master' }));
+    return res.status(200).json({ ok: true, adminName: 'Master' });
   }
 
   if (action === 'park-login') {

@@ -16,7 +16,11 @@ form.addEventListener('submit', async (e) => {
     const res = await fetch('/api/admin/auth', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'super-login', password: document.getElementById('password').value }),
+      body: JSON.stringify({
+        action: 'super-login',
+        email: document.getElementById('email').value.trim(),
+        password: document.getElementById('password').value,
+      }),
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Login failed');

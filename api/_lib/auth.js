@@ -25,8 +25,8 @@ function getSecret() {
   return secret;
 }
 
-export function createSessionCookie({ role, parkId = null }) {
-  const token = jwt.sign({ role, parkId }, getSecret(), { expiresIn: `${SESSION_DAYS}d` });
+export function createSessionCookie({ role, parkId = null, adminId = null, adminName = null }) {
+  const token = jwt.sign({ role, parkId, adminId, adminName }, getSecret(), { expiresIn: `${SESSION_DAYS}d` });
   const maxAge = SESSION_DAYS * 24 * 60 * 60;
   return `${COOKIE_NAME}=${token}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=${maxAge}`;
 }

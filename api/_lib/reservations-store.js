@@ -117,6 +117,19 @@ function ensureSchema() {
       ALTER TABLE parks ADD COLUMN IF NOT EXISTS ota_integration_enabled BOOLEAN NOT NULL DEFAULT false;
       ALTER TABLE parks ADD COLUMN IF NOT EXISTS ghl_crm_url TEXT;
 
+      -- Named platform-admin accounts. Alongside SUPER_ADMIN_PASSWORD (kept
+      -- as a bootstrap/recovery login), this lets more than one real person
+      -- have their own super-admin credentials instead of sharing one secret.
+      CREATE TABLE IF NOT EXISTS admin_users (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        email TEXT NOT NULL,
+        phone TEXT,
+        password_hash TEXT NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      );
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_admin_users_email ON admin_users(lower(email));
+
       CREATE TABLE IF NOT EXISTS sites (
         id TEXT PRIMARY KEY,
         park_id TEXT NOT NULL REFERENCES parks(id) ON DELETE CASCADE,
@@ -1304,6 +1317,44 @@ export async function removePromoCode(parkId, promoId) {
 }
 
 // Safe for the super-admin dashboard to display — strips the password hash.
+function mapAdminUser(row) {
+  if (!row) return null;
+  return { id: row.id, name: row.name, email: row.email, phone: row.phone, createdAt: row.created_at.toISOString() };
+}
+
+export async function createAdminUser({ name, email, phone, password }) {
+  if (!name || !email || !password) throw new Error('Name, email, and password are required');
+  if (password.length < 8) throw new Error('Password must be at least 8 characters');
+
+  const existing = await query('SELECT 1 FROM admin_users WHERE lower(email) = lower($1)', [email]);
+  if (existing.rows.length) throw new Error('An admin account with that email already exists');
+
+  const id = `admin-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const passwordHash = bcrypt.hashSync(password, 10);
+  const res = await query(
+    'INSERT INTO admin_users (id, name, email, phone, password_hash) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+    [id, name, email, phone || null, passwordHash]
+  );
+  return mapAdminUser(res.rows[0]);
+}
+
+export async function verifyAdminLogin(email, password) {
+  const res = await query('SELECT * FROM admin_users WHERE lower(email) = lower($1)', [email || '']);
+  const row = res.rows[0];
+  if (!row || !bcrypt.compareSync(password || '', row.password_hash)) return null;
+  return mapAdminUser(row);
+}
+
+export async function listAdminUsers() {
+  const res = await query('SELECT * FROM admin_users ORDER BY created_at ASC');
+  return res.rows.map(mapAdminUser);
+}
+
+export async function removeAdminUser(adminId) {
+  const res = await query('DELETE FROM admin_users WHERE id = $1', [adminId]);
+  if (res.rowCount === 0) throw new Error('Unknown admin account');
+}
+
 export async function setParkGhlCrmUrl(parkId, ghlCrmUrl) {
   const res = await query('UPDATE parks SET ghl_crm_url = $2 WHERE id = $1 RETURNING *', [parkId, ghlCrmUrl || null]);
   if (!res.rows.length) throw new Error('Unknown park');

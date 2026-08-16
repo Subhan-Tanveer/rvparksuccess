@@ -1,7 +1,7 @@
 import '../css/tokens.css';
 import { initCore } from './core.js';
 import { PACKAGES } from './services-data.js';
-import { alertDialog } from './ui-dialogs.js';
+import { alertDialog, confirmDialog } from './ui-dialogs.js';
 
 initCore();
 
@@ -122,4 +122,89 @@ document.getElementById('logoutBtn').addEventListener('click', async () => {
   window.location.href = 'admin-login.html';
 });
 
+/* -- named admin accounts -- */
+const adminsTbody = document.getElementById('adminsTableBody');
+const adminsEmptyEl = document.getElementById('adminsEmpty');
+const createAdminForm = document.getElementById('createAdminForm');
+const createAdminBtn = document.getElementById('createAdminBtn');
+const createAdminAlert = document.getElementById('createAdminAlert');
+
+async function loadAdmins() {
+  const res = await fetch('/api/admin/ops?resource=admin-users');
+  if (res.status === 401) {
+    window.location.href = 'admin-login.html';
+    return;
+  }
+  const data = await res.json();
+  renderAdmins(data.admins || []);
+}
+
+function renderAdmins(admins) {
+  if (!admins.length) {
+    adminsTbody.innerHTML = '';
+    adminsEmptyEl.style.display = 'block';
+    return;
+  }
+  adminsEmptyEl.style.display = 'none';
+  adminsTbody.innerHTML = admins.map((a) => `
+    <tr>
+      <td>${escapeHtml(a.name)}</td>
+      <td>${escapeHtml(a.email)}</td>
+      <td>${escapeHtml(a.phone || '—')}</td>
+      <td>${new Date(a.createdAt).toLocaleDateString()}</td>
+      <td><button type="button" class="btn btn-ghost btn-sm admin-remove-btn" data-admin-id="${a.id}">Remove</button></td>
+    </tr>`).join('');
+
+  adminsTbody.querySelectorAll('.admin-remove-btn').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const ok = await confirmDialog({ title: 'Remove admin account', message: 'They will no longer be able to log in with this account.', confirmLabel: 'Remove', danger: true });
+      if (!ok) return;
+      try {
+        const res = await fetch('/api/admin/ops?resource=admin-users', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ adminId: btn.dataset.adminId }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Could not remove admin');
+        loadAdmins();
+      } catch (err) {
+        await alertDialog({ title: 'Error', message: err.message });
+      }
+    });
+  });
+}
+
+createAdminForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  createAdminAlert.classList.remove('is-visible', 'is-success', 'is-error');
+  createAdminBtn.disabled = true;
+
+  try {
+    const res = await fetch('/api/admin/ops?resource=admin-users', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: document.getElementById('aName').value,
+        email: document.getElementById('aEmail').value,
+        phone: document.getElementById('aPhone').value,
+        password: document.getElementById('aPassword').value,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Could not create admin account');
+
+    createAdminAlert.textContent = `${data.admin.name} can now log in at admin-login.html with ${data.admin.email} and the password you set.`;
+    createAdminAlert.classList.add('is-visible', 'is-success');
+    createAdminForm.reset();
+    loadAdmins();
+  } catch (err) {
+    createAdminAlert.textContent = err.message;
+    createAdminAlert.classList.add('is-visible', 'is-error');
+  } finally {
+    createAdminBtn.disabled = false;
+  }
+});
+
 loadParks();
+loadAdmins();

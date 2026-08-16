@@ -55,6 +55,9 @@ import {
   createPark,
   listParksForAdmin,
   setParkGhlCrmUrl,
+  createAdminUser,
+  listAdminUsers,
+  removeAdminUser,
   query as dbQuery,
 } from '../_lib/reservations-store.js';
 import {
@@ -120,6 +123,8 @@ export default async function handler(req, res) {
       return otaHandler(req, res);
     case 'parks':
       return parksHandler(req, res);
+    case 'admin-users':
+      return adminUsersHandler(req, res);
     default:
       return res.status(400).json({ error: 'Unknown or missing resource parameter' });
   }
@@ -1521,5 +1526,42 @@ async function parksHandler(req, res) {
   }
 
   res.setHeader('Allow', 'GET, POST, PUT');
+  res.status(405).json({ error: 'Method not allowed' });
+}
+
+/* ================================================================== */
+/* admin-users — named platform-admin accounts (super-admin only)       */
+/* ================================================================== */
+
+async function adminUsersHandler(req, res) {
+  const session = requireSession(req, res, { role: 'super-admin' });
+  if (!session) return;
+
+  if (req.method === 'GET') {
+    return res.status(200).json({ admins: await listAdminUsers() });
+  }
+
+  if (req.method === 'POST') {
+    const { name, email, phone, password } = req.body || {};
+    try {
+      const admin = await createAdminUser({ name, email, phone, password });
+      return res.status(201).json({ admin });
+    } catch (err) {
+      return res.status(400).json({ error: err.message });
+    }
+  }
+
+  if (req.method === 'DELETE') {
+    const { adminId } = req.body || {};
+    if (!adminId) return res.status(400).json({ error: 'adminId is required' });
+    try {
+      await removeAdminUser(adminId);
+      return res.status(200).json({ ok: true });
+    } catch (err) {
+      return res.status(400).json({ error: err.message });
+    }
+  }
+
+  res.setHeader('Allow', 'GET, POST, DELETE');
   res.status(405).json({ error: 'Method not allowed' });
 }
