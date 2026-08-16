@@ -55,6 +55,7 @@ export const PACKAGES = [
       'Daily posts and seasonal promotions',
       'AI generated content tailored to your specific park',
       'Consistent year round visibility',
+      'Marketing CRM — send SMS/email campaigns, run AI agents, and manage your social media all in one place',
     ],
     note: 'Seasonal flexibility available — pause in your slow months and resume when your busy season starts. No penalties.',
   },
