@@ -3,6 +3,8 @@
 // from /api/admin/features?resource=analytics, renders via vanilla DOM (no framework),
 // respects dark mode, and exports CSV for offline analysis.
 
+import { renderAiInsightWidget } from './ai-insight-widget.js';
+
 class AnalyticsDashboard {
   constructor(containerId) {
     this.container = document.getElementById(containerId);
@@ -67,6 +69,8 @@ class AnalyticsDashboard {
             <div class="kpi-sub" id="kpiRepeatGuestsSub"></div>
           </div>
         </div>
+
+        <div id="analyticsAiInsightSlot"></div>
 
         <!-- Revenue Chart -->
         <div class="analytics-section glass">
@@ -246,6 +250,7 @@ class AnalyticsDashboard {
       this.data = { overview, trends, sites, forecasting, guests, sources, heatmap, dailyRevenue, topGuests };
 
       this.renderKpiCards();
+      this.renderAiInsight();
       this.renderRevenueChart();
       this.renderOccupancyHeatmap();
       this.renderSitesTable();
@@ -300,6 +305,28 @@ class AnalyticsDashboard {
     const repeatGuestPercent = overview.guests?.repeatGuestPercent || 0;
     document.getElementById('kpiRepeatGuests').textContent = `${repeatGuestPercent}%`;
     document.getElementById('kpiRepeatGuestsSub').textContent = `${overview.guests?.uniqueGuestCount || 0} unique guests`;
+  }
+
+  renderAiInsight() {
+    const slot = document.getElementById('analyticsAiInsightSlot');
+    if (!slot) return;
+    slot.innerHTML = '';
+    const overview = this.data.overview || {};
+    const trends = this.data.trends || {};
+    const sources = this.data.sources?.sources || [];
+    const widget = renderAiInsightWidget('analytics');
+    widget.setBusy(() => ({
+      periodDays: this.selectedPeriod,
+      totalRevenueUsd: (overview.revenue?.totalRevenueCents || 0) / 100,
+      revenueTrendPercent: trends.revenueTrendPercent,
+      occupancyPercent: overview.occupancy?.occupancyPercent,
+      occupancyTrendPercent: trends.occupancyTrendPercent,
+      adrUsd: (overview.revenue?.adrCents || 0) / 100,
+      repeatGuestPercent: overview.guests?.repeatGuestPercent,
+      uniqueGuestCount: overview.guests?.uniqueGuestCount,
+      topBookingSources: sources.slice(0, 3).map((s) => ({ source: s.source, bookingPercent: s.bookingPercent })),
+    }));
+    slot.appendChild(widget);
   }
 
   // Re-draw the canvas-based charts using already-loaded data. The canvases

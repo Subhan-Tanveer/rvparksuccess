@@ -12,6 +12,7 @@
  */
 
 import { withLoading, alertDialog, confirmDialog } from './ui-dialogs.js';
+import { renderAiInsightWidget } from './ai-insight-widget.js';
 
 export class MLOptimizationDashboard {
   constructor(containerId, parkId, sites = []) {
@@ -154,6 +155,7 @@ export class MLOptimizationDashboard {
           <div class="ml-recommendations-feed" id="mlRecommendationsFeed">
             <p class="ml-loading">Loading recommendations...</p>
           </div>
+          <div id="mlAiInsightSlot"></div>
         </div>
 
         <!-- Performance Dashboard -->
@@ -278,6 +280,7 @@ export class MLOptimizationDashboard {
       this.currentForecast = data;
       this.renderElasticityCurve(data);
       this.renderRecommendationsFeed(data);
+      this.renderAiInsight();
     } catch (err) {
       console.error('Error loading rate prediction:', err);
     }
@@ -481,6 +484,26 @@ export class MLOptimizationDashboard {
       <strong>Confidence:</strong> ${suggestion.confidence}%
     `;
     alertDialog({ title: 'Rate Forecast Detail', message: detail });
+  }
+
+  /**
+   * Insert the "AI Insight" card, wired to whatever forecast is currently loaded.
+   */
+  renderAiInsight() {
+    const slot = document.getElementById('mlAiInsightSlot');
+    if (!slot || !this.currentForecast) return;
+    slot.innerHTML = '';
+    const site = this.sites.find((s) => s.id === this.selectedSiteId);
+    const widget = renderAiInsightWidget('rate-optimization');
+    widget.setBusy(() => ({
+      siteName: site?.name || 'this site',
+      currentRateUsd: this.currentForecast.current_rate,
+      suggestedRateUsd: this.currentForecast.suggested_rate,
+      confidencePercent: this.currentForecast.confidence,
+      predictedOccupancyPercent: this.currentForecast.predicted_occupancy,
+      estimatedDailyRevenueUsd: this.currentForecast.revenue_estimate,
+    }));
+    slot.appendChild(widget);
   }
 
   /**

@@ -2,6 +2,8 @@
 // forecasts, seasonal patterns, booking pace, capacity utilization, and
 // staffing recommendations. Renders via vanilla DOM (no framework).
 
+import { renderAiInsightWidget } from './ai-insight-widget.js';
+
 export async function initializeOccupancyForecastingDashboard() {
   const container = document.getElementById('occupancyForecastingDashboard');
   if (!container) {
@@ -22,6 +24,8 @@ export async function initializeOccupancyForecastingDashboard() {
 function renderLayout(container) {
   container.innerHTML = `
     <div class="occupancy-forecasting">
+      <div id="ocfAiInsightSlot"></div>
+
       <!-- Section: 90-Day Forecast -->
       <div class="ocf-section glass">
         <div class="section-head">
@@ -222,6 +226,7 @@ async function loadData(container) {
     renderPeakPrediction(container, peak.peak);
     renderTrendAnalysis(container, trend);
     renderAnomalies(container, anomalies.anomalies || []);
+    renderAiInsight(container, forecast.forecast || [], peak.peak);
   } catch (error) {
     console.error('Error loading forecasting data:', error);
     showError(container, 'Failed to load forecast data');
@@ -442,6 +447,28 @@ function renderStaffingTimeline(container, recommendations) {
   }
   html += '</div>';
   timeline.innerHTML = html;
+}
+
+function renderAiInsight(container, forecast, peak) {
+  const slot = container.querySelector('#ocfAiInsightSlot');
+  if (!slot) return;
+  slot.innerHTML = '';
+  if (!forecast.length) return;
+
+  const avg30 = Math.round(forecast.slice(0, 30).reduce((sum, d) => sum + d.forecastOccupancy, 0) / Math.min(30, forecast.length));
+  const avg90 = Math.round(forecast.reduce((sum, d) => sum + d.forecastOccupancy, 0) / forecast.length);
+  const trendLabel = forecast[forecast.length - 1]?.trend || 'stable';
+  const todayOccupancyPercent = Math.round(forecast[0].forecastOccupancy);
+
+  const widget = renderAiInsightWidget('occupancy-forecast');
+  widget.setBusy(() => ({
+    todayOccupancyPercent,
+    avg30DayOccupancyPercent: avg30,
+    avg90DayOccupancyPercent: avg90,
+    trend: trendLabel,
+    nextPeakSeason: peak ? { startDate: peak.startDate, endDate: peak.endDate, expectedOccupancyPercent: peak.expectedOccupancy } : null,
+  }));
+  slot.appendChild(widget);
 }
 
 function renderPeakPrediction(container, peak) {

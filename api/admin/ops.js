@@ -103,6 +103,7 @@ import { AvailabilitySyncEngine } from '../_lib/availability-sync.js';
 import { OTAManager } from '../_lib/ota-manager.js';
 import * as store from '../_lib/reservations-store.js';
 import RateOptimizer, { serializeModel, deserializeModel } from '../_lib/ml-rate-optimizer.js';
+import { generateNarrative } from '../_lib/ai-insights.js';
 
 export default async function handler(req, res) {
   const { resource } = req.query;
@@ -126,6 +127,8 @@ export default async function handler(req, res) {
       return parksHandler(req, res);
     case 'admin-users':
       return adminUsersHandler(req, res);
+    case 'ai-insight':
+      return aiInsightHandler(req, res);
     default:
       return res.status(400).json({ error: 'Unknown or missing resource parameter' });
   }
@@ -1570,4 +1573,39 @@ async function adminUsersHandler(req, res) {
 
   res.setHeader('Allow', 'GET, POST, DELETE');
   res.status(405).json({ error: 'Method not allowed' });
+}
+
+/* ================================================================== */
+/* ai-insight — narrates numbers the site already computed (rate        */
+/* suggestions, occupancy forecasts, analytics KPIs) via BazaarLink's   */
+/* OpenAI-compatible API. Never generates the numbers itself.           */
+/* ================================================================== */
+
+const AI_INSIGHT_SYSTEM_PROMPTS = {
+  'rate-optimization': 'You are a pricing analyst for an RV park. Given a JSON object with the park\'s current rate, AI-suggested rate, predicted occupancy, and elasticity data, write a 2-3 sentence plain-English summary explaining the recommendation and why. No markdown, no bullet points, speak directly to the park owner.',
+  'analytics': 'You are a hospitality revenue analyst for an RV park. Given a JSON object of recent revenue, occupancy, and booking-source KPIs, write a 2-3 sentence plain-English summary of what stands out and one concrete thing worth doing about it. No markdown, no bullet points, speak directly to the park owner.',
+  'occupancy-forecast': 'You are a hospitality operations analyst for an RV park. Given a JSON object of occupancy forecast data (today, 30/90-day averages, trend, peak dates), write a 2-3 sentence plain-English outlook and one concrete staffing or pricing implication. No markdown, no bullet points, speak directly to the park owner.',
+};
+
+async function aiInsightHandler(req, res) {
+  const session = requireSession(req, res, { role: 'park-staff' });
+  if (!session) return;
+
+  if (req.method !== 'POST') {
+    res.setHeader('Allow', 'POST');
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  const { kind, context } = req.body || {};
+  const systemPrompt = AI_INSIGHT_SYSTEM_PROMPTS[kind];
+  if (!systemPrompt) return res.status(400).json({ error: 'Unknown insight kind' });
+  if (!context || typeof context !== 'object') return res.status(400).json({ error: 'context is required' });
+
+  try {
+    const insight = await generateNarrative(systemPrompt, JSON.stringify(context));
+    return res.status(200).json({ insight });
+  } catch (err) {
+    console.error('AI insight error:', err.message);
+    return res.status(502).json({ error: err.message });
+  }
 }
