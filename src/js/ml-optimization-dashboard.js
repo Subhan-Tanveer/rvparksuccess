@@ -21,6 +21,7 @@ export class MLOptimizationDashboard {
     this.selectedSiteId = sites.length > 0 ? sites[0].id : null;
     this.modelStatus = null;
     this.currentForecast = null;
+    this.currentSuggestions = [];
   }
 
   /**
@@ -406,7 +407,8 @@ export class MLOptimizationDashboard {
       );
       const data = await resp.json();
 
-      this.renderCalendar(data.suggestions);
+      this.currentSuggestions = data.suggestions || [];
+      this.renderCalendar(this.currentSuggestions);
     } catch (err) {
       console.error('Error loading seasonal rates:', err);
     }
@@ -478,7 +480,7 @@ export class MLOptimizationDashboard {
       <strong>Revenue Estimate:</strong> $${(suggestion.revenue_estimate / 100).toFixed(2)}<br>
       <strong>Confidence:</strong> ${suggestion.confidence}%
     `;
-    alertDialog({ title: 'Rate Forecast Detail', body: detail });
+    alertDialog({ title: 'Rate Forecast Detail', message: detail });
   }
 
   /**
@@ -570,33 +572,62 @@ export class MLOptimizationDashboard {
         if (resp.ok) {
           await alertDialog({
             title: 'Model Trained',
-            body: `Data points: ${data.data_points_used}<br>Accuracy (MAE): ±$${data.accuracy_mae}/night`,
+            message: `Data points: ${data.data_points_used}<br>Accuracy (MAE): &plusmn;$${data.accuracy_mae}/night`,
           });
           await this.loadModelStatus();
         } else {
-          await alertDialog({ title: 'Training Error', body: data.error });
+          await alertDialog({ title: 'Training Error', message: data.error || 'Failed to train model' });
         }
       } catch (err) {
         console.error('Training error:', err);
-        await alertDialog({ title: 'Error', body: 'Failed to train model' });
+        await alertDialog({ title: 'Error', message: 'Failed to train model' });
       }
     });
   }
 
   /**
-   * Apply all calendar suggestions
+   * Apply all calendar suggestions — actually changes what a guest pays on
+   * each suggested date (via applyDynamicPriceOverride on the backend),
+   * not just a cosmetic "done" message.
    */
   async applyAllSuggestions() {
+    if (!this.currentSuggestions.length) {
+      await alertDialog({ title: 'Nothing to apply', message: 'Load a month of suggestions first.' });
+      return;
+    }
+
     const confirm = await confirmDialog({
       title: 'Apply All Suggestions?',
-      message: 'This will update rates for all suggested dates. Are you sure?',
+      message: `This will update rates for all ${this.currentSuggestions.length} suggested dates. Are you sure?`,
     });
 
     if (!confirm) return;
 
     await withLoading(async () => {
-      // In production, this would batch-apply all suggestions
-      await alertDialog({ title: 'Applied', body: 'All suggestions have been applied.' });
+      let succeeded = 0;
+      let failed = 0;
+
+      for (const sugg of this.currentSuggestions) {
+        try {
+          const resp = await fetch('/api/admin/ops?resource=ml-optimization&endpoint=apply-suggestion', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ siteId: this.selectedSiteId, date: sugg.date, suggestedRate: sugg.suggested_rate }),
+          });
+          if (resp.ok) succeeded++;
+          else failed++;
+        } catch (err) {
+          console.error('Apply suggestion failed for', sugg.date, err);
+          failed++;
+        }
+      }
+
+      await alertDialog({
+        title: 'Applied',
+        message: failed
+          ? `${succeeded} of ${this.currentSuggestions.length} dates updated — ${failed} failed. Check the console for details.`
+          : `${succeeded} date${succeeded === 1 ? '' : 's'} updated with the suggested rate.`,
+      });
     });
   }
 }

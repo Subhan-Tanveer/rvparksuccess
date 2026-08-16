@@ -58,6 +58,7 @@ import {
   createAdminUser,
   listAdminUsers,
   removeAdminUser,
+  applyDynamicPriceOverride,
   query as dbQuery,
 } from '../_lib/reservations-store.js';
 import {
@@ -776,12 +777,17 @@ async function mlApplySuggestion(req, res) {
       [suggestion_id, siteId, park_id, date, suggestedRate, 0.8]
     );
 
+    // Actually change what a guest pays for that date — logging the
+    // suggestion above without this would make "Apply" cosmetic-only,
+    // same bug already fixed once for Pricing Intelligence's Apply button.
+    await applyDynamicPriceOverride(siteId, park_id, date, applied_rate_cents);
+
     return res.status(200).json({
       status: 'success', suggestion_id,
       previous_rate: (previous_rate / 100).toFixed(2),
       applied_rate: suggestedRate.toFixed(2),
       change_percent: (((applied_rate_cents - previous_rate) / previous_rate) * 100).toFixed(1),
-      message: 'Rate suggestion recorded',
+      message: 'Rate applied',
     });
   } catch (err) {
     console.error('Apply suggestion error:', err);
