@@ -429,11 +429,8 @@
       <h2 style="font-size: 1.375rem;">Park Settings</h2>
     </div>
     <form id="settingsForm">
-      <div class="field-row-2">
-        <div class="field-float"><input id="stTaxRate" type="number" min="0" max="30" step="0.01" required><label for="stTaxRate">Lodging Tax Rate (%)</label></div>
-        <div class="field-float"><input id="stDepositPercent" type="number" min="0" max="100" step="1" required><label for="stDepositPercent">Deposit Required (%)</label></div>
-      </div>
-      <p class="form-note">Tax applies to the room subtotal, not the platform fee. Deposit is the % of the total collected online at booking — leave at 0 to charge the full amount up front; the guest pays the rest at check-in.</p>
+      <div class="field-float"><input id="stTaxRate" type="number" min="0" max="30" step="0.01" required><label for="stTaxRate">Lodging Tax Rate (%)</label></div>
+      <p class="form-note">Tax applies to the room subtotal, not the platform fee. Guests are always charged the full amount at booking — deposits aren't available.</p>
       <button type="submit" class="btn btn-ghost" id="saveSettingsBtn"><span>Save Settings</span></button>
       <div class="admin-alert" id="settingsAlert"></div>
     </form>

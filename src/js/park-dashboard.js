@@ -172,8 +172,6 @@ async function loadDashboard() {
   renderUpgradeNudge(currentPark, data.stats);
   document.getElementById('stTaxRate').value = currentPark.taxRatePercent ?? 0;
   document.getElementById('stTaxRate').classList.add('has-value');
-  document.getElementById('stDepositPercent').value = currentPark.depositPercent ?? 0;
-  document.getElementById('stDepositPercent').classList.add('has-value');
   renderPromoCodes(currentPark.promoCodes || []);
   renderWaitlist(data.waitlist || []);
   document.getElementById('payoutNet').textContent = formatUsd(data.payout.netOwedToParkCents);
@@ -674,7 +672,6 @@ settingsForm.addEventListener('submit', async (e) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           taxRatePercent: parseFloat(document.getElementById('stTaxRate').value),
-          depositPercent: parseFloat(document.getElementById('stDepositPercent').value),
         }),
       });
       const data = await res.json();

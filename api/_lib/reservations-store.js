@@ -1290,9 +1290,13 @@ export async function updateParkSettings(parkId, { taxRatePercent, depositPercen
     sets.push(`tax_rate_percent = $${params.length}`);
   }
   if (depositPercent !== undefined) {
+    // Deposits are disabled platform-wide — there's no way to collect the
+    // remaining balance later (no automated charge, no dashboard button),
+    // so a nonzero deposit just leaves guests owing money nobody can
+    // actually bill them for. Every park charges the full amount upfront.
     const rate = Number(depositPercent);
-    if (isNaN(rate) || rate < 0 || rate > 100) throw new Error('Deposit percent must be between 0 and 100');
-    params.push(rate);
+    if (isNaN(rate) || rate !== 0) throw new Error('Deposits are not available — parks always charge the full amount at booking.');
+    params.push(0);
     sets.push(`deposit_percent = $${params.length}`);
   }
   if (!sets.length) {
