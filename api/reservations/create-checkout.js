@@ -41,24 +41,35 @@ export default async function handler(req, res) {
   // still want the receipt to show real numbers — scale each component
   // proportionally to what's actually being charged today.
   const chargeRatio = reservation.totalCents > 0 ? chargeCents / reservation.totalCents : 1;
+
+  const ratePortionCents = Math.round(reservation.subtotalCents * chargeRatio) - Math.round(reservation.discountCents * chargeRatio);
+  const taxPortionCents = reservation.taxCents > 0 ? Math.round(reservation.taxCents * chargeRatio) : 0;
+  // The booking fee line absorbs whatever's left rather than being rounded
+  // independently — rounding each portion separately can land a cent or two
+  // off the promised total (e.g. $4.05 + $0.41 + $0.08 = $4.54 when the
+  // guest was told $4.53), since rounded pieces don't always sum back to
+  // the original rounded total. This guarantees the three line items
+  // always add up to exactly what reservations.js showed the guest.
+  const feePortionCents = chargeCents - ratePortionCents - taxPortionCents;
+
   const lineItems = [
     {
       price_data: {
         currency: 'usd',
         product_data: { name: `${park.name} — ${site.name} (${reservation.nights} night${reservation.nights === 1 ? '' : 's'}, ${checkIn} to ${checkOut})${isDeposit ? ' — Deposit' : ''}` },
-        unit_amount: Math.round(reservation.subtotalCents * chargeRatio) - Math.round(reservation.discountCents * chargeRatio),
+        unit_amount: ratePortionCents,
       },
       quantity: 1,
     },
   ];
-  if (reservation.taxCents > 0) {
+  if (taxPortionCents > 0) {
     lineItems.push({
-      price_data: { currency: 'usd', product_data: { name: `Lodging Tax (${reservation.taxRatePercent}%)` }, unit_amount: Math.round(reservation.taxCents * chargeRatio) },
+      price_data: { currency: 'usd', product_data: { name: `Lodging Tax (${reservation.taxRatePercent}%)` }, unit_amount: taxPortionCents },
       quantity: 1,
     });
   }
   lineItems.push({
-    price_data: { currency: 'usd', product_data: { name: 'Booking Fee' }, unit_amount: Math.round(reservation.feeCents * chargeRatio) },
+    price_data: { currency: 'usd', product_data: { name: 'Booking Fee' }, unit_amount: feePortionCents },
     quantity: 1,
   });
 
@@ -75,9 +86,11 @@ export default async function handler(req, res) {
     try {
       const account = await stripe.accounts.retrieve(park.stripeAccountId);
       if (account.payouts_enabled) {
-        const applicationFeeCents = Math.round(reservation.feeCents * chargeRatio);
+        // Same figure as the "Booking Fee" line item above, not an
+        // independently-rounded recalculation — keeps what the platform
+        // takes in sync with what the guest was actually shown.
         paymentIntentData = {
-          application_fee_amount: applicationFeeCents,
+          application_fee_amount: feePortionCents,
           transfer_data: { destination: park.stripeAccountId },
         };
       }
