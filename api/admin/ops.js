@@ -309,7 +309,15 @@ async function calendarHandler(req, res) {
       endDate.setDate(0);
 
       const sites = await getSitesForPark(parkId);
-      const reservations = await getReservationsForParkInRange(parkId, startDate, endDate);
+      // Canceled reservations (abandoned checkouts, superseded retries, staff
+      // cancellations) still exist in the database as a record, but they're
+      // not real occupancy — the calendar's cell lookup has no status
+      // filter of its own, so sending these through made a canceled booking
+      // indistinguishable from a real one and let it block/occupy a date
+      // (sometimes even hiding the actual confirmed reservation for that
+      // same site/date, depending on array order).
+      const reservations = (await getReservationsForParkInRange(parkId, startDate, endDate))
+        .filter((r) => r.status !== 'canceled');
       const blockedDates = await getBlockedDatesForPark(parkId, startDate, endDate);
 
       const formattedReservations = reservations.map((r) => ({
