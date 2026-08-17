@@ -308,6 +308,16 @@ async function calendarHandler(req, res) {
       endDate.setMonth(endDate.getMonth() + 1);
       endDate.setDate(0);
 
+      // Release any checkout the guest abandoned more than 20 minutes ago —
+      // otherwise a still-'pending' hold sits on the calendar showing as
+      // occupied indefinitely, since nothing else about *viewing* the
+      // calendar would trigger this cleanup (only an availability search or
+      // a booking attempt on that exact site did, until now).
+      await dbQuery(
+        `UPDATE reservations SET status = 'canceled' WHERE park_id = $1 AND status = 'pending' AND hold_expires_at < now()`,
+        [parkId]
+      );
+
       const sites = await getSitesForPark(parkId);
       // Canceled reservations (abandoned checkouts, superseded retries, staff
       // cancellations) still exist in the database as a record, but they're
