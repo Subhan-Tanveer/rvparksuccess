@@ -16,6 +16,8 @@ class AnalyticsDashboard {
     this.selectedPeriod = '30d';
     this.data = {};
     this.chartInstances = {};
+    // 0 = the week containing today; -1 = last week, +1 = next week, etc.
+    this.heatmapWeekOffset = 0;
   }
 
   async init() {
@@ -87,7 +89,12 @@ class AnalyticsDashboard {
         <div class="analytics-section glass">
           <div class="section-head">
             <h3>Occupancy Heatmap</h3>
-            <p class="sub">Site occupancy by date (30-day window)</p>
+            <p class="sub">Site occupancy by date — one week at a time</p>
+          </div>
+          <div class="heatmap-week-nav" style="display:flex; align-items:center; justify-content:space-between; gap: var(--sp-2); margin-bottom: var(--sp-3);">
+            <button type="button" class="btn btn-ghost btn-sm" id="heatmapPrevWeek"><span>&larr; Previous week</span></button>
+            <span id="heatmapWeekLabel" style="font-size:0.9375rem; color: var(--cream-dim); font-weight:600;"></span>
+            <button type="button" class="btn btn-ghost btn-sm" id="heatmapNextWeek"><span>Next week &rarr;</span></button>
           </div>
           <div class="heatmap-container" id="heatmapContainer" style="overflow-x: auto;"></div>
         </div>
@@ -220,6 +227,16 @@ class AnalyticsDashboard {
     // Export CSV
     document.getElementById('exportCsvBtn')?.addEventListener('click', () => this.exportCsv());
 
+    // Occupancy heatmap week navigation
+    document.getElementById('heatmapPrevWeek')?.addEventListener('click', () => {
+      this.heatmapWeekOffset -= 1;
+      this.loadHeatmapWeek();
+    });
+    document.getElementById('heatmapNextWeek')?.addEventListener('click', () => {
+      this.heatmapWeekOffset += 1;
+      this.loadHeatmapWeek();
+    });
+
     // KPI card clicks (optional drill-down)
     document.querySelectorAll('.kpi-card').forEach((card) => {
       card.style.cursor = 'pointer';
@@ -234,6 +251,8 @@ class AnalyticsDashboard {
     try {
       this.showLoading(true);
 
+      const heatmapWeek = this.getHeatmapWeekRange();
+
       // Load all analytics endpoints in parallel
       const [overview, trends, sites, forecasting, guests, sources, heatmap, dailyRevenue, topGuests] = await Promise.all([
         this.fetchAnalytics('overview'),
@@ -242,7 +261,7 @@ class AnalyticsDashboard {
         this.fetchAnalytics('forecasting', { days: '30' }),
         this.fetchAnalytics('guests'),
         this.fetchAnalytics('sources'),
-        this.fetchAnalytics('heatmap', { startDate: this.getHeatmapStart(), endDate: this.getHeatmapEnd() }),
+        this.fetchAnalytics('heatmap', { startDate: heatmapWeek.start, endDate: heatmapWeek.end }),
         this.fetchAnalytics('daily-revenue'),
         this.fetchAnalytics('top-guests', { limit: '10' }),
       ]);
@@ -253,6 +272,8 @@ class AnalyticsDashboard {
       this.renderAiInsight();
       this.renderRevenueChart();
       this.renderOccupancyHeatmap();
+      const heatmapLabelEl = document.getElementById('heatmapWeekLabel');
+      if (heatmapLabelEl) heatmapLabelEl.textContent = this.formatHeatmapWeekLabel(heatmapWeek.start, heatmapWeek.end);
       this.renderSitesTable();
       this.renderSourcesChart();
       this.renderForecast();
@@ -467,15 +488,18 @@ class AnalyticsDashboard {
   buildHeatmapHtml(heatmapData) {
     if (!heatmapData.length) return '';
 
+    const todayStr = new Date().toISOString().split('T')[0];
     const dateKeys = Object.keys(heatmapData[0].dates || {}).sort();
-    const columnWidth = Math.max(20, Math.min(40, 1200 / dateKeys.length));
+    const columnWidth = Math.max(20, Math.min(60, 1200 / dateKeys.length));
 
     let html = `<div class="heatmap-grid" style="display: grid; gap: 1px; grid-template-columns: 120px repeat(${dateKeys.length}, ${columnWidth}px);">`;
 
-    // Header row with dates
+    // Header row with dates — today's column gets a highlighted border so
+    // it's obvious at a glance which day is "now" within the week shown.
     html += '<div class="heatmap-label" style="grid-column: 1; padding: 8px; text-align: left; font-weight: 600;">Site</div>';
     dateKeys.forEach((date) => {
-      html += `<div class="heatmap-date-header" style="grid-column: auto; padding: 4px; text-align: center; font-size: 0.75rem; writing-mode: vertical-rl;">${this.formatDate(date)}</div>`;
+      const isToday = date === todayStr;
+      html += `<div class="heatmap-date-header" style="grid-column: auto; padding: 4px; text-align: center; font-size: 0.75rem; writing-mode: vertical-rl; ${isToday ? 'color: var(--amber-light); font-weight: 700;' : ''}">${this.formatDate(date)}${isToday ? ' •' : ''}</div>`;
     });
 
     // Data rows
@@ -486,7 +510,9 @@ class AnalyticsDashboard {
         const occupancy = site.dates[date] || 0;
         const intensity = occupancy > 0 ? 1 : 0.2;
         const bgColor = `rgba(79, 192, 114, ${intensity * 0.6})`;
-        html += `<div class="heatmap-cell" style="grid-column: auto; background: ${bgColor}; min-height: 30px; border: 1px solid var(--border-glass);" title="${date}"></div>`;
+        const isToday = date === todayStr;
+        const border = isToday ? '2px solid var(--amber-light)' : '1px solid var(--border-glass)';
+        html += `<div class="heatmap-cell" style="grid-column: auto; background: ${bgColor}; min-height: 30px; border: ${border};" title="${date}"></div>`;
       });
     });
 
@@ -693,14 +719,37 @@ class AnalyticsDashboard {
     return `<span style="color: ${color}; font-size: 0.875rem;">${sign}${percent}% vs prev period</span>`;
   }
 
-  getHeatmapStart() {
-    const end = new Date();
-    const start = new Date(end.getTime() - 30 * 24 * 60 * 60 * 1000);
-    return start.toISOString().split('T')[0];
+  // Sunday-to-Saturday week containing today, shifted by heatmapWeekOffset
+  // weeks — offset 0 (the default) always includes today, regardless of
+  // when in the week "today" falls, unlike a fixed trailing/leading window.
+  getHeatmapWeekRange() {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const start = new Date(today);
+    start.setDate(start.getDate() - start.getDay() + this.heatmapWeekOffset * 7);
+    const end = new Date(start);
+    end.setDate(end.getDate() + 6);
+    return { start: start.toISOString().split('T')[0], end: end.toISOString().split('T')[0] };
   }
 
-  getHeatmapEnd() {
-    return new Date().toISOString().split('T')[0];
+  formatHeatmapWeekLabel(start, end) {
+    const startD = new Date(start);
+    const endD = new Date(end);
+    const opts = { month: 'short', day: 'numeric' };
+    const label = `${startD.toLocaleDateString('en-US', opts)} – ${endD.toLocaleDateString('en-US', opts)}`;
+    return this.heatmapWeekOffset === 0 ? `${label} (this week)` : label;
+  }
+
+  async loadHeatmapWeek() {
+    const { start, end } = this.getHeatmapWeekRange();
+    const labelEl = document.getElementById('heatmapWeekLabel');
+    if (labelEl) labelEl.textContent = this.formatHeatmapWeekLabel(start, end);
+    try {
+      this.data.heatmap = await this.fetchAnalytics('heatmap', { startDate: start, endDate: end });
+      this.renderOccupancyHeatmap();
+    } catch (err) {
+      console.error('Error loading heatmap week:', err);
+    }
   }
 
   escapeHtml(str) {
