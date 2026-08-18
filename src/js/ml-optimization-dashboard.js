@@ -425,24 +425,42 @@ export class MLOptimizationDashboard {
     if (!container) return;
 
     container.innerHTML = '';
+    if (!suggestions.length) return;
 
-    // Group by week
+    // Weekday header row (Sun-Sat) so the grid reads as an actual calendar.
+    const headerEl = document.createElement('div');
+    headerEl.className = 'ml-calendar-week ml-calendar-header';
+    ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].forEach((label) => {
+      const cell = document.createElement('div');
+      cell.className = 'ml-calendar-day-label';
+      cell.textContent = label;
+      headerEl.appendChild(cell);
+    });
+    container.appendChild(headerEl);
+
+    // Split into Sun-Sat weeks, padding the first/last week with blank
+    // cells so each day lands in its correct weekday column. The previous
+    // version grouped strictly by array position with a broken "same week"
+    // check (it read a `date_start` field that was never set), so every
+    // suggestion ended up alone in its own "week" — rendering as a single
+    // narrow column instead of a 7-day calendar grid.
     const weeks = [];
     let currentWeek = [];
 
+    const firstDow = new Date(suggestions[0].date).getDay();
+    for (let i = 0; i < firstDow; i++) currentWeek.push(null);
+
     for (const sugg of suggestions) {
-      const date = new Date(sugg.date);
-      if (currentWeek.length > 0 && currentWeek[0].date_start !== new Date(sugg.date).getDate() - date.getDay()) {
-        weeks.push(currentWeek);
-        currentWeek = [];
-      }
       currentWeek.push(sugg);
       if (currentWeek.length === 7) {
         weeks.push(currentWeek);
         currentWeek = [];
       }
     }
-    if (currentWeek.length > 0) weeks.push(currentWeek);
+    if (currentWeek.length > 0) {
+      while (currentWeek.length < 7) currentWeek.push(null);
+      weeks.push(currentWeek);
+    }
 
     // Create calendar
     for (const week of weeks) {
@@ -451,8 +469,14 @@ export class MLOptimizationDashboard {
 
       for (const sugg of week) {
         const dayEl = document.createElement('div');
-        dayEl.className = 'ml-calendar-day';
 
+        if (!sugg) {
+          dayEl.className = 'ml-calendar-day ml-calendar-day-empty';
+          weekEl.appendChild(dayEl);
+          continue;
+        }
+
+        dayEl.className = 'ml-calendar-day';
         const intensity = sugg.suggested_rate / 250; // Normalize to 0-1
         dayEl.style.backgroundColor = `rgba(220, 150, 80, ${Math.min(intensity, 0.8)})`;
 

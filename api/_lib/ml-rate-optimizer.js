@@ -208,12 +208,16 @@ export class RateOptimizer {
   /**
    * Train comprehensive model on historical data
    */
-  static trainModel(reservations, occupancy_history = []) {
+  static trainModel(reservations, occupancy_history = [], siteCount = 10) {
     // Prepare rate/occupancy pairs for elasticity analysis
     const rate_occupancy_pairs = [];
     const rate_map = {};
 
-    // Group by date, calculate occupancy per rate point
+    // Group by date, calculate occupancy per rate point. res.rate_cents is
+    // expected to already be a per-night rate (subtotal_cents / nights) —
+    // passing the stay's total subtotal here would make a 20-night stay
+    // look like a 20x higher "rate" than a 2-night stay at the same nightly
+    // price, which corrupts the elasticity regression with fake variance.
     for (const res of reservations) {
       const night_count = res.nights || 1;
       for (let i = 0; i < night_count; i++) {
@@ -221,14 +225,17 @@ export class RateOptimizer {
         stay_date.setDate(stay_date.getDate() + i);
         const date_key = stay_date.toISOString().split('T')[0];
 
-        if (!rate_map[date_key]) rate_map[date_key] = { booked: 0, rate_cents: res.rate_cents || 15000 };
+        if (!rate_map[date_key]) rate_map[date_key] = { booked: 0, rate_cents: res.rate_cents || 4500 };
         rate_map[date_key].booked += 1;
       }
     }
 
-    // Convert to rate/occupancy points (assuming ~365 sites, 30% base occupancy)
-    // More conservative: assume 10 comparable sites in market for smoothing
-    const base_sites = 10;
+    // Convert to rate/occupancy points. base_sites should reflect this
+    // park's actual site count — the old hardcoded 10 compressed a 1-site
+    // park's real 100%-on-booked-days occupancy down to a meaningless flat
+    // 10%, which combined with every booked day scoring identically left
+    // the regression with zero variance in occupancy to explain.
+    const base_sites = Math.max(1, siteCount);
     for (const date_key in rate_map) {
       const booked = rate_map[date_key].booked;
       const occupancy = Math.min(1, booked / base_sites);
@@ -285,6 +292,21 @@ export class RateOptimizer {
       predicted_occupancy = Math.max(0, Math.min(1, elasticity_prediction));
       confidence = Math.max(0.4, Math.min(0.8, Math.abs(model.elasticity.r_squared)));
       method = 'elasticity';
+    } else if (model.elasticity && model.elasticity.mean_x > 0 && model.elasticity.mean_y > 0) {
+      // The regression couldn't fit a real slope — this happens whenever
+      // every historical booking shared the same nightly rate (the common
+      // case for a park that has never run dynamic pricing), which leaves
+      // zero rate variance to explain occupancy from. Rather than
+      // flatlining at a meaningless 50% for every price point, apply a
+      // standard moderate price elasticity (-0.5, i.e. a 10% rate increase
+      // trims demand ~5%) around this site's own real historical average
+      // rate/occupancy, so the curve is at least anchored to real data and
+      // slopes the right direction.
+      const STANDARD_ELASTICITY = -0.5;
+      const pctRateDelta = (rate - model.elasticity.mean_x) / model.elasticity.mean_x;
+      predicted_occupancy = Math.max(0, Math.min(1, model.elasticity.mean_y * (1 + STANDARD_ELASTICITY * pctRateDelta)));
+      confidence = 0.35;
+      method = 'assumed-elasticity';
     }
 
     // Enhance with time series seasonality

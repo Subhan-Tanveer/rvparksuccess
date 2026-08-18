@@ -739,8 +739,13 @@ async function mlTrain(req, res) {
   if (!parkId || !siteId) return res.status(400).json({ error: 'parkId and siteId required' });
 
   try {
+    // subtotal_cents is the TOTAL charged for the whole stay, not a nightly
+    // rate — a 20-night stay and a 2-night stay at the same $45/night both
+    // need to train the elasticity model on $45, not $900 vs $90. Dividing
+    // by nights here (rather than in JS) keeps every consumer of rate_cents
+    // downstream working with real per-night dollars.
     const reservations = await dbQuery(
-      `SELECT check_in, check_out, nights, subtotal_cents as rate_cents
+      `SELECT check_in, check_out, nights, ROUND(subtotal_cents::numeric / GREATEST(nights, 1)) as rate_cents
        FROM reservations
        WHERE site_id = $1 AND park_id = $2 AND status IN ('confirmed', 'confirmed-deposit')
        AND check_in >= NOW() - INTERVAL '180 days'
@@ -754,12 +759,19 @@ async function mlTrain(req, res) {
       [siteId, parkId]
     );
 
+    // The model's occupancy proxy (booked-sites / base_sites) needs the
+    // park's real site count — a hardcoded assumption compresses a 1-site
+    // park's real 100%-when-booked occupancy down to a token amount and
+    // erases any variance the model could otherwise learn from.
+    const site_count_result = await dbQuery(`SELECT COUNT(*)::int as count FROM sites WHERE park_id = $1`, [parkId]);
+    const siteCount = site_count_result.rows[0]?.count || 1;
+
     const reserv_list = reservations.rows || [];
     const occ_list = (occupancy_data.rows || []).map((r) => ({ date: r.date, occupancy: parseFloat(r.occupancy) }));
 
     if (reserv_list.length < 3) return res.status(400).json({ error: 'Insufficient historical data (need at least 3 bookings)' });
 
-    const model = RateOptimizer.trainModel(reserv_list, occ_list);
+    const model = RateOptimizer.trainModel(reserv_list, occ_list, siteCount);
 
     const model_id = `mlm_${Date.now()}`;
     await dbQuery(
