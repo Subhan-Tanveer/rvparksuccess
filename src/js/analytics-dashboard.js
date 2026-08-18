@@ -523,6 +523,12 @@ class AnalyticsDashboard {
   drawLineChart(canvas, labels, values, opts = {}) {
     const ctx = canvas.getContext('2d');
     const { color, gridColor } = opts;
+    // Canvas strokeStyle/fillStyle can't resolve CSS custom properties like
+    // ctx.strokeStyle = 'var(--cream-dim)' — it silently no-ops, leaving
+    // whatever color was last set (which is why axes/labels used to render
+    // in the line's green instead of the intended dim cream). Resolve it
+    // to a real color value up front instead.
+    const axisColor = getComputedStyle(document.documentElement).getPropertyValue('--cream-dim').trim() || 'rgba(245, 240, 232, 0.7)';
     const w = canvas.offsetWidth;
     const h = canvas.offsetHeight || 300;
 
@@ -531,79 +537,136 @@ class AnalyticsDashboard {
     canvas.height = h * 2;
     ctx.scale(2, 2);
 
-    // Dimensions and padding
-    const padding = 40;
-    const chartW = w - padding * 2;
+    // Dimensions and padding — right side gets less padding than left since
+    // it has no y-axis labels to make room for.
+    const padding = 56;
+    const rightPadding = 16;
+    const chartW = w - padding - rightPadding;
     const chartH = h - padding * 2;
-
-    // Clear
-    ctx.fillStyle = 'transparent';
-    ctx.fillRect(0, 0, w, h);
-
-    // Grid lines
-    ctx.strokeStyle = gridColor;
-    ctx.lineWidth = 0.5;
-    for (let i = 0; i <= 5; i++) {
-      const y = padding + (chartH * i) / 5;
-      ctx.beginPath();
-      ctx.moveTo(padding, y);
-      ctx.lineTo(w - padding, y);
-      ctx.stroke();
-    }
 
     // Find min/max
     const maxVal = Math.max(...values, 1);
     const minVal = 0;
 
-    // Draw line
-    if (values.length > 0) {
-      ctx.strokeStyle = color;
-      ctx.lineWidth = 2;
+    const points = values.map((val, i) => ({
+      x: padding + (chartW * i) / (values.length - 1 || 1),
+      y: padding + chartH - ((val - minVal) / (maxVal - minVal)) * chartH,
+      label: labels[i],
+      value: val,
+    }));
+
+    const draw = (hoverIndex = -1) => {
+      ctx.clearRect(0, 0, w, h);
+
+      // Grid lines + y-axis dollar labels
+      ctx.font = '11px Inter';
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'middle';
+      for (let i = 0; i <= 5; i++) {
+        const y = padding + (chartH * i) / 5;
+        ctx.strokeStyle = gridColor;
+        ctx.lineWidth = 0.5;
+        ctx.beginPath();
+        ctx.moveTo(padding, y);
+        ctx.lineTo(w - rightPadding, y);
+        ctx.stroke();
+
+        const gridVal = maxVal - (maxVal * i) / 5;
+        ctx.fillStyle = axisColor;
+        ctx.fillText(this.formatCurrency(gridVal * 100), padding - 10, y);
+      }
+
+      // Draw line
+      if (points.length > 0) {
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        points.forEach((p, i) => (i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y)));
+        ctx.stroke();
+
+        // Draw points — the hovered/clicked point is drawn larger and ringed
+        // so the tooltip has an obvious anchor.
+        points.forEach((p, i) => {
+          const isHover = i === hoverIndex;
+          ctx.fillStyle = isHover ? '#ffffff' : color;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, isHover ? 5 : 3, 0, Math.PI * 2);
+          ctx.fill();
+          if (isHover) {
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+            ctx.stroke();
+          }
+        });
+      }
+
+      // Axes
+      ctx.strokeStyle = axisColor;
+      ctx.lineWidth = 1;
       ctx.beginPath();
-
-      values.forEach((val, i) => {
-        const x = padding + (chartW * i) / (values.length - 1 || 1);
-        const y = padding + chartH - ((val - minVal) / (maxVal - minVal)) * chartH;
-
-        if (i === 0) {
-          ctx.moveTo(x, y);
-        } else {
-          ctx.lineTo(x, y);
-        }
-      });
-
+      ctx.moveTo(padding, padding);
+      ctx.lineTo(padding, h - padding);
+      ctx.lineTo(w - rightPadding, h - padding);
       ctx.stroke();
 
-      // Draw points
-      ctx.fillStyle = color;
-      values.forEach((val, i) => {
-        const x = padding + (chartW * i) / (values.length - 1 || 1);
-        const y = padding + chartH - ((val - minVal) / (maxVal - minVal)) * chartH;
-        ctx.beginPath();
-        ctx.arc(x, y, 3, 0, Math.PI * 2);
-        ctx.fill();
+      // X-axis date labels
+      ctx.fillStyle = axisColor;
+      ctx.font = '12px Inter';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'alphabetic';
+      labels.forEach((label, i) => {
+        if (i % Math.ceil(labels.length / 7) === 0 || i === labels.length - 1) {
+          const x = padding + (chartW * i) / (labels.length - 1 || 1);
+          ctx.fillText(label, x, h - 10);
+        }
       });
+    };
+
+    draw();
+
+    // Hover/click tooltip — reuse one tooltip element per canvas instead of
+    // creating a new one on every redraw (this function re-runs whenever the
+    // dashboard's period filter changes or the window resizes).
+    let tooltip = canvas._chartTooltipEl;
+    if (!tooltip) {
+      tooltip = document.createElement('div');
+      tooltip.className = 'chart-tooltip';
+      tooltip.style.display = 'none';
+      canvas.parentElement.appendChild(tooltip);
+      canvas._chartTooltipEl = tooltip;
     }
 
-    // Axes
-    ctx.strokeStyle = 'var(--cream-dim)';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(padding, padding);
-    ctx.lineTo(padding, h - padding);
-    ctx.lineTo(w - padding, h - padding);
-    ctx.stroke();
+    const showTooltip = (clientX) => {
+      if (!points.length) return;
+      const rect = canvas.getBoundingClientRect();
+      const mouseX = clientX - rect.left;
+      let nearest = 0;
+      let nearestDist = Infinity;
+      points.forEach((p, i) => {
+        const dist = Math.abs(p.x - mouseX);
+        if (dist < nearestDist) {
+          nearestDist = dist;
+          nearest = i;
+        }
+      });
+      draw(nearest);
+      const p = points[nearest];
+      tooltip.textContent = `${p.label}: ${this.formatCurrency(p.value * 100)}`;
+      tooltip.style.left = `${p.x}px`;
+      tooltip.style.top = `${p.y}px`;
+      tooltip.style.display = 'block';
+    };
 
-    // Labels
-    ctx.fillStyle = 'var(--cream-dim)';
-    ctx.font = '12px Inter';
-    ctx.textAlign = 'center';
-    labels.forEach((label, i) => {
-      if (i % Math.ceil(labels.length / 7) === 0 || i === labels.length - 1) {
-        const x = padding + (chartW * i) / (labels.length - 1 || 1);
-        ctx.fillText(label, x, h - 10);
-      }
-    });
+    const hideTooltip = () => {
+      draw();
+      tooltip.style.display = 'none';
+    };
+
+    // Assigning onmousemove/onclick (rather than addEventListener) means
+    // each redraw replaces the old handler instead of stacking a new one.
+    canvas.onmousemove = (e) => showTooltip(e.clientX);
+    canvas.onclick = (e) => showTooltip(e.clientX);
+    canvas.onmouseleave = hideTooltip;
   }
 
   drawPieChart(canvas, data, opts = {}) {

@@ -144,6 +144,20 @@
   overflow: hidden;
 }
 
+.chart-tooltip {
+  position: absolute;
+  transform: translate(-50%, -100%) translateY(-10px);
+  background: #1a1a1a;
+  color: var(--cream);
+  border: 1px solid var(--amber-light);
+  border-radius: var(--radius-sm, 4px);
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 5;
+}
+
 canvas {
   width: 100% !important;
   height: 100% !important;
