@@ -1501,6 +1501,63 @@ export async function removeSeasonalRate(siteId, parkId, seasonId) {
   return getSite(siteId);
 }
 
+// Records, for every site across every park, what actually happened on
+// `dateOfStay` (a past date) versus what the AI suggested for it — this is
+// the only thing that ever writes to rate_performance. Without it, the
+// Recommendation Performance card on the ML dashboard can never show
+// anything but "No data" no matter how many real bookings a park gets,
+// because nothing was ever recording outcomes to compare against.
+// Idempotent: safe to re-run for the same date (replaces prior rows).
+export async function recordRatePerformanceForDate(dateOfStay) {
+  const sites = await query(
+    `SELECT s.id as site_id, s.park_id, s.nightly_rate_cents FROM sites s`
+  );
+  if (!sites.rows.length) return { recorded: 0 };
+
+  const overrides = await query(
+    `SELECT site_id, nightly_rate_cents FROM seasonal_rates WHERE start_date <= $1 AND end_date > $1`,
+    [dateOfStay]
+  );
+  const overrideBySite = new Map(overrides.rows.map((r) => [r.site_id, r.nightly_rate_cents]));
+
+  const booked = await query(
+    `SELECT site_id, subtotal_cents, nights FROM reservations
+     WHERE status IN ('confirmed', 'confirmed-deposit') AND check_in <= $1 AND check_out > $1`,
+    [dateOfStay]
+  );
+  const bookingBySite = new Map(booked.rows.map((r) => [r.site_id, r]));
+
+  const suggestions = await query(
+    `SELECT DISTINCT ON (site_id) site_id, suggested_rate FROM rate_suggestions
+     WHERE date = $1 ORDER BY site_id, created_at DESC`,
+    [dateOfStay]
+  );
+  const suggestionBySite = new Map(suggestions.rows.map((r) => [r.site_id, parseFloat(r.suggested_rate)]));
+
+  await query('DELETE FROM rate_performance WHERE date_of_stay = $1', [dateOfStay]);
+
+  let recorded = 0;
+  for (const site of sites.rows) {
+    const effectiveRateCents = overrideBySite.get(site.site_id) ?? site.nightly_rate_cents;
+    const setRate = effectiveRateCents / 100;
+    const booking = bookingBySite.get(site.site_id);
+    const actualOccupancy = booking ? 1 : 0;
+    const actualRevenueCents = booking ? Math.round(booking.subtotal_cents / Math.max(booking.nights, 1)) : 0;
+    const aiSuggestedRate = suggestionBySite.has(site.site_id) ? suggestionBySite.get(site.site_id) : null;
+    const accuracyError = aiSuggestedRate !== null ? Math.abs(setRate - aiSuggestedRate) : null;
+
+    const id = `perf-${dateOfStay}-${site.site_id}`;
+    await query(
+      `INSERT INTO rate_performance (id, site_id, park_id, date_of_stay, set_rate, actual_occupancy, actual_revenue_cents, ai_suggested_rate, accuracy_error)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+      [id, site.site_id, site.park_id, dateOfStay, setRate, actualOccupancy, actualRevenueCents, aiSuggestedRate, accuracyError]
+    );
+    recorded++;
+  }
+
+  return { recorded };
+}
+
 export async function getReservationsForPark(parkId) {
   const res = await query('SELECT * FROM reservations WHERE park_id = $1 ORDER BY created_at DESC', [parkId]);
   return res.rows.map(mapReservation);

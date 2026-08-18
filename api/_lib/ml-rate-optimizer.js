@@ -17,6 +17,8 @@
  * - detectAnomalies(siteId, date) → Flag unusual patterns
  */
 
+import { pricingConfig } from './pricing-engine.js';
+
 /**
  * Linear Regression Model
  * Used for: Rate elasticity (price → occupancy relationship)
@@ -296,16 +298,34 @@ export class RateOptimizer {
       // The regression couldn't fit a real slope — this happens whenever
       // every historical booking shared the same nightly rate (the common
       // case for a park that has never run dynamic pricing), which leaves
-      // zero rate variance to explain occupancy from. Rather than
-      // flatlining at a meaningless 50% for every price point, apply the
-      // standard constant-elasticity demand curve occupancy = mean_y *
-      // (rate/mean_x)^E, anchored on this site's own real average
-      // rate/occupancy. Unlike a linear (rate - mean) formula, this decays
-      // smoothly toward 0 as rate rises instead of hitting a hard "cliff"
-      // at some rate and flatlining there, which reads as a rendering bug
-      // rather than a price curve.
-      const STANDARD_ELASTICITY = -0.5;
-      predicted_occupancy = Math.max(0, Math.min(1, model.elasticity.mean_y * Math.pow(rate / model.elasticity.mean_x, STANDARD_ELASTICITY)));
+      // zero rate variance to explain occupancy from. A pure power-law
+      // demand curve (occupancy = mean_y * (rate/mean_x)^E) has no interior
+      // revenue maximum for realistic |E| < 1 — revenue = rate*occupancy
+      // just rises monotonically with rate, so a revenue-maximizing
+      // optimizer always ends up picking the price ceiling. That's why the
+      // 30-day calendar previously collapsed to the same $150-everywhere
+      // suggestion for every date.
+      //
+      // Use a log-normal demand curve instead: occupancy peaks at the
+      // site's own historical average rate and decays smoothly in both
+      // directions in log-price space. This has a genuine interior revenue
+      // maximum (for this decay constant, roughly 40% above the average
+      // rate) — "raise your rate ~40%" is a believable AI recommendation;
+      // "always charge the max the system allows" is not.
+      const DEMAND_DECAY_K = 1 / Math.LN2; // occupancy ~halves each time price doubles
+      const logRatio = Math.log(rate / model.elasticity.mean_x);
+      let demand = model.elasticity.mean_y * Math.exp(-DEMAND_DECAY_K * logRatio * logRatio);
+
+      // No real day-of-week signal exists yet (that requires occupancy
+      // history the nightly performance-tracking cron hasn't built up yet)
+      // — apply the same weekend-demand assumption the Pricing Intelligence
+      // tab already uses elsewhere, so the calendar isn't perfectly
+      // identical across every date in the meantime.
+      const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+      const dayMultiplier = pricingConfig.dayOfWeekMultiplier[dayNames[new Date(date).getDay()]] || 1;
+      demand *= dayMultiplier;
+
+      predicted_occupancy = Math.max(0, Math.min(1, demand));
       confidence = 0.35;
       method = 'assumed-elasticity';
     }

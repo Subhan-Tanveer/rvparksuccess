@@ -403,9 +403,12 @@ export class MLOptimizationDashboard {
     path.setAttribute('class', 'ml-curve');
     g.appendChild(path);
 
-    // Hoverable dots along the curve — same interaction pattern as the
-    // Revenue Trend chart, so hovering any point tells you exactly what
-    // occupancy it predicts at that rate.
+    // Dots along the curve — same interaction pattern as the Revenue Trend
+    // chart. Each dot is drawn small (r=3) for a clean line, but sits under
+    // an invisible larger circle that actually receives the pointer events
+    // — a 3px target is hard to land a click on precisely, especially on
+    // touch. Both hover AND click/tap open the tooltip (click also makes it
+    // stick open, since a tap has no "hover" state to keep it visible).
     let tooltip = svg.parentElement._mlTooltipEl;
     if (!tooltip) {
       tooltip = document.createElement('div');
@@ -416,21 +419,42 @@ export class MLOptimizationDashboard {
     rates.forEach((rate, i) => {
       const cx = scaleX(rate);
       const cy = scaleY(occupancies[i]);
+
+      const showTooltip = () => {
+        tooltip.textContent = `$${rate}/night → ${Math.round(occupancies[i] * 100)}% occupancy`;
+        tooltip.style.left = `${margin.left + cx}px`;
+        tooltip.style.top = `${margin.top + cy}px`;
+        tooltip.style.display = 'block';
+      };
+
       const dot = el('circle');
       dot.setAttribute('cx', cx);
       dot.setAttribute('cy', cy);
       dot.setAttribute('r', 3);
       dot.setAttribute('class', 'ml-curve-dot');
-      dot.addEventListener('mouseenter', () => {
-        tooltip.textContent = `$${rate}/night → ${Math.round(occupancies[i] * 100)}% occupancy`;
-        tooltip.style.left = `${margin.left + cx}px`;
-        tooltip.style.top = `${margin.top + cy}px`;
-        tooltip.style.display = 'block';
-      });
-      dot.addEventListener('mouseleave', () => {
+
+      const hitArea = el('circle');
+      hitArea.setAttribute('cx', cx);
+      hitArea.setAttribute('cy', cy);
+      hitArea.setAttribute('r', 10);
+      hitArea.setAttribute('fill', 'transparent');
+      hitArea.style.cursor = 'pointer';
+      hitArea.addEventListener('mouseenter', showTooltip);
+      hitArea.addEventListener('mouseleave', () => {
         tooltip.style.display = 'none';
       });
+      hitArea.addEventListener('click', (e) => {
+        e.stopPropagation();
+        showTooltip();
+      });
+
       g.appendChild(dot);
+      g.appendChild(hitArea);
+    });
+
+    // Tapping/clicking outside any dot dismisses a click-opened tooltip.
+    svg.addEventListener('click', () => {
+      tooltip.style.display = 'none';
     });
 
     // Mark current rate — nearest tested point, not an exact-match lookup
@@ -592,9 +616,13 @@ export class MLOptimizationDashboard {
   }
 
   /**
-   * Show detailed forecast for a specific day
+   * Show detailed forecast for a specific day, with the option to apply
+   * just that one date's suggested rate — previously the only way to apply
+   * anything was "Apply All Suggestions" for the whole month; clicking an
+   * individual day only ever opened a read-only detail popup with no
+   * action available on it at all.
    */
-  showDayDetail(suggestion) {
+  async showDayDetail(suggestion) {
     const detail = `
       <strong>Date:</strong> ${suggestion.date} (${suggestion.day_of_week})<br>
       <strong>Suggested Rate:</strong> $${suggestion.suggested_rate}<br>
@@ -602,7 +630,29 @@ export class MLOptimizationDashboard {
       <strong>Revenue Estimate:</strong> $${(suggestion.revenue_estimate / 100).toFixed(2)}<br>
       <strong>Confidence:</strong> ${suggestion.confidence}%
     `;
-    alertDialog({ title: 'Rate Forecast Detail', message: detail });
+
+    const wantsApply = await confirmDialog({
+      title: 'Rate Forecast Detail',
+      message: detail,
+      confirmLabel: `Apply $${suggestion.suggested_rate} for ${suggestion.date}`,
+      cancelLabel: 'Close',
+    });
+    if (!wantsApply) return;
+
+    await withLoading(async () => {
+      try {
+        const resp = await fetch('/api/admin/ops?resource=ml-optimization&endpoint=apply-suggestion', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ siteId: this.selectedSiteId, date: suggestion.date, suggestedRate: suggestion.suggested_rate }),
+        });
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        await alertDialog({ title: 'Applied', message: `$${suggestion.suggested_rate} set for ${suggestion.date}.` });
+      } catch (err) {
+        console.error('Apply suggestion failed for', suggestion.date, err);
+        await alertDialog({ title: 'Apply failed', message: `Could not update the rate for ${suggestion.date}. Please try again.` });
+      }
+    });
   }
 
   /**

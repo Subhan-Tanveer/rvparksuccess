@@ -5,7 +5,14 @@
 // Log for the owner to review manually. This is what makes the "Dynamic
 // Pricing ON" toggle in the dashboard actually do something — previously
 // it was only a stored preference with no automated behavior behind it.
+//
+// Also records rate_performance for yesterday, across every site of every
+// park (not just Dynamic-Pricing-enabled ones) — this is the only place
+// that ever writes to that table, so the Recommendation Performance card
+// on the ML dashboard stays "No data" forever without it, no matter how
+// many real bookings happen.
 import { runAutoDynamicPricingForAllParks } from '../_lib/dynamic-pricing.js';
+import { recordRatePerformanceForDate } from '../_lib/reservations-store.js';
 
 export default async function handler(req, res) {
   // Vercel Cron sends `Authorization: Bearer $CRON_SECRET` automatically
@@ -28,7 +35,11 @@ export default async function handler(req, res) {
       }),
       { applied: 0, skippedLowConfidence: 0 }
     );
-    return res.status(200).json({ ok: true, parksProcessed: results.length, totals, results });
+
+    const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const performance = await recordRatePerformanceForDate(yesterday);
+
+    return res.status(200).json({ ok: true, parksProcessed: results.length, totals, results, performanceRecorded: performance.recorded, performanceDate: yesterday });
   } catch (err) {
     console.error('Dynamic pricing cron error:', err.message);
     return res.status(500).json({ error: 'Dynamic pricing run failed' });

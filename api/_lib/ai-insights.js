@@ -30,7 +30,15 @@ export async function generateNarrative(systemPrompt, userPrompt) {
 
   if (!response.ok) {
     const text = await response.text().catch(() => '');
-    throw new Error(`AI insight request failed (HTTP ${response.status}): ${text.slice(0, 300)}`);
+    // Log the raw provider response for debugging, but never surface it
+    // to the dashboard — a park owner shouldn't see a wall of upstream
+    // JSON ("invalid_request_error", HTTP codes) for what's just "this
+    // account needs billing attention" or "try again."
+    console.error(`AI insight request failed (HTTP ${response.status}):`, text.slice(0, 500));
+    if (response.status === 402) {
+      throw new Error('AI insights are temporarily unavailable — the BazaarLink account needs more credits. Contact your administrator.');
+    }
+    throw new Error('AI insights are temporarily unavailable. Please try again in a moment.');
   }
 
   const data = await response.json();
