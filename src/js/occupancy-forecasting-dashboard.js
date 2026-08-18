@@ -3,6 +3,7 @@
 // staffing recommendations. Renders via vanilla DOM (no framework).
 
 import { renderAiInsightWidget } from './ai-insight-widget.js';
+import { infoIcon } from './info-icon.js';
 
 export async function initializeOccupancyForecastingDashboard() {
   const container = document.getElementById('occupancyForecastingDashboard');
@@ -29,7 +30,7 @@ function renderLayout(container) {
       <!-- Section: 90-Day Forecast -->
       <div class="ocf-section glass">
         <div class="section-head">
-          <h3>90-Day Occupancy Forecast</h3>
+          <h3>90-Day Occupancy Forecast ${infoIcon('A day-by-day prediction of occupancy for the next 90 days, with a shaded confidence band that widens the further out the forecast goes. "Today’s Occupancy" and the 30/90-day averages below are computed from this same forecast.')}</h3>
           <p class="sub">Predicted occupancy % with confidence intervals</p>
         </div>
         <div class="ocf-chart-wrapper">
@@ -58,7 +59,7 @@ function renderLayout(container) {
       <!-- Section: Seasonal Calendar -->
       <div class="ocf-section glass">
         <div class="section-head">
-          <h3>Seasonal Calendar</h3>
+          <h3>Seasonal Calendar ${infoIcon('A full year at a glance, month by month — each cell is a real day, colored by how occupied that day was (or is forecast to be). Useful for spotting your busy season and slow season side by side.')}</h3>
           <p class="sub">12-month occupancy heatmap</p>
         </div>
         <div id="seasonalCalendarContainer" class="seasonal-calendar-container">
@@ -69,7 +70,7 @@ function renderLayout(container) {
       <!-- Section: Booking Pace -->
       <div class="ocf-section glass">
         <div class="section-head">
-          <h3>Booking Pace Analysis</h3>
+          <h3>Booking Pace Analysis ${infoIcon('Compares how quickly guests are booking right now versus your historical average booking pace. 100% = normal pace; above 100% means bookings are coming in faster than usual, below means slower. "Anomalies" flags unusual booking patterns worth a second look.')}</h3>
           <p class="sub">Are you booking faster or slower than usual?</p>
         </div>
         <div class="pace-grid" id="paceGrid">
@@ -94,7 +95,7 @@ function renderLayout(container) {
       <!-- Section: Capacity Utilization -->
       <div class="ocf-section glass">
         <div class="section-head">
-          <h3>Capacity Utilization</h3>
+          <h3>Capacity Utilization ${infoIcon('What percentage of your available site-nights over the NEXT 30 days are already booked, against an 85% target. This looks forward from today — it can read differently than "Today’s Occupancy" above, which is just this one specific day.')}</h3>
           <p class="sub">How much of your available capacity are you selling?</p>
         </div>
         <div class="capacity-gauge-wrapper">
@@ -125,7 +126,7 @@ function renderLayout(container) {
       <!-- Section: Underutilized Dates -->
       <div class="ocf-section glass">
         <div class="section-head">
-          <h3>Underutilized Dates</h3>
+          <h3>Underutilized Dates ${infoIcon('Upcoming date ranges (within the next 90 days) where forecast occupancy is low, with an estimate of the revenue you’re likely to miss and a suggested action — e.g. run a promotion or discount to fill those nights.')}</h3>
           <p class="sub">Opportunities for promotions or discounts</p>
         </div>
         <div class="table-scroll">
@@ -149,7 +150,7 @@ function renderLayout(container) {
       <!-- Section: Staffing Recommendations -->
       <div class="ocf-section glass">
         <div class="section-head">
-          <h3>Staffing Recommendations</h3>
+          <h3>Staffing Recommendations ${infoIcon('Groups the next 90 days into stretches by expected occupancy level and suggests a staffing adjustment for each — e.g. add seasonal staff for a high-occupancy stretch, scale down for a quiet one.')}</h3>
           <p class="sub">Next 90 days staffing level guidance</p>
         </div>
         <div class="staffing-timeline" id="staffingTimeline">
@@ -160,7 +161,7 @@ function renderLayout(container) {
       <!-- Section: Peak Season Prediction -->
       <div class="ocf-section glass">
         <div class="section-head">
-          <h3>Peak Season Prediction</h3>
+          <h3>Peak Season Prediction ${infoIcon('The next 7-day stretch where forecast occupancy is expected to stay high (75%+), based on your booking history — useful for planning staffing and rates ahead of your next busy period.')}</h3>
           <p class="sub">When is your next high-occupancy period?</p>
         </div>
         <div class="peak-card" id="peakCard">
@@ -174,7 +175,7 @@ function renderLayout(container) {
       <!-- Section: Trend Analysis -->
       <div class="ocf-section glass">
         <div class="section-head">
-          <h3>Occupancy Trend (365 days)</h3>
+          <h3>Occupancy Trend (365 days) ${infoIcon('Looks back over your last year of real booking history and fits a trend line through it to say whether occupancy has been climbing, declining, or holding steady. "Model Fit (R²)" shows how well that line actually matches your real data — closer to 1 means a stronger, more reliable trend.')}</h3>
           <p class="sub">Is occupancy improving or declining over time?</p>
         </div>
         <div class="trend-analysis" id="trendAnalysis">

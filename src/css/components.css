@@ -2,6 +2,37 @@
    RVParkSuccess.com — shared components
    ============================================================ */
 
+/* -- info-icon: "?" badge next to a section heading, explaining what that
+   section shows on hover. Shared across every dashboard module (Analytics,
+   ML Rate Optimization, Occupancy Forecasting, ...) so it only needs
+   styling once. Uses the native title attribute for its tooltip — see
+   src/js/info-icon.js for why. -- */
+.info-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  margin-left: var(--sp-2, 6px);
+  border-radius: 50%;
+  border: 1px solid var(--cream-dim);
+  color: var(--cream-dim);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: help;
+  vertical-align: middle;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.info-icon:hover,
+.info-icon:focus-visible {
+  border-color: var(--amber-light);
+  color: var(--amber-light);
+  outline: none;
+}
+
 /* -- page-transition intro (wipes in from left, holds, wipes out right).
    Pure CSS animation (not JS-triggered) so it covers the screen from the very
    first paint — a JS-driven version always starts a beat late, after the

@@ -4,6 +4,7 @@
 // respects dark mode, and exports CSV for offline analysis.
 
 import { renderAiInsightWidget } from './ai-insight-widget.js';
+import { infoIcon } from './info-icon.js';
 
 class AnalyticsDashboard {
   constructor(containerId) {
@@ -77,7 +78,7 @@ class AnalyticsDashboard {
         <!-- Revenue Chart -->
         <div class="analytics-section glass">
           <div class="section-head">
-            <h3>Revenue Trend</h3>
+            <h3>Revenue Trend ${infoIcon('Total revenue booked per day over the period selected above. Hover or click any point on the line for that exact day’s revenue.')}</h3>
             <p class="sub">Daily revenue over the selected period</p>
           </div>
           <div class="chart-container">
@@ -88,7 +89,7 @@ class AnalyticsDashboard {
         <!-- Occupancy Heatmap -->
         <div class="analytics-section glass">
           <div class="section-head">
-            <h3>Occupancy Heatmap</h3>
+            <h3>Occupancy Heatmap ${infoIcon('A 7-day grid showing which sites were booked on which dates. Darker cells mean more sites were occupied that day. Use the Previous/Next week buttons to look at a different week.')}</h3>
             <p class="sub">Site occupancy by date — one week at a time</p>
           </div>
           <div class="heatmap-week-nav" style="display:flex; align-items:center; justify-content:space-between; gap: var(--sp-2); margin-bottom: var(--sp-3);">
@@ -102,7 +103,7 @@ class AnalyticsDashboard {
         <!-- Per-Site Metrics -->
         <div class="analytics-section glass">
           <div class="section-head">
-            <h3>Revenue by Site</h3>
+            <h3>Revenue by Site ${infoIcon('Every site at your park, ranked by how much revenue it has generated: number of bookings, total revenue, and the average nightly rate guests actually paid.')}</h3>
             <p class="sub">Performance breakdown across all sites</p>
           </div>
           <div class="table-scroll">
@@ -125,7 +126,7 @@ class AnalyticsDashboard {
         <!-- Booking Source Breakdown -->
         <div class="analytics-section glass">
           <div class="section-head">
-            <h3>Booking Sources</h3>
+            <h3>Booking Sources ${infoIcon('Where your bookings are coming from (e.g. direct website, referral) and how much revenue each source has brought in — useful for knowing which channels are actually worth investing in.')}</h3>
             <p class="sub">Revenue by booking source</p>
           </div>
           <div class="sources-grid">
@@ -147,7 +148,7 @@ class AnalyticsDashboard {
         <!-- Forecast Card -->
         <div class="analytics-section glass">
           <div class="section-head">
-            <h3>Revenue Forecast</h3>
+            <h3>Revenue Forecast ${infoIcon('A projection of how much revenue the next 30 days should bring, based on your average nightly rate and your real occupancy rate over the selected period — not an assumption that every night sells.')}</h3>
             <p class="sub">Predicted revenue for next 30 days</p>
           </div>
           <div class="forecast-content">
@@ -160,7 +161,7 @@ class AnalyticsDashboard {
         <!-- Top Guests -->
         <div class="analytics-section glass">
           <div class="section-head">
-            <h3>Top Guests</h3>
+            <h3>Top Guests ${infoIcon('Your highest-value guests this period, ranked by total revenue — how many times they’ve booked and how many nights total. Useful for spotting repeat guests worth reaching out to directly.')}</h3>
             <p class="sub">Highest-value repeat guests this period</p>
           </div>
           <div class="table-scroll">
@@ -184,7 +185,7 @@ class AnalyticsDashboard {
         <!-- Guest Metrics -->
         <div class="analytics-section glass">
           <div class="section-head">
-            <h3>Guest Metrics</h3>
+            <h3>Guest Metrics ${infoIcon('High-level guest behavior stats: how long guests typically stay, what share of them are repeat visitors, and other retention signals for this period.')}</h3>
             <p class="sub">Guest retention and behavior</p>
           </div>
           <div class="metrics-grid">

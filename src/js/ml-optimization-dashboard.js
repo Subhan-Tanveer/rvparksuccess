@@ -13,6 +13,7 @@
 
 import { withLoading, alertDialog, confirmDialog } from './ui-dialogs.js';
 import { renderAiInsightWidget } from './ai-insight-widget.js';
+import { infoIcon } from './info-icon.js';
 
 export class MLOptimizationDashboard {
   constructor(containerId, parkId, sites = []) {
@@ -70,7 +71,7 @@ export class MLOptimizationDashboard {
         <!-- Model Health Section -->
         <div class="ml-card glass">
           <div class="ml-card-head">
-            <h3>Model Health</h3>
+            <h3>Model Health ${infoIcon('Whether the pricing model has enough real booking history to make trustworthy predictions for this site: its training status, how many historical bookings it learned from, and when it was last retrained.')}</h3>
             <span class="ml-badge" id="mlStatusBadge">Loading...</span>
           </div>
           <div class="ml-health-grid">
@@ -100,7 +101,7 @@ export class MLOptimizationDashboard {
         <!-- Occupancy Forecast Curve -->
         <div class="ml-card glass">
           <div class="ml-card-head">
-            <h3>Rate Elasticity Curve</h3>
+            <h3>Rate Elasticity Curve ${infoIcon('Shows how predicted occupancy changes as you raise or lower this site’s nightly rate. Green dot = your current rate. Amber star = the rate the model thinks maximizes revenue. Hover or click any point on the line for its exact occupancy at that price.')}</h3>
             <p class="ml-subtext">Predicted occupancy at different price points</p>
           </div>
           <div class="ml-chart-container">
@@ -125,7 +126,7 @@ export class MLOptimizationDashboard {
         <!-- 30-Day Rate Suggestions Calendar -->
         <div class="ml-card glass">
           <div class="ml-card-head">
-            <h3>30-Day Rate Suggestions</h3>
+            <h3>30-Day Rate Suggestions ${infoIcon('A calendar of the AI-suggested nightly rate for each day of the selected month, along with the predicted occupancy and confidence for that suggestion. Click any day to apply just that day’s rate, or use "Apply All Suggestions" to apply the whole month at once.')}</h3>
             <div class="ml-calendar-controls">
               <select id="mlCalendarMonth" class="form-control ml-month-select">
                 ${Array.from({ length: 12 }, (_, i) => {
@@ -145,7 +146,7 @@ export class MLOptimizationDashboard {
         <!-- Elasticity Analysis -->
         <div class="ml-card glass">
           <div class="ml-card-head">
-            <h3>Price Elasticity Analysis</h3>
+            <h3>Price Elasticity Analysis ${infoIcon('A single number summarizing how sensitive demand is to price for this site. Closer to -1 means guests are very price-sensitive (small rate increases lose bookings); closer to 0 means demand stays steady even as rates change.')}</h3>
             <p class="ml-subtext">How demand responds to price changes</p>
           </div>
           <div class="ml-elasticity-content">
@@ -163,7 +164,7 @@ export class MLOptimizationDashboard {
         <!-- AI Recommendations Feed -->
         <div class="ml-card glass">
           <div class="ml-card-head">
-            <h3>AI Recommendations</h3>
+            <h3>AI Recommendations ${infoIcon('Plain-English, actionable pricing suggestions generated from the current rate prediction — e.g. what rate to try next and what revenue impact to expect.')}</h3>
             <p class="ml-subtext">Actionable pricing strategies</p>
           </div>
           <div class="ml-recommendations-feed" id="mlRecommendationsFeed">
@@ -175,7 +176,7 @@ export class MLOptimizationDashboard {
         <!-- Performance Dashboard -->
         <div class="ml-card glass">
           <div class="ml-card-head">
-            <h3>Recommendation Performance</h3>
+            <h3>Recommendation Performance ${infoIcon('Tracks how accurate the AI’s past rate suggestions turned out to be, by comparing each suggested rate against what was actually charged and what actually happened. Builds up over time — a brand-new park or model will show little history here at first.')}</h3>
             <p class="ml-subtext">How accurate are our suggestions?</p>
           </div>
           <div class="ml-performance-grid">
