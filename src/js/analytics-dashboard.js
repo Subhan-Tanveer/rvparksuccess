@@ -624,16 +624,20 @@ class AnalyticsDashboard {
 
     draw();
 
-    // Hover/click tooltip — reuse one tooltip element per canvas instead of
-    // creating a new one on every redraw (this function re-runs whenever the
-    // dashboard's period filter changes or the window resizes).
-    let tooltip = canvas._chartTooltipEl;
+    // Appended to <body> with position: fixed rather than inside the chart
+    // card — any ancestor's overflow:hidden (the chart container has one,
+    // to stop the canvas itself spawning a scrollbar) or z-index/stacking
+    // context would otherwise clip or bury the tooltip. A fixed-position
+    // element escapes all of that entirely. Reused across redraws (this
+    // function re-runs whenever the dashboard's period filter changes or
+    // the window resizes) rather than recreated each time.
+    let tooltip = document._chartTooltipEl;
     if (!tooltip) {
       tooltip = document.createElement('div');
       tooltip.className = 'chart-tooltip';
       tooltip.style.display = 'none';
-      canvas.parentElement.appendChild(tooltip);
-      canvas._chartTooltipEl = tooltip;
+      document.body.appendChild(tooltip);
+      document._chartTooltipEl = tooltip;
     }
 
     const showTooltip = (clientX) => {
@@ -651,15 +655,14 @@ class AnalyticsDashboard {
       });
       draw(nearest);
       const p = points[nearest];
+      const pointX = rect.left + p.x;
+      const pointY = rect.top + p.y;
       tooltip.textContent = `${p.label}: ${this.formatCurrency(p.value * 100)}`;
-      tooltip.style.left = `${p.x}px`;
-      tooltip.style.top = `${p.y}px`;
-      // .chart-container clips overflow (overflow-y: hidden, needed so the
-      // canvas itself doesn't spawn a scrollbar) — a tooltip anchored above
-      // a point near the top of the chart (a high-revenue day) gets its top
-      // half clipped off instead of rendering above the container. Flip it
-      // downward whenever there isn't roughly a tooltip's-height of room.
-      tooltip.classList.toggle('is-below', p.y < 44);
+      tooltip.style.left = `${pointX}px`;
+      tooltip.style.top = `${pointY}px`;
+      // Flip downward instead of upward whenever there isn't roughly a
+      // tooltip's-height of room above the point on screen.
+      tooltip.classList.toggle('is-below', pointY < 44);
       tooltip.style.display = 'block';
     };
 

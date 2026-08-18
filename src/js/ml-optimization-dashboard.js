@@ -26,6 +26,20 @@ export class MLOptimizationDashboard {
   }
 
   /**
+   * Re-render the elasticity curve — needed because the ML Optimization
+   * section lives behind the dashboard's sidebar tabs and starts
+   * display:none if it isn't the initially active tab. svg.clientWidth
+   * reads 0 while hidden, so the chart's very first render locks in a
+   * 600-unit fallback layout; without a redraw once the tab actually
+   * becomes visible, that stale layout never corrects itself (same
+   * 0-width-while-hidden issue the Advanced Analytics tab already works
+   * around with its own redrawCharts()).
+   */
+  redrawCharts() {
+    if (this.currentForecast) this.renderElasticityCurve(this.currentForecast);
+  }
+
+  /**
    * Initialize dashboard
    */
   async init() {
@@ -297,6 +311,16 @@ export class MLOptimizationDashboard {
 
     const width = svg.clientWidth || 600;
     const height = 300;
+    // The HTML template hardcodes viewBox="0 0 600 300", but `width` above
+    // is the SVG's real on-screen pixel width (often ~1150+ in the actual
+    // dashboard layout, not 600). Every cx/cy computed below assumes a
+    // coordinate space matching `width`, so leaving the viewBox pinned at
+    // 600 made the browser uniformly scale the whole SVG drawing to fit —
+    // while the plain HTML tooltip div (positioned with ordinary, unscaled
+    // CSS pixels) kept using the un-scaled cx/cy values. The dot rendered
+    // in the right place; the tooltip did not. Syncing the viewBox to the
+    // real width/height keeps 1 SVG unit == 1 real pixel, so both agree.
+    svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
     const margin = { top: 20, right: 24, bottom: 44, left: 54 };
     const plotWidth = width - margin.left - margin.right;
     const plotHeight = height - margin.top - margin.bottom;
@@ -409,12 +433,18 @@ export class MLOptimizationDashboard {
     // — a 3px target is hard to land a click on precisely, especially on
     // touch. Both hover AND click/tap open the tooltip (click also makes it
     // stick open, since a tap has no "hover" state to keep it visible).
-    let tooltip = svg.parentElement._mlTooltipEl;
+    // Appended to <body> with position: fixed rather than inside the chart
+    // card — any ancestor's overflow:hidden (the chart container has one,
+    // to stop the chart itself spawning a scrollbar) or z-index/stacking
+    // context would otherwise clip or bury the tooltip. A fixed-position
+    // element escapes all of that, so it's always fully visible regardless
+    // of what container styling changes around it later.
+    let tooltip = document._mlChartTooltipEl;
     if (!tooltip) {
       tooltip = document.createElement('div');
       tooltip.className = 'ml-chart-tooltip';
-      svg.parentElement.appendChild(tooltip);
-      svg.parentElement._mlTooltipEl = tooltip;
+      document.body.appendChild(tooltip);
+      document._mlChartTooltipEl = tooltip;
     }
     rates.forEach((rate, i) => {
       const cx = scaleX(rate);
@@ -422,17 +452,24 @@ export class MLOptimizationDashboard {
 
       const showTooltip = () => {
         tooltip.textContent = `$${rate}/night → ${Math.round(occupancies[i] * 100)}% occupancy`;
-        tooltip.style.left = `${margin.left + cx}px`;
-        tooltip.style.top = `${margin.top + cy}px`;
-        // The chart container clips overflow (see .ml-chart-container's
-        // overflow-y: hidden — needed elsewhere to stop the chart itself
-        // spawning a scrollbar), so a tooltip anchored above a point near
-        // the top of the curve (e.g. the "Current $45" marker, which sits
-        // close to 100% occupancy) gets its top half clipped off instead
-        // of just rendering above the container. Flip it to open downward
-        // instead whenever there isn't roughly a tooltip's-height of room
-        // above the point.
-        tooltip.classList.toggle('is-below', margin.top + cy < 44);
+        // Convert the point's SVG-space coordinates to real screen pixels
+        // via the browser's own CTM rather than adding raw offsets — the
+        // viewBox is kept in sync with the SVG's pixel width at render
+        // time, but this section can still be display:none at that exact
+        // moment (it's one of several sidebar tabs) which would freeze a
+        // stale/mismatched viewBox until the next redraw. getScreenCTM()
+        // accounts for whatever scale the browser is actually applying
+        // right now, so the tooltip lines up with the dot even if a
+        // redraw hasn't caught up yet.
+        const svgPoint = svg.createSVGPoint();
+        svgPoint.x = margin.left + cx;
+        svgPoint.y = margin.top + cy;
+        const screenPoint = svgPoint.matrixTransform(svg.getScreenCTM());
+        tooltip.style.left = `${screenPoint.x}px`;
+        tooltip.style.top = `${screenPoint.y}px`;
+        // Flip downward instead of upward whenever there isn't roughly a
+        // tooltip's-height of room above the point on screen.
+        tooltip.classList.toggle('is-below', screenPoint.y < 44);
         tooltip.style.display = 'block';
       };
 

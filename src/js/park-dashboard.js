@@ -69,6 +69,11 @@ function initDashboardSidebar() {
     if (id === 'analytics' && window.__analyticsDashboard) {
       window.__analyticsDashboard.redrawCharts();
     }
+    // Same 0-width-while-hidden issue for the ML Rate Optimization tab's
+    // elasticity curve SVG.
+    if (id === 'ml-optimization' && window.__mlOptimizationDashboard) {
+      window.__mlOptimizationDashboard.redrawCharts();
+    }
     return true;
   };
 
@@ -204,7 +209,11 @@ async function loadDashboard() {
   initBookingRulesDashboard();
 
   // Initialize ML optimization dashboard
-  await initMLOptimizationDashboard(currentPark.id, currentSites);
+  const mlOptimizationDashboard = await initMLOptimizationDashboard(currentPark.id, currentSites);
+  // Exposed so initDashboardSidebar() can force a chart redraw when the
+  // ML Rate Optimization tab becomes visible (its elasticity curve SVG
+  // renders at 0x0 while the section is display:none).
+  window.__mlOptimizationDashboard = mlOptimizationDashboard;
 
   // Initialize occupancy forecasting dashboard
   await initializeOccupancyForecastingDashboard();

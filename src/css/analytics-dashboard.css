@@ -145,7 +145,12 @@
 }
 
 .chart-tooltip {
-  position: absolute;
+  /* position: fixed + appended to <body> (see analytics-dashboard.js) so no
+     ancestor's overflow:hidden or z-index/stacking context can ever clip
+     or bury it — the high z-index still matters on its own since a modal
+     or another fixed element could otherwise render on top of it even
+     when it isn't clipped. */
+  position: fixed;
   transform: translate(-50%, -100%) translateY(-10px);
   background: #1a1a1a;
   color: var(--cream);
@@ -155,7 +160,7 @@
   font-size: 0.75rem;
   white-space: nowrap;
   pointer-events: none;
-  z-index: 5;
+  z-index: 9999;
 }
 
 /* Opens downward instead of upward when the anchor point is too close to
