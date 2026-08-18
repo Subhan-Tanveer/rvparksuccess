@@ -711,6 +711,14 @@ function ensureSchema() {
         updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
         UNIQUE(park_id, month)
       );
+      -- 'year' was never part of the original table, so every cached
+      -- calendar silently lost it (saveSeasonalAnalysis had nowhere to put
+      -- it) and re-reading from cache rendered "April undefined" instead
+      -- of "April 2026". Backfilled to the current year for any rows that
+      -- already exist -- good enough for a cache that self-invalidates on
+      -- year change anyway (see occHasYearChanged in api/admin/ops.js).
+      ALTER TABLE seasonal_analysis ADD COLUMN IF NOT EXISTS year INTEGER;
+      UPDATE seasonal_analysis SET year = EXTRACT(YEAR FROM updated_at)::int WHERE year IS NULL;
       CREATE INDEX IF NOT EXISTS idx_seasonal_analysis_park ON seasonal_analysis(park_id);
       CREATE INDEX IF NOT EXISTS idx_seasonal_analysis_updated ON seasonal_analysis(updated_at DESC);
 
@@ -3262,12 +3270,13 @@ export async function getOccupancyForecastCache(parkId) {
 export async function saveSeasonalAnalysis(parkId, calendarData) {
   for (const month of calendarData) {
     await query(
-      `INSERT INTO seasonal_analysis (id, park_id, month, month_name, average_occupancy, season, calendar_json)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
+      `INSERT INTO seasonal_analysis (id, park_id, month, month_name, average_occupancy, season, calendar_json, year)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
        ON CONFLICT (park_id, month) DO UPDATE SET
        average_occupancy = EXCLUDED.average_occupancy,
        season = EXCLUDED.season,
        calendar_json = EXCLUDED.calendar_json,
+       year = EXCLUDED.year,
        updated_at = now()`,
       [
         `seasonal_${parkId}_${month.month}`,
@@ -3276,7 +3285,8 @@ export async function saveSeasonalAnalysis(parkId, calendarData) {
         month.monthName,
         month.averageOccupancy,
         month.season,
-        JSON.stringify(month.days || [])
+        JSON.stringify(month.days || []),
+        month.year
       ]
     );
   }
@@ -3284,7 +3294,7 @@ export async function saveSeasonalAnalysis(parkId, calendarData) {
 
 export async function getSeasonalAnalysis(parkId) {
   const res = await query(
-    `SELECT month, month_name, average_occupancy, season, calendar_json, updated_at
+    `SELECT month, month_name, average_occupancy, season, calendar_json, year, updated_at
      FROM seasonal_analysis
      WHERE park_id = $1
      ORDER BY month ASC`,
@@ -3298,6 +3308,7 @@ export async function getSeasonalAnalysis(parkId) {
     monthName: row.month_name,
     averageOccupancy: Number(row.average_occupancy),
     season: row.season,
+    year: row.year,
     days: JSON.parse(row.calendar_json || '[]')
   }));
 

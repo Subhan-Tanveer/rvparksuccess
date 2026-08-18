@@ -74,6 +74,11 @@ function initDashboardSidebar() {
     if (id === 'ml-optimization' && window.__mlOptimizationDashboard) {
       window.__mlOptimizationDashboard.redrawCharts();
     }
+    // Same 0-width-while-hidden issue for the Occupancy Forecasting tab's
+    // 90-Day Forecast canvas.
+    if (id === 'occupancy-forecasting' && window.__occupancyForecastingDashboard) {
+      window.__occupancyForecastingDashboard.redrawCharts();
+    }
     return true;
   };
 
@@ -216,7 +221,11 @@ async function loadDashboard() {
   window.__mlOptimizationDashboard = mlOptimizationDashboard;
 
   // Initialize occupancy forecasting dashboard
-  await initializeOccupancyForecastingDashboard();
+  const occupancyForecastingDashboard = await initializeOccupancyForecastingDashboard();
+  // Exposed so initDashboardSidebar() can force a chart redraw when the
+  // Occupancy Forecasting tab becomes visible (its 90-Day Forecast canvas
+  // renders at 0x0 while the section is display:none).
+  window.__occupancyForecastingDashboard = occupancyForecastingDashboard;
 }
 
 /* -- Marketing CRM (GoHighLevel) tab — Growth/Maximum plans only -- */

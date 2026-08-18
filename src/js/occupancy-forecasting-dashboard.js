@@ -5,6 +5,12 @@
 import { renderAiInsightWidget } from './ai-insight-widget.js';
 import { infoIcon } from './info-icon.js';
 
+// Cached so the 90-Day Forecast canvas can be redrawn without a fresh
+// fetch once its section actually becomes visible — see redrawCharts()
+// below for why that's necessary.
+let lastForecastContainer = null;
+let lastForecastData = [];
+
 export async function initializeOccupancyForecastingDashboard() {
   const container = document.getElementById('occupancyForecastingDashboard');
   if (!container) {
@@ -20,6 +26,19 @@ export async function initializeOccupancyForecastingDashboard() {
     console.error('Occupancy forecasting dashboard error:', err);
     showError(container, 'Failed to initialize forecasting dashboard');
   }
+
+  return {
+    // The 90-Day Forecast canvas sizes itself from canvas.offsetWidth /
+    // offsetHeight at render time, which are both 0 while this dashboard's
+    // sidebar tab is display:none (the common case — a park owner rarely
+    // lands directly on this tab). That locks the canvas at 0x0 forever,
+    // since nothing else ever redraws it once the tab becomes visible —
+    // same bug already fixed for the Advanced Analytics and ML
+    // Optimization tabs via their own redrawCharts().
+    redrawCharts() {
+      if (lastForecastContainer) renderForecastChart(lastForecastContainer, lastForecastData);
+    },
+  };
 }
 
 function renderLayout(container) {
@@ -218,7 +237,9 @@ async function loadData(container) {
       ]);
 
     // Render sections
-    renderForecastChart(container, forecast.forecast || []);
+    lastForecastContainer = container;
+    lastForecastData = forecast.forecast || [];
+    renderForecastChart(container, lastForecastData);
     renderSeasonalCalendar(container, seasonal.calendar || []);
     renderBookingPace(container, pace);
     renderCapacityGauge(container, utilization);
