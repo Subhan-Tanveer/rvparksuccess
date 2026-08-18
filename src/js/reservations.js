@@ -154,7 +154,65 @@ function renderResults(sites, checkIn, checkOut) {
 }
 
 searchBtn.addEventListener('click', searchAvailability);
-searchAvailability();
+
+/* -- smart default dates: if the plain "tomorrow, 2 nights" default is
+   already fully booked, silently walk forward and start the guest on the
+   first date range that actually has something open, instead of greeting
+   them with "No sites available" before they've touched anything. Checks
+   run in small batches so a long streak of booked-out nights doesn't mean
+   dozens of sequential round trips. -- */
+const DEFAULT_STAY_NIGHTS = 2;
+const AUTO_LOOKAHEAD_DAYS = 60;
+const AUTO_LOOKAHEAD_BATCH = 7;
+
+async function checkDateRangeHasAvailability(checkIn, checkOut) {
+  try {
+    const params = new URLSearchParams({ park: PARK_ID, checkIn, checkOut });
+    const res = await fetch(`/api/reservations/availability?${params}`);
+    if (!res.ok) return false;
+    const data = await res.json();
+    return !!(data.sites && data.sites.length);
+  } catch {
+    return false;
+  }
+}
+
+async function findFirstAvailableDates(startFrom) {
+  for (let offset = 0; offset < AUTO_LOOKAHEAD_DAYS; offset += AUTO_LOOKAHEAD_BATCH) {
+    const batch = [];
+    for (let i = 0; i < AUTO_LOOKAHEAD_BATCH && offset + i < AUTO_LOOKAHEAD_DAYS; i++) {
+      const checkIn = new Date(startFrom);
+      checkIn.setDate(checkIn.getDate() + offset + i);
+      const checkOut = new Date(checkIn);
+      checkOut.setDate(checkOut.getDate() + DEFAULT_STAY_NIGHTS);
+      batch.push({ checkIn: isoDate(checkIn), checkOut: isoDate(checkOut) });
+    }
+    const results = await Promise.all(
+      batch.map(async (range) => ((await checkDateRangeHasAvailability(range.checkIn, range.checkOut)) ? range : null))
+    );
+    const found = results.find(Boolean);
+    if (found) return found;
+  }
+  return null;
+}
+
+(async () => {
+  if (PARK_ID) {
+    const originalCheckIn = checkInEl.value;
+    const found = await findFirstAvailableDates(tomorrow);
+    if (found && found.checkIn !== originalCheckIn) {
+      checkInEl.value = found.checkIn;
+      checkOutEl.value = found.checkOut;
+      checkOutEl.min = found.checkIn;
+      const note = document.getElementById('autoDateNote');
+      if (note) {
+        note.textContent = `Heads up — the next couple of nights are booked, so we moved these dates to the next open slot. Pick your own dates anytime.`;
+        note.style.display = 'block';
+      }
+    }
+  }
+  searchAvailability();
+})();
 
 /* -- pre-fill guest details for a logged-in guest account -- */
 enforceGuestIdleTimeout().then((wentIdle) => {
