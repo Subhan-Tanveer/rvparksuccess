@@ -1632,7 +1632,7 @@ async function adminUsersHandler(req, res) {
 
 /* ================================================================== */
 /* ai-insight — narrates numbers the site already computed (rate        */
-/* suggestions, occupancy forecasts, analytics KPIs) via BazaarLink's   */
+/* suggestions, occupancy forecasts, analytics KPIs) via NVIDIA's NIM   */
 /* OpenAI-compatible API. Never generates the numbers itself.           */
 /* ================================================================== */
 

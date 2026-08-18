@@ -1,8 +1,8 @@
 // Reusable "AI Insight" card — a button that sends already-computed
 // numbers (rate suggestions, occupancy forecasts, analytics KPIs) to
 // /api/admin/ops?resource=ai-insight and shows back a short narrative.
-// Manual trigger only (never auto-runs on page load) so a free/limited
-// BazaarLink budget isn't burned on every dashboard visit.
+// Manual trigger only (never auto-runs on page load) so a limited
+// NVIDIA API budget isn't burned on every dashboard visit.
 
 export function renderAiInsightWidget(kind, buttonLabel = 'Generate AI Insight') {
   const wrap = document.createElement('div');
