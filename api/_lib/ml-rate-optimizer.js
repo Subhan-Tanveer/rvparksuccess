@@ -19,6 +19,12 @@
 
 import { pricingConfig } from './pricing-engine.js';
 
+// Standard moderate price elasticity assumed whenever the regression can't
+// fit a real slope from historical rate variance (see predictOccupancy and
+// analyzeElasticity below for why that happens routinely — it's not a data
+// shortage). Shared so both places report the same number.
+const STANDARD_ELASTICITY = -0.5;
+
 /**
  * Linear Regression Model
  * Used for: Rate elasticity (price → occupancy relationship)
@@ -416,7 +422,9 @@ export class RateOptimizer {
    * > -0.5: inelastic (demand stable regardless of price)
    */
   static analyzeElasticity(model) {
-    if (!model || !model.elasticity || model.elasticity.slope === 0) {
+    // No model has ever been trained at all — this really is a data
+    // shortage (mlTrain requires 3+ bookings before it will even try).
+    if (!model || !model.elasticity) {
       return {
         elasticity: 0,
         interpretation: 'insufficient data',
@@ -424,9 +432,30 @@ export class RateOptimizer {
       };
     }
 
-    const elasticity = model.elasticity.slope;
+    let elasticity = model.elasticity.slope;
     let interpretation = 'moderate elasticity';
     let recommendation = 'Consider gradual rate adjustments';
+
+    // slope === 0 does NOT mean there's no data — see predictOccupancy's
+    // matching comment. It means every historical booking shared the same
+    // nightly rate, so the regression had zero rate variance to learn an
+    // elasticity from. That's the normal case for any park that's never
+    // run dynamic pricing, real bookings or not, and it used to
+    // permanently read "insufficient data" here regardless of how much
+    // history existed. Report the same standard assumption
+    // predictOccupancy already falls back to instead.
+    if (elasticity === 0 && model.elasticity.mean_x > 0) {
+      elasticity = STANDARD_ELASTICITY;
+      interpretation = 'moderate elasticity (assumed — rates have never varied enough to measure this directly)';
+      recommendation = 'Try a small rate change and watch how occupancy responds — that will let the model learn your site’s real price sensitivity instead of assuming it.';
+      return { elasticity, interpretation, recommendation };
+    } else if (elasticity === 0) {
+      return {
+        elasticity: 0,
+        interpretation: 'insufficient data',
+        recommendation: 'More historical data needed',
+      };
+    }
 
     if (elasticity < -0.8) {
       interpretation = 'high elasticity (price sensitive)';
