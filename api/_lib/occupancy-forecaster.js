@@ -193,17 +193,24 @@ export function predictSeasonalPeak(reservations, totalSites, peakThreshold = 75
       consecutiveDays++;
 
       if (consecutiveDays >= 7) {
-        // Found a 7-day peak
-        const peakEnd = new Date(day.date);
-        peakEnd.setDate(peakEnd.getDate() + 7);
+        // Found a 7-day peak. `day.date` here is already the 7th
+        // consecutive day (peakStart + 6), so adding another 7 days to
+        // build peakEnd produced a 14-day window (peakStart..peakStart+13)
+        // instead of the intended 7 — averaging that 14-day sum with a
+        // hardcoded /7 divisor could report over 100% expected occupancy.
+        // peakEnd is peakStart + 6 days (7 days inclusive); dividing by the
+        // actual matched day count (not a hardcoded 7) keeps this correct
+        // even if forecast data has gaps.
+        const peakEnd = new Date(peakStart);
+        peakEnd.setDate(peakEnd.getDate() + 6);
+
+        const peakDays = forecast.filter((d) => new Date(d.date) >= peakStart && new Date(d.date) <= peakEnd);
 
         return {
           startDate: peakStart.toISOString().split('T')[0],
           endDate: peakEnd.toISOString().split('T')[0],
           expectedOccupancy: Math.round(
-            forecast
-              .filter((d) => new Date(d.date) >= peakStart && new Date(d.date) <= peakEnd)
-              .reduce((sum, d) => sum + d.forecastOccupancy, 0) / 7
+            peakDays.reduce((sum, d) => sum + d.forecastOccupancy, 0) / (peakDays.length || 1)
           ),
           daysUntilPeak: Math.ceil((peakStart - today) / (1000 * 60 * 60 * 24)),
         };

@@ -862,7 +862,16 @@ async function occupancyForecastingHandler(req, res) {
 }
 
 async function occGet(res, endpoint, query, park) {
-  const { parkId, days = '90', year = '2026', date, siteId } = query;
+  // `park` here is already resolved from the caller's correctly-defaulted
+  // parkId (falls back to session.parkId when the request doesn't specify
+  // one) — re-reading `parkId` from the raw query threw that default away,
+  // since none of this dashboard's fetch() calls ever send `?parkId=`. The
+  // result was every occ* helper getting `parkId=undefined`, which made
+  // getSitesForPark(undefined) return zero sites, which made every widget
+  // hit its "no sites configured" fallback regardless of how much real
+  // booking data existed. Use park.id (guaranteed correct) everywhere.
+  const { days = '90', year = '2026', date, siteId } = query;
+  const parkId = park.id;
 
   switch (endpoint) {
     case 'forecast': return occForecast(res, parkId, parseInt(days, 10));
