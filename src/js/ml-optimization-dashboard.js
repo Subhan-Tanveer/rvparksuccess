@@ -293,41 +293,91 @@ export class MLOptimizationDashboard {
     const svg = document.getElementById('mlElasticityCurve');
     if (!svg) return;
 
-    // Clear SVG
     svg.innerHTML = '';
 
     const width = svg.clientWidth || 600;
     const height = 300;
-    const margin = { top: 20, right: 20, bottom: 40, left: 50 };
+    const margin = { top: 20, right: 24, bottom: 44, left: 54 };
     const plotWidth = width - margin.left - margin.right;
     const plotHeight = height - margin.top - margin.bottom;
 
-    // Test rates from 50 to 250 in $10 increments
-    const rates = Array.from({ length: 21 }, (_, i) => 50 + i * 10);
-    const occupancies = [];
+    const currentRate = forecast.current_rate || 50;
+    const optimalRate = forecast.suggested_rate || currentRate;
 
-    for (const rate of rates) {
-      try {
-        const resp = await fetch(
-          `/api/admin/ops?resource=ml-optimization&endpoint=occupancy-forecast&siteId=${this.selectedSiteId}&date=${new Date().toISOString().split('T')[0]}&rate=${rate}`
-        );
-        const data = await resp.json();
-        occupancies.push(parseFloat(data.predicted_occupancy_percent) / 100);
-      } catch {
-        occupancies.push(0.5);
-      }
-    }
+    // Test a range that always brackets both the current and optimal rate
+    // (with headroom) instead of a fixed $50-$250 window — the site's real
+    // rate can sit anywhere, and a fixed window meant the current/optimal
+    // markers frequently fell outside the tested range and just never
+    // rendered.
+    const rangeLow = Math.max(10, Math.floor(Math.min(currentRate, optimalRate) * 0.6 / 5) * 5);
+    const rangeHigh = Math.ceil(Math.max(currentRate, optimalRate) * 1.8 / 5) * 5;
+    const steps = 20;
+    const stepSize = (rangeHigh - rangeLow) / steps;
+    const rates = Array.from({ length: steps + 1 }, (_, i) => Math.round(rangeLow + i * stepSize));
 
-    // Scale functions
-    const scaleX = (rate) => ((rate - 50) / 200) * plotWidth;
+    const date = new Date().toISOString().split('T')[0];
+    const occupancies = await Promise.all(
+      rates.map((rate) =>
+        fetch(`/api/admin/ops?resource=ml-optimization&endpoint=occupancy-forecast&siteId=${this.selectedSiteId}&date=${date}&rate=${rate}`)
+          .then((r) => r.json())
+          .then((data) => parseFloat(data.predicted_occupancy_percent) / 100)
+          .catch(() => 0.5)
+      )
+    );
+
+    const scaleX = (rate) => ((rate - rangeLow) / (rangeHigh - rangeLow)) * plotWidth;
     const scaleY = (occ) => plotHeight - occ * plotHeight;
 
-    // Draw axes
     const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
     g.setAttribute('transform', `translate(${margin.left}, ${margin.top})`);
+    const svgNS = 'http://www.w3.org/2000/svg';
+    const el = (tag) => document.createElementNS(svgNS, tag);
 
-    // X axis
-    const xAxis = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    // Horizontal gridlines + y-axis occupancy labels (0/25/50/75/100%)
+    for (let i = 0; i <= 4; i++) {
+      const occVal = i / 4;
+      const y = scaleY(occVal);
+      const gridLine = el('line');
+      gridLine.setAttribute('x1', 0);
+      gridLine.setAttribute('y1', y);
+      gridLine.setAttribute('x2', plotWidth);
+      gridLine.setAttribute('y2', y);
+      gridLine.setAttribute('class', 'ml-grid-line');
+      g.appendChild(gridLine);
+
+      const tick = el('text');
+      tick.setAttribute('x', -8);
+      tick.setAttribute('y', y);
+      tick.setAttribute('text-anchor', 'end');
+      tick.setAttribute('dominant-baseline', 'middle');
+      tick.setAttribute('class', 'ml-tick-label');
+      tick.textContent = `${Math.round(occVal * 100)}%`;
+      g.appendChild(tick);
+    }
+
+    // Vertical gridlines + x-axis dollar labels at 5 evenly-spaced rates
+    for (let i = 0; i <= 4; i++) {
+      const rate = rangeLow + ((rangeHigh - rangeLow) * i) / 4;
+      const x = scaleX(rate);
+      const gridLine = el('line');
+      gridLine.setAttribute('x1', x);
+      gridLine.setAttribute('y1', 0);
+      gridLine.setAttribute('x2', x);
+      gridLine.setAttribute('y2', plotHeight);
+      gridLine.setAttribute('class', 'ml-grid-line');
+      g.appendChild(gridLine);
+
+      const tick = el('text');
+      tick.setAttribute('x', x);
+      tick.setAttribute('y', plotHeight + 16);
+      tick.setAttribute('text-anchor', 'middle');
+      tick.setAttribute('class', 'ml-tick-label');
+      tick.textContent = `$${Math.round(rate)}`;
+      g.appendChild(tick);
+    }
+
+    // Axes
+    const xAxis = el('line');
     xAxis.setAttribute('x1', 0);
     xAxis.setAttribute('y1', plotHeight);
     xAxis.setAttribute('x2', plotWidth);
@@ -335,8 +385,7 @@ export class MLOptimizationDashboard {
     xAxis.setAttribute('class', 'ml-axis');
     g.appendChild(xAxis);
 
-    // Y axis
-    const yAxis = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    const yAxis = el('line');
     yAxis.setAttribute('x1', 0);
     yAxis.setAttribute('y1', 0);
     yAxis.setAttribute('x2', 0);
@@ -344,55 +393,101 @@ export class MLOptimizationDashboard {
     yAxis.setAttribute('class', 'ml-axis');
     g.appendChild(yAxis);
 
-    // Draw curve
+    // Curve
     let pathData = `M${scaleX(rates[0])},${scaleY(occupancies[0])}`;
     for (let i = 1; i < rates.length; i++) {
       pathData += ` L${scaleX(rates[i])},${scaleY(occupancies[i])}`;
     }
-
-    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    const path = el('path');
     path.setAttribute('d', pathData);
     path.setAttribute('class', 'ml-curve');
     g.appendChild(path);
 
-    // Mark current rate
-    const currentRate = forecast.current_rate;
-    const currentRateIdx = rates.findIndex((r) => r === Math.round(currentRate / 5) * 5);
-    if (currentRateIdx >= 0) {
-      const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-      circle.setAttribute('cx', scaleX(rates[currentRateIdx]));
-      circle.setAttribute('cy', scaleY(occupancies[currentRateIdx]));
-      circle.setAttribute('r', 6);
-      circle.setAttribute('class', 'ml-point-current');
-      g.appendChild(circle);
+    // Hoverable dots along the curve — same interaction pattern as the
+    // Revenue Trend chart, so hovering any point tells you exactly what
+    // occupancy it predicts at that rate.
+    let tooltip = svg.parentElement._mlTooltipEl;
+    if (!tooltip) {
+      tooltip = document.createElement('div');
+      tooltip.className = 'ml-chart-tooltip';
+      svg.parentElement.appendChild(tooltip);
+      svg.parentElement._mlTooltipEl = tooltip;
     }
+    rates.forEach((rate, i) => {
+      const cx = scaleX(rate);
+      const cy = scaleY(occupancies[i]);
+      const dot = el('circle');
+      dot.setAttribute('cx', cx);
+      dot.setAttribute('cy', cy);
+      dot.setAttribute('r', 3);
+      dot.setAttribute('class', 'ml-curve-dot');
+      dot.addEventListener('mouseenter', () => {
+        tooltip.textContent = `$${rate}/night → ${Math.round(occupancies[i] * 100)}% occupancy`;
+        tooltip.style.left = `${margin.left + cx}px`;
+        tooltip.style.top = `${margin.top + cy}px`;
+        tooltip.style.display = 'block';
+      });
+      dot.addEventListener('mouseleave', () => {
+        tooltip.style.display = 'none';
+      });
+      g.appendChild(dot);
+    });
 
-    // Mark optimal rate
-    const optimalRate = forecast.suggested_rate;
-    const optimalRateIdx = rates.findIndex((r) => r === Math.round(optimalRate / 5) * 5);
-    if (optimalRateIdx >= 0) {
-      const star = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
-      const cx = scaleX(rates[optimalRateIdx]);
-      const cy = scaleY(occupancies[optimalRateIdx]);
+    // Mark current rate — nearest tested point, not an exact-match lookup
+    // (the old code required an exact 5-multiple match against a fixed
+    // $50-$250/10 grid, so a real rate like $45 or an optimal rate like $65
+    // silently matched nothing and no marker ever appeared).
+    let currentIdx = 0;
+    let optimalIdx = 0;
+    rates.forEach((r, i) => {
+      if (Math.abs(r - currentRate) < Math.abs(rates[currentIdx] - currentRate)) currentIdx = i;
+      if (Math.abs(r - optimalRate) < Math.abs(rates[optimalIdx] - optimalRate)) optimalIdx = i;
+    });
+
+    const circle = el('circle');
+    circle.setAttribute('cx', scaleX(rates[currentIdx]));
+    circle.setAttribute('cy', scaleY(occupancies[currentIdx]));
+    circle.setAttribute('r', 6);
+    circle.setAttribute('class', 'ml-point-current');
+    g.appendChild(circle);
+    const currentLabel = el('text');
+    currentLabel.setAttribute('x', scaleX(rates[currentIdx]));
+    currentLabel.setAttribute('y', scaleY(occupancies[currentIdx]) - 12);
+    currentLabel.setAttribute('text-anchor', 'middle');
+    currentLabel.setAttribute('class', 'ml-point-label ml-point-label-current');
+    currentLabel.textContent = `Current $${Math.round(currentRate)}`;
+    g.appendChild(currentLabel);
+
+    if (optimalIdx !== currentIdx) {
+      const cx = scaleX(rates[optimalIdx]);
+      const cy = scaleY(occupancies[optimalIdx]);
+      const star = el('polygon');
       star.setAttribute('points', `${cx},${cy - 8} ${cx + 3},${cy - 2} ${cx + 8},${cy - 2} ${cx + 4},${cy + 2} ${cx + 6},${cy + 8} ${cx},${cy + 4} ${cx - 6},${cy + 8} ${cx - 4},${cy + 2} ${cx - 8},${cy - 2} ${cx - 3},${cy - 2}`);
       star.setAttribute('class', 'ml-point-optimal');
       g.appendChild(star);
+      const optimalLabel = el('text');
+      optimalLabel.setAttribute('x', cx);
+      optimalLabel.setAttribute('y', cy - 14);
+      optimalLabel.setAttribute('text-anchor', 'middle');
+      optimalLabel.setAttribute('class', 'ml-point-label ml-point-label-optimal');
+      optimalLabel.textContent = `Optimal $${Math.round(optimalRate)}`;
+      g.appendChild(optimalLabel);
     }
 
-    // Add axis labels
-    const xLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    // Axis titles
+    const xLabel = el('text');
     xLabel.setAttribute('x', plotWidth / 2);
-    xLabel.setAttribute('y', plotHeight + 35);
+    xLabel.setAttribute('y', plotHeight + 36);
     xLabel.setAttribute('text-anchor', 'middle');
     xLabel.setAttribute('class', 'ml-axis-label');
     xLabel.textContent = 'Nightly Rate ($)';
     g.appendChild(xLabel);
 
-    const yLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    const yLabel = el('text');
     yLabel.setAttribute('x', -plotHeight / 2);
-    yLabel.setAttribute('y', -35);
+    yLabel.setAttribute('y', -40);
     yLabel.setAttribute('text-anchor', 'middle');
-    yLabel.setAttribute('transform', `rotate(-90, -35, ${-plotHeight / 2})`);
+    yLabel.setAttribute('transform', `rotate(-90, -40, ${-plotHeight / 2})`);
     yLabel.setAttribute('class', 'ml-axis-label');
     yLabel.textContent = 'Predicted Occupancy (%)';
     g.appendChild(yLabel);

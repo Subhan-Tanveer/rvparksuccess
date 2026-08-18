@@ -207,10 +207,16 @@
 
 /* Chart Container */
 .ml-chart-container {
+  position: relative;
   width: 100%;
   height: 320px;
   margin-bottom: var(--sp-4);
   overflow-x: auto;
+  /* Setting only overflow-x forces the browser to compute overflow-y as
+     'auto' too (per spec, one axis can't stay 'visible' once the other is
+     scrollable) — without this, a chart even a few px taller than the
+     container spawns an unwanted vertical scrollbar that clips the chart. */
+  overflow-y: hidden;
   border-radius: var(--radius-md);
   background: var(--surface-glass-strong);
   padding: var(--sp-3);
@@ -232,12 +238,28 @@ svg.ml-chart {
   font-size: 12px;
 }
 
+.ml-grid-line {
+  stroke: var(--cream-dim);
+  stroke-width: 1;
+  opacity: 0.12;
+}
+
+.ml-tick-label {
+  fill: var(--cream-dim);
+  font-size: 10px;
+}
+
 .ml-curve {
   stroke: var(--ml-chart-line);
   stroke-width: 3;
   fill: none;
   stroke-linecap: round;
   stroke-linejoin: round;
+}
+
+.ml-curve-dot {
+  fill: var(--ml-chart-line);
+  cursor: pointer;
 }
 
 .ml-point-current {
@@ -248,6 +270,34 @@ svg.ml-chart {
 .ml-point-optimal {
   fill: var(--ml-point-optimal);
   opacity: 0.9;
+}
+
+.ml-point-label {
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.ml-point-label-current {
+  fill: var(--ml-point-current);
+}
+
+.ml-point-label-optimal {
+  fill: var(--ml-point-optimal);
+}
+
+.ml-chart-tooltip {
+  position: absolute;
+  transform: translate(-50%, -100%) translateY(-10px);
+  background: #1a1a1a;
+  color: var(--cream);
+  border: 1px solid var(--ml-chart-line);
+  border-radius: 4px;
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 5;
+  display: none;
 }
 
 .ml-curve-legend {

@@ -297,14 +297,15 @@ export class RateOptimizer {
       // every historical booking shared the same nightly rate (the common
       // case for a park that has never run dynamic pricing), which leaves
       // zero rate variance to explain occupancy from. Rather than
-      // flatlining at a meaningless 50% for every price point, apply a
-      // standard moderate price elasticity (-0.5, i.e. a 10% rate increase
-      // trims demand ~5%) around this site's own real historical average
-      // rate/occupancy, so the curve is at least anchored to real data and
-      // slopes the right direction.
+      // flatlining at a meaningless 50% for every price point, apply the
+      // standard constant-elasticity demand curve occupancy = mean_y *
+      // (rate/mean_x)^E, anchored on this site's own real average
+      // rate/occupancy. Unlike a linear (rate - mean) formula, this decays
+      // smoothly toward 0 as rate rises instead of hitting a hard "cliff"
+      // at some rate and flatlining there, which reads as a rendering bug
+      // rather than a price curve.
       const STANDARD_ELASTICITY = -0.5;
-      const pctRateDelta = (rate - model.elasticity.mean_x) / model.elasticity.mean_x;
-      predicted_occupancy = Math.max(0, Math.min(1, model.elasticity.mean_y * (1 + STANDARD_ELASTICITY * pctRateDelta)));
+      predicted_occupancy = Math.max(0, Math.min(1, model.elasticity.mean_y * Math.pow(rate / model.elasticity.mean_x, STANDARD_ELASTICITY)));
       confidence = 0.35;
       method = 'assumed-elasticity';
     }
