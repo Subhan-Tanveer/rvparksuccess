@@ -654,6 +654,12 @@ class AnalyticsDashboard {
       tooltip.textContent = `${p.label}: ${this.formatCurrency(p.value * 100)}`;
       tooltip.style.left = `${p.x}px`;
       tooltip.style.top = `${p.y}px`;
+      // .chart-container clips overflow (overflow-y: hidden, needed so the
+      // canvas itself doesn't spawn a scrollbar) — a tooltip anchored above
+      // a point near the top of the chart (a high-revenue day) gets its top
+      // half clipped off instead of rendering above the container. Flip it
+      // downward whenever there isn't roughly a tooltip's-height of room.
+      tooltip.classList.toggle('is-below', p.y < 44);
       tooltip.style.display = 'block';
     };
 

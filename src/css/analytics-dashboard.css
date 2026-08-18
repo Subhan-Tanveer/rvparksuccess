@@ -158,6 +158,12 @@
   z-index: 5;
 }
 
+/* Opens downward instead of upward when the anchor point is too close to
+   the container's clipped top edge for the tooltip to fully fit above it. */
+.chart-tooltip.is-below {
+  transform: translate(-50%, 0) translateY(10px);
+}
+
 canvas {
   width: 100% !important;
   height: 100% !important;

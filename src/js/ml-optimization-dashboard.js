@@ -424,6 +424,15 @@ export class MLOptimizationDashboard {
         tooltip.textContent = `$${rate}/night → ${Math.round(occupancies[i] * 100)}% occupancy`;
         tooltip.style.left = `${margin.left + cx}px`;
         tooltip.style.top = `${margin.top + cy}px`;
+        // The chart container clips overflow (see .ml-chart-container's
+        // overflow-y: hidden — needed elsewhere to stop the chart itself
+        // spawning a scrollbar), so a tooltip anchored above a point near
+        // the top of the curve (e.g. the "Current $45" marker, which sits
+        // close to 100% occupancy) gets its top half clipped off instead
+        // of just rendering above the container. Flip it to open downward
+        // instead whenever there isn't roughly a tooltip's-height of room
+        // above the point.
+        tooltip.classList.toggle('is-below', margin.top + cy < 44);
         tooltip.style.display = 'block';
       };
 

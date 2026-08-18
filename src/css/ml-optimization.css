@@ -300,6 +300,12 @@ svg.ml-chart {
   display: none;
 }
 
+/* Opens downward instead of upward when the anchor point is too close to
+   the container's clipped top edge for the tooltip to fully fit above it. */
+.ml-chart-tooltip.is-below {
+  transform: translate(-50%, 0) translateY(10px);
+}
+
 .ml-curve-legend {
   display: flex;
   gap: var(--sp-4);
