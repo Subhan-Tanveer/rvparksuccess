@@ -273,14 +273,18 @@ export function calculateBookingSourceMetrics(reservations) {
  * @param {number} confidence - Confidence interval (0-1)
  * @returns {Object} Forecast data
  */
-export function calculateForecast(reservations, parkAdrCents, forecastDays = 30, confidence = 0.9) {
+export function calculateForecast(reservations, parkAdrCents, forecastDays = 30, confidence = 0.9, occupancyRate = 1) {
   const confirmed = reservations.filter((r) => r.status === 'confirmed' || r.status === 'confirmed-deposit');
 
-  // Average nightly bookings over the past period
+  // Average rate charged per booked night over the past period
   const avgNightlyRevenue = confirmed.length > 0 ? confirmed.reduce((sum, r) => sum + (r.subtotalCents / r.nights), 0) / confirmed.length : 0;
 
-  // Simple linear forecast: recent avg * days ahead
-  const predictedRevenueCents = Math.round(avgNightlyRevenue * forecastDays);
+  // Rate x forecastDays alone assumes every single night sells — occupancyRate
+  // (actual booked-nights / available-nights over the historical window) scales
+  // that down to something closer to "what you'll likely actually collect."
+  // A park with a strong nightly rate but only a handful of real bookings so
+  // far previously forecasted as if it were booked solid for the next month.
+  const predictedRevenueCents = Math.round(avgNightlyRevenue * forecastDays * Math.max(0, Math.min(1, occupancyRate)));
 
   // Confidence interval (simplified: ±20% based on historical variance)
   const variance = 0.2;

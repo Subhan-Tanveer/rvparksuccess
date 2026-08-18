@@ -249,7 +249,8 @@ async function analyticsForecasting(res, parkId, park, sites, period, forecastDa
   const { start, end } = getDateRange(days);
   const reservations = await getReservationsForParkInRange(parkId, start, end);
   const revenue = calculateRevenueMetrics(reservations, park);
-  const forecast = calculateForecast(reservations, revenue.adrCents, forecastDays, 0.85);
+  const occupancy = calculateOccupancyMetrics(reservations, sites.length, start, end);
+  const forecast = calculateForecast(reservations, revenue.adrCents, forecastDays, 0.85, occupancy.occupancyPercent / 100);
   return res.status(200).json({
     period,
     historicalDateRange: { start, end },
