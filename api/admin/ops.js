@@ -1021,9 +1021,15 @@ async function occUnderutilized(res, parkId) {
     const totalSites = sites.length;
     if (totalSites === 0) return res.json({ underutilized: [] });
 
+    // identifyUnderutilizedDates forecasts the NEXT 90 days, so the query
+    // needs to reach that far forward too — same bug as occCapacityUtil:
+    // fetching only up through today made every future booking invisible.
     const endDate = new Date();
     const startDate = new Date(endDate.getTime() - 365 * 24 * 60 * 60 * 1000);
-    const reservations = await getReservationsForParkInRange(parkId, startDate.toISOString().split('T')[0], endDate.toISOString().split('T')[0]);
+    const reservations = await getReservationsForParkInRange(
+      parkId, startDate.toISOString().split('T')[0],
+      new Date(endDate.getTime() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+    );
 
     const underutilized = identifyUnderutilizedDates(reservations, totalSites, 90, 40);
     return res.json({ underutilized, count: underutilized.length, totalPotentialRevenueLoss: underutilized.reduce((sum, u) => sum + u.potentialRevenueLoss, 0) });
@@ -1098,10 +1104,20 @@ async function occCapacityUtil(res, parkId) {
     const totalSites = sites.length;
     if (totalSites === 0) return res.json({ utilization: null });
 
+    // getCapacityUtilization analyzes the NEXT 30 days (today -> today+30),
+    // but this only fetched reservations up through today — every future
+    // booking (which is where almost all real activity lives) was
+    // invisible to it, so utilization was computed against an
+    // almost-empty reservation set regardless of how full the park
+    // actually is. Extend the query forward to cover what's actually
+    // being analyzed.
     const endDate = new Date();
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - 365);
-    const reservations = await getReservationsForParkInRange(parkId, startDate.toISOString().split('T')[0], endDate.toISOString().split('T')[0]);
+    const reservations = await getReservationsForParkInRange(
+      parkId, startDate.toISOString().split('T')[0],
+      new Date(endDate.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+    );
 
     return res.json(getCapacityUtilization(reservations, totalSites, 30));
   } catch (error) {
