@@ -195,8 +195,12 @@ function ensureSchema() {
         payment_method TEXT,
         notes TEXT NOT NULL DEFAULT '',
         canceled_at TIMESTAMPTZ,
-        created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+        paid_via_connect BOOLEAN NOT NULL DEFAULT false
       );
+      -- Existing databases predate paid_via_connect (added for new
+      -- installs above) -- backfill it here so production doesn't error.
+      ALTER TABLE reservations ADD COLUMN IF NOT EXISTS paid_via_connect BOOLEAN NOT NULL DEFAULT false;
       CREATE INDEX IF NOT EXISTS idx_reservations_park ON reservations(park_id);
       CREATE INDEX IF NOT EXISTS idx_reservations_site_dates ON reservations(site_id, check_in, check_out);
       CREATE INDEX IF NOT EXISTS idx_reservations_guest_email ON reservations(guest_email);
@@ -806,6 +810,7 @@ function mapReservation(row) {
     notes: row.notes,
     canceledAt: row.canceled_at ? row.canceled_at.toISOString() : null,
     createdAt: row.created_at.toISOString(),
+    paidViaConnect: row.paid_via_connect === true,
   };
 }
 
@@ -1180,8 +1185,20 @@ export async function createStaffReservation({ parkId, siteId, checkIn, checkOut
   });
 }
 
-export async function attachStripeSession(reservationId, stripeSessionId) {
-  const res = await query('UPDATE reservations SET stripe_session_id = $2 WHERE id = $1 RETURNING *', [reservationId, stripeSessionId]);
+// paidViaConnect records whether THIS specific booking was routed as a
+// Stripe Connect destination charge (the park's connected account got
+// paid directly, atomically, at checkout) versus collected into the
+// platform account for manual payout. This has to be captured per-
+// reservation at the moment of charge, not inferred later from the park's
+// CURRENT Connect status — a park can connect Stripe after some of its
+// bookings already collected into the platform account, and re-checking
+// live status later would wrongly mark those old bookings as
+// already-paid, hiding real money still owed to the park.
+export async function attachStripeSession(reservationId, stripeSessionId, paidViaConnect = false) {
+  const res = await query(
+    'UPDATE reservations SET stripe_session_id = $2, paid_via_connect = $3 WHERE id = $1 RETURNING *',
+    [reservationId, stripeSessionId, paidViaConnect]
+  );
   return res.rows[0] ? mapReservation(res.rows[0]) : null;
 }
 
@@ -1603,11 +1620,19 @@ export async function getParkStats(parkId, { windowDays = 30 } = {}) {
 }
 
 // What the park is actually owed vs. what RVPark Success keeps, from money
-// that's already been collected. This is a calculation only — see
-// api/admin/dashboard.js and api/reservations/create-checkout.js for the
-// actual Stripe Connect logic that automates payouts once a park connects.
+// that's STILL SITTING in the platform account waiting on a manual payout.
+// Reservations paid via a Stripe Connect destination charge already went
+// straight to the park's own connected account at checkout — including
+// those here would double-count real money the park has already received,
+// showing a manual "Owed to You" balance that's partly or entirely
+// fictional. See api/reservations/create-checkout.js for where
+// paid_via_connect gets set, and setParkStripeAccount/park.stripeAccountId
+// for the one-time Connect onboarding.
 export async function getPayoutSummary(parkId) {
-  const resRes = await query(`SELECT * FROM reservations WHERE park_id = $1 AND status IN ('confirmed','confirmed-deposit')`, [parkId]);
+  const resRes = await query(
+    `SELECT * FROM reservations WHERE park_id = $1 AND status IN ('confirmed','confirmed-deposit') AND paid_via_connect = false`,
+    [parkId]
+  );
   const reservations = resRes.rows.map(mapReservation);
 
   let grossCollectedCents = 0;

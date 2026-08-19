@@ -112,7 +112,7 @@ export default async function handler(req, res) {
       cancel_url: `${origin}/reservations.html?park=${parkId}&checkout=canceled`,
     });
 
-    await attachStripeSession(reservation.id, session.id);
+    await attachStripeSession(reservation.id, session.id, !!paymentIntentData);
     res.status(200).json({ url: session.url, reservationId: reservation.id });
   } catch (err) {
     console.error('Reservation checkout session error:', err.message);
