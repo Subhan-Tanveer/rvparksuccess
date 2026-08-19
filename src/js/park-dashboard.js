@@ -5,6 +5,7 @@ import { PACKAGES, formatUsd as formatUsdWhole } from './services-data.js';
 import { initPricingDashboard } from './pricing-dashboard.js';
 import AnalyticsDashboard from './analytics-dashboard.js';
 import { initCrmDashboard } from './crm-dashboard.js';
+import { loadGoogleMaps } from './google-maps-loader.js';
 // Campaigns, Social Media, and Competitors are intentionally not wired
 // into the dashboard nav — the Marketing CRM (GoHighLevel) tab below covers
 // that ground for Growth/Maximum plans instead. Those modules are still on
@@ -185,6 +186,15 @@ async function loadDashboard() {
   renderUpgradeNudge(currentPark, data.stats);
   document.getElementById('stTaxRate').value = currentPark.taxRatePercent ?? 0;
   document.getElementById('stTaxRate').classList.add('has-value');
+  const stAddressEl = document.getElementById('stAddress');
+  if (currentPark.address) {
+    stAddressEl.value = currentPark.address;
+    stAddressEl.classList.add('has-value');
+  }
+  parkAddressLatLng = currentPark.latitude != null && currentPark.longitude != null
+    ? { lat: currentPark.latitude, lng: currentPark.longitude }
+    : null;
+  initParkAddressAutocomplete(stAddressEl);
   renderPromoCodes(currentPark.promoCodes || []);
   renderWaitlist(data.waitlist || []);
   document.getElementById('payoutNet').textContent = formatUsd(data.payout.netOwedToParkCents);
@@ -687,17 +697,51 @@ const settingsForm = document.getElementById('settingsForm');
 const saveSettingsBtn = document.getElementById('saveSettingsBtn');
 const settingsAlert = document.getElementById('settingsAlert');
 
+// Set by initParkAddressAutocomplete() when the owner picks a real place
+// from the dropdown — null if they've only typed free text (no pin to
+// save yet) or haven't touched the field. Persisted alongside the tax
+// rate on the same form/submit so there's no separate save action to
+// forget.
+let parkAddressLatLng = null;
+
+function initParkAddressAutocomplete(inputEl) {
+  loadGoogleMaps()
+    .then((maps) => {
+      const autocomplete = new maps.places.Autocomplete(inputEl, { fields: ['formatted_address', 'geometry', 'name'] });
+      autocomplete.addListener('place_changed', () => {
+        const place = autocomplete.getPlace();
+        if (!place.geometry?.location) {
+          // User hit Enter without picking a suggestion — no coordinates
+          // to save, so don't silently keep a stale pin from before.
+          parkAddressLatLng = null;
+          return;
+        }
+        inputEl.value = place.formatted_address || place.name || inputEl.value;
+        inputEl.classList.add('has-value');
+        parkAddressLatLng = { lat: place.geometry.location.lat(), lng: place.geometry.location.lng() };
+      });
+    })
+    .catch((err) => console.error('Address autocomplete unavailable:', err.message));
+}
+
 settingsForm.addEventListener('submit', async (e) => {
   e.preventDefault();
   settingsAlert.classList.remove('is-visible', 'is-success', 'is-error');
 
   await withLoading(saveSettingsBtn, async () => {
     try {
+      const addressValue = document.getElementById('stAddress').value.trim();
       const res = await fetch('/api/admin/dashboard', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           taxRatePercent: parseFloat(document.getElementById('stTaxRate').value),
+          // Only send address if the field actually has a value — matches
+          // updateParkSettings' "field !== undefined means update it"
+          // convention, so leaving the address blank never wipes it.
+          ...(addressValue
+            ? { address: addressValue, latitude: parkAddressLatLng?.lat ?? currentPark.latitude ?? null, longitude: parkAddressLatLng?.lng ?? currentPark.longitude ?? null }
+            : {}),
         }),
       });
       const data = await res.json();

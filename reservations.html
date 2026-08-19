@@ -27,6 +27,12 @@
   .res-banner.is-canceled { background: rgba(217,127,46,0.1); border: 1px solid rgba(217,127,46,0.4); color: var(--cream-dim); }
   .res-banner.is-error { background: rgba(217,60,46,0.1); border: 1px solid rgba(217,60,46,0.4); color: #f0a89a; }
 
+  .res-directions { padding: var(--sp-4); border-radius: var(--radius-lg); margin-bottom: var(--sp-4); }
+  .res-directions-head h3 { font-size: 1.125rem; margin: 0; }
+  .res-directions-head .sub { font-size: 0.875rem; color: var(--cream-dim); margin: 2px 0 var(--sp-3); }
+  .res-directions-map { margin-bottom: var(--sp-3); background: var(--surface-glass); }
+  .res-directions-actions { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+
   .res-results { margin-top: var(--sp-6); }
   .res-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--sp-3); }
   .res-site-card { padding: var(--sp-4); display: flex; flex-direction: column; }
@@ -125,6 +131,7 @@
 <section class="section" style="padding-top:0;">
   <div class="wrap">
     <div class="res-banner" id="resBanner"></div>
+    <div class="res-directions glass" id="resDirections" style="display:none;"></div>
     <div class="res-search glass dot-grid" data-reveal>
       <div class="res-search-row">
         <div class="field-float">

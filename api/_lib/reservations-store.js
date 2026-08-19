@@ -116,6 +116,15 @@ function ensureSchema() {
       ALTER TABLE parks ADD COLUMN IF NOT EXISTS vrbo_listing_id TEXT;
       ALTER TABLE parks ADD COLUMN IF NOT EXISTS ota_integration_enabled BOOLEAN NOT NULL DEFAULT false;
       ALTER TABLE parks ADD COLUMN IF NOT EXISTS ghl_crm_url TEXT;
+      -- Precise pinpoint location for the guest-facing "Get Directions"
+      -- feature (Marie's ask: a map from wherever the guest is to the
+      -- campground). The 'location' column above is just a free-text
+      -- "City, State" string, not precise enough to route to -- these
+      -- come from a Google Places Autocomplete selection in Park
+      -- Settings instead.
+      ALTER TABLE parks ADD COLUMN IF NOT EXISTS address TEXT;
+      ALTER TABLE parks ADD COLUMN IF NOT EXISTS latitude NUMERIC;
+      ALTER TABLE parks ADD COLUMN IF NOT EXISTS longitude NUMERIC;
 
       -- Named platform-admin accounts. Alongside SUPER_ADMIN_PASSWORD (kept
       -- as a bootstrap/recovery login), this lets more than one real person
@@ -774,6 +783,9 @@ function mapPark(row, promoCodes = []) {
     vrboListingId: row.vrbo_listing_id,
     otaIntegrationEnabled: row.ota_integration_enabled || false,
     ghlCrmUrl: row.ghl_crm_url,
+    address: row.address,
+    latitude: row.latitude !== null ? Number(row.latitude) : null,
+    longitude: row.longitude !== null ? Number(row.longitude) : null,
     createdAt: row.created_at.toISOString(),
     promoCodes: promoCodes.map(mapPromo),
   };
@@ -1302,10 +1314,11 @@ export async function setParkPlan(parkId, { planKey, stripeCustomerId, stripeSub
   return mapPark(res.rows[0]);
 }
 
-// Owner-editable park settings — tax rate and deposit %. Scoped by parkId
-// from the session, same as site management, so a staff member can only
-// ever edit their own park.
-export async function updateParkSettings(parkId, { taxRatePercent, depositPercent } = {}) {
+// Owner-editable park settings — tax rate, deposit %, and the precise
+// pinpoint address behind the guest-facing "Get Directions" feature.
+// Scoped by parkId from the session, same as site management, so a staff
+// member can only ever edit their own park.
+export async function updateParkSettings(parkId, { taxRatePercent, depositPercent, address, latitude, longitude } = {}) {
   const sets = [];
   const params = [parkId];
   if (taxRatePercent !== undefined) {
@@ -1323,6 +1336,17 @@ export async function updateParkSettings(parkId, { taxRatePercent, depositPercen
     if (isNaN(rate) || rate !== 0) throw new Error('Deposits are not available — parks always charge the full amount at booking.');
     params.push(0);
     sets.push(`deposit_percent = $${params.length}`);
+  }
+  // address/latitude/longitude always travel together — they come from a
+  // single Places Autocomplete selection, so a stale pin can never end up
+  // paired with a different address than the one it was geocoded from.
+  if (address !== undefined) {
+    params.push(address || null);
+    sets.push(`address = $${params.length}`);
+    params.push(latitude ?? null);
+    sets.push(`latitude = $${params.length}`);
+    params.push(longitude ?? null);
+    sets.push(`longitude = $${params.length}`);
   }
   if (!sets.length) {
     const park = await getPark(parkId);

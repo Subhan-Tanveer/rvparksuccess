@@ -430,6 +430,8 @@
       <h2 style="font-size: 1.375rem;">Park Settings</h2>
     </div>
     <form id="settingsForm">
+      <div class="field-float"><input id="stAddress" type="text" autocomplete="off" placeholder=" "><label for="stAddress">Park Address</label></div>
+      <p class="form-note">Start typing and pick your park from the suggestions — this is what powers the "Get Directions" map guests see after booking. A vague address (just a city) won't route them anywhere useful.</p>
       <div class="field-float"><input id="stTaxRate" type="number" min="0" max="30" step="0.01" required><label for="stTaxRate">Lodging Tax Rate (%)</label></div>
       <p class="form-note">Tax applies to the room subtotal, not the platform fee. Guests are always charged the full amount at booking — deposits aren't available.</p>
       <button type="submit" class="btn btn-ghost" id="saveSettingsBtn"><span>Save Settings</span></button>

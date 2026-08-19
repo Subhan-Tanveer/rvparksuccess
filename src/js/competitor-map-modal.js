@@ -3,25 +3,7 @@
 // Exposes openAddCompetitorModal(), which resolves true if a competitor was
 // added (so the caller knows to refresh its list) or false if canceled.
 
-let mapsLoaderPromise = null;
-
-function loadGoogleMaps() {
-  if (mapsLoaderPromise) return mapsLoaderPromise;
-
-  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
-  mapsLoaderPromise = new Promise((resolve, reject) => {
-    if (window.google?.maps?.places) { resolve(window.google.maps); return; }
-    if (!apiKey) { reject(new Error('Google Maps is not configured.')); return; }
-
-    window.__ciMapsCallback = () => resolve(window.google.maps);
-    const script = document.createElement('script');
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(apiKey)}&libraries=places&callback=__ciMapsCallback`;
-    script.async = true;
-    script.onerror = () => reject(new Error('Failed to load Google Maps.'));
-    document.head.appendChild(script);
-  });
-  return mapsLoaderPromise;
-}
+import { loadGoogleMaps } from './google-maps-loader.js';
 
 function buildModalShell() {
   const backdrop = document.createElement('div');
