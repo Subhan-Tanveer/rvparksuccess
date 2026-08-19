@@ -24,6 +24,8 @@ import {
   completeBulkOperation,
   logOperationAudit,
   updateSite,
+  createBlackoutDate,
+  addPromoCode,
 } from './reservations-store.js';
 
 /**
@@ -183,14 +185,21 @@ export async function getPropertyComparison(userId, sortBy = 'revenue') {
  * @param {string} userId - The user ID
  * @param {Array<string>} propertyIds - Property IDs to update
  * @param {Object} rateCard - Rate configuration { siteId: cents, ... }
+ * @param {number} [baseRateCents] - When set, applies this rate to every
+ *   site of every selected property that isn't already covered by an
+ *   explicit rateCard entry — this is what the portfolio dashboard's
+ *   single "Base Rate" bulk-update field actually needs, since the
+ *   frontend has no per-site rate UI and previously had no way to
+ *   populate rateCard at all (it always sent {}, so nothing ever updated
+ *   despite the UI reporting success).
  * @returns {Promise<Object>} Operation result
  */
-export async function bulkUpdateRates(userId, propertyIds, rateCard) {
+export async function bulkUpdateRates(userId, propertyIds, rateCard, baseRateCents = null) {
   const operationId = await createBulkOperation(
     userId,
     'bulk-rate-update',
     propertyIds,
-    { rateCard, timestamp: new Date().toISOString() }
+    { rateCard, baseRateCents, timestamp: new Date().toISOString() }
   );
 
   let completed = 0;
@@ -210,10 +219,11 @@ export async function bulkUpdateRates(userId, propertyIds, rateCard) {
       const sites = await getSitesForPark(parkId);
 
       for (const site of sites) {
-        if (rateCard[site.id]) {
+        const targetRateCents = rateCard[site.id] || baseRateCents;
+        if (targetRateCents) {
           try {
-            await updateSite(site.id, parkId, { nightlyRateCents: rateCard[site.id] });
-            await logOperationAudit(operationId, parkId, 'rate-update', 'success', `Site ${site.name}: ${rateCard[site.id]} cents`);
+            await updateSite(site.id, parkId, { nightlyRateCents: targetRateCents });
+            await logOperationAudit(operationId, parkId, 'rate-update', 'success', `Site ${site.name}: ${targetRateCents} cents`);
           } catch (siteErr) {
             failed++;
             await logOperationAudit(operationId, parkId, 'rate-update', 'failed', `Site ${site.name}: ${siteErr.message}`);
@@ -259,14 +269,22 @@ export async function bulkSendPromotion(userId, propertyIds, campaign) {
         continue;
       }
 
-      // In a real implementation, this would integrate with the campaign engine
-      // For now, just log the audit
+      // Actually create the promo code — this used to only log an audit
+      // row claiming a promotion was sent while never creating anything a
+      // guest could actually use. The dialog that feeds this only collects
+      // a promo code + discount %, matching addPromoCode's shape exactly
+      // (not an email/SMS blast — that's what campaign-engine.js is for,
+      // and sending real messages to guests isn't something a "bulk
+      // operation across N parks" button should trigger without a
+      // per-park review step first).
+      await addPromoCode(parkId, { code: campaign.code, type: 'percent', value: campaign.discount });
+
       await logOperationAudit(
         operationId,
         parkId,
         'campaign-send',
         'success',
-        `Campaign "${campaign.code}" scheduled for ${campaign.description}`
+        `Promo code "${campaign.code}" (${campaign.discount}% off) created for ${campaign.description || 'this park'}`
       );
 
       completed++;
@@ -313,7 +331,24 @@ export async function bulkScheduleMaintenance(userId, propertyIds, siteIds, star
       const sites = await getSitesForPark(parkId);
       const sitesToBlock = siteIds.length > 0 ? sites.filter(s => siteIds.includes(s.id)) : sites;
 
-      // In a real implementation, this would create blackout dates
+      // Actually create the blackout — this used to only log an audit row
+      // claiming sites were blocked while never touching availability at
+      // all, so a guest could still book a site during its "maintenance"
+      // window. createBlackoutDate/getBlackoutDates already exist and are
+      // already enforced by booking-rules-engine.js; this just needed to
+      // call them.
+      for (const site of sitesToBlock) {
+        await createBlackoutDate({
+          id: `blackout-${Date.now()}-${site.id}-${Math.random().toString(36).slice(2, 6)}`,
+          park_id: parkId,
+          site_id: site.id,
+          start_date: startDate,
+          end_date: endDate,
+          reason,
+          created_at: new Date().toISOString(),
+        });
+      }
+
       await logOperationAudit(
         operationId,
         parkId,

@@ -1369,9 +1369,11 @@ async function multiPropertyHandler(req, res) {
     }
 
     if (req.method === 'POST' && view === 'bulk-update-rates') {
-      const { propertyIds, rateCard } = req.body;
-      if (!propertyIds || !Array.isArray(propertyIds) || !rateCard) return res.status(400).json({ error: 'propertyIds array and rateCard required' });
-      const result = await bulkUpdateRates(userId, propertyIds, rateCard);
+      const { propertyIds, rateCard, baseRateCents } = req.body;
+      if (!propertyIds || !Array.isArray(propertyIds) || (!rateCard && !baseRateCents)) {
+        return res.status(400).json({ error: 'propertyIds array and either rateCard or baseRateCents required' });
+      }
+      const result = await bulkUpdateRates(userId, propertyIds, rateCard || {}, baseRateCents || null);
       return res.status(200).json({ success: true, ...result });
     }
 
@@ -1638,7 +1640,7 @@ async function adminUsersHandler(req, res) {
 
 const AI_INSIGHT_SYSTEM_PROMPTS = {
   'rate-optimization': 'You are a pricing analyst for an RV park. Given a JSON object with the park\'s current rate, AI-suggested rate, predicted occupancy, and elasticity data, write a 2-3 sentence plain-English summary explaining the recommendation and why. No markdown, no bullet points, speak directly to the park owner.',
-  'analytics': 'You are a hospitality revenue analyst for an RV park. Given a JSON object of recent revenue, occupancy, and booking-source KPIs, write a 2-3 sentence plain-English summary of what stands out and one concrete thing worth doing about it. No markdown, no bullet points, speak directly to the park owner.',
+  'analytics': 'You are a hospitality revenue analyst for an RV park. Given a JSON object of recent revenue, occupancy, and booking-source KPIs, write a 2-3 sentence plain-English summary of what stands out and one concrete thing worth doing about it. Only state facts the numbers actually support: repeatGuestPercent is the real guest-retention figure — topBookingSources[].source is just the name of a booking channel (e.g. "guest" means bookings made through the park\'s own website booking flow, as opposed to a staff-entered walk-in) and has no connection to repeat guests, so never conflate the two or claim something about repeat guests unless repeatGuestPercent itself supports it. No markdown, no bullet points, speak directly to the park owner.',
   'occupancy-forecast': 'You are a hospitality operations analyst for an RV park. Given a JSON object of occupancy forecast data (today, 30/90-day averages, trend, peak dates), write a 2-3 sentence plain-English outlook and one concrete staffing or pricing implication. No markdown, no bullet points, speak directly to the park owner.',
 };
 

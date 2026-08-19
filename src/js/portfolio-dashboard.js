@@ -252,21 +252,27 @@ async function startBulkRateUpdate() {
 
   if (!result) return;
 
+  const baseRateCents = Number(result.baseRate);
+  if (!Number.isFinite(baseRateCents) || baseRateCents <= 0) {
+    alertDialog({ title: 'Invalid rate', message: 'Enter a base rate greater than 0.' });
+    return;
+  }
+
   try {
     withLoading(true);
 
-    const rateCard = {};
-    selectedIds.forEach(parkId => {
-      // In a real implementation, get all sites and build rate card
-      // For now, just apply a global rate
-    });
-
+    // This dialog only has one rate field (no per-site UI exists), so
+    // "apply to all sites" is the only mode there actually is right now —
+    // send it as baseRateCents and let the backend apply it to every site
+    // of every selected property. This used to build an empty rateCard
+    // ({}) here and send that instead, so the request always "succeeded"
+    // while updating zero sites.
     const response = await fetch('/api/admin/ops?resource=multi-property&sub=bulk-update-rates', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         propertyIds: selectedIds,
-        rateCard,
+        baseRateCents,
       }),
     });
 
@@ -322,8 +328,8 @@ async function startBulkCampaign() {
     if (!response.ok) throw new Error(data.error);
 
     alertDialog({
-      title: 'Campaign Sent',
-      message: `Promotion sent to ${data.completed} properties, ${data.failed} failed`,
+      title: 'Promo Code Created',
+      message: `Created "${result.promoCode}" on ${data.completed} properties (${data.failed} failed — likely already had that code). Guests can redeem it at checkout; this doesn't send anything to anyone automatically.`,
     });
 
     // Reload data
