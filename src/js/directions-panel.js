@@ -32,7 +32,15 @@ function milesBetween(lat1, lng1, lat2, lng2) {
 // Settings > Park Address); otherwise leaves the container empty rather
 // than showing a broken/pointless map, since a park that's never set a
 // real address has nothing to route to.
-export function renderDirectionsPanel(container, park) {
+//
+// showArrivalGreeting controls whether the live "You've Arrived" toggle
+// appears. The map + Get Directions link are useful the moment a guest is
+// looking at a park — even before booking, "how far is this from me" is
+// part of deciding whether to book at all. The arrival greeting only
+// makes sense once there's an actual reservation to arrive at; showing it
+// (and its location-permission prompt) to someone who hasn't booked
+// anything yet is a pointless, slightly creepy ask.
+export function renderDirectionsPanel(container, park, { showArrivalGreeting = false } = {}) {
   if (!container || !park || park.latitude == null || park.longitude == null) {
     if (container) container.style.display = 'none';
     return;
@@ -50,11 +58,12 @@ export function renderDirectionsPanel(container, park) {
          href="https://www.google.com/maps/dir/?api=1&destination=${park.latitude},${park.longitude}">
         <span>Get Directions</span>
       </a>
+      ${showArrivalGreeting ? `
       <button type="button" class="btn btn-ghost btn-sm" id="resArrivalToggleBtn">
         <span>Get a "You've Arrived" greeting</span>
-      </button>
+      </button>` : ''}
     </div>
-    <p class="form-note" id="resArrivalStatus" style="display:none;"></p>
+    ${showArrivalGreeting ? '<p class="form-note" id="resArrivalStatus" style="display:none;"></p>' : ''}
   `;
 
   loadGoogleMaps()
@@ -71,7 +80,7 @@ export function renderDirectionsPanel(container, park) {
       if (mapEl) mapEl.style.display = 'none';
     });
 
-  wireArrivalGreeting(park);
+  if (showArrivalGreeting) wireArrivalGreeting(park);
 }
 
 function wireArrivalGreeting(park) {

@@ -73,12 +73,14 @@ async function searchAvailability() {
     if (data.park) {
       document.getElementById('resParkHeading').textContent = `Book Your Stay at ${data.park.name}`;
       document.title = `Book a Site — ${data.park.name}`;
-      // Only worth showing right after a successful checkout — a guest
-      // still browsing availability hasn't booked anything yet, so
-      // "getting to the park" isn't relevant until they actually have.
-      if (checkoutStatus === 'success') {
-        renderDirectionsPanel(document.getElementById('resDirections'), data.park);
-      }
+      // "How far is this from me" is part of deciding whether to book at
+      // all, so the map shows as soon as a park is picked — not just
+      // after paying. The live arrival-greeting toggle stays gated to a
+      // completed checkout, though: there's nothing to "arrive at" yet,
+      // and asking for location permission before that is a pointless ask.
+      renderDirectionsPanel(document.getElementById('resDirections'), data.park, {
+        showArrivalGreeting: checkoutStatus === 'success',
+      });
     }
     renderResults(data.sites, checkIn, checkOut);
   } catch (err) {
