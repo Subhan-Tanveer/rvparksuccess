@@ -166,6 +166,24 @@ function ensureSchema() {
       );
       CREATE INDEX IF NOT EXISTS idx_site_media_site ON site_media(site_id, sort_order);
 
+      -- Operating expenses — the missing half of a real income/expense
+      -- report. Revenue was already tracked (every booking is a real
+      -- transaction record); this is what turns that into Net Operating
+      -- Income instead of just a revenue figure. Receipt is optional and
+      -- stored in the same Vercel Blob store as site photos.
+      CREATE TABLE IF NOT EXISTS park_expenses (
+        id TEXT PRIMARY KEY,
+        park_id TEXT NOT NULL REFERENCES parks(id) ON DELETE CASCADE,
+        category TEXT NOT NULL,
+        description TEXT NOT NULL DEFAULT '',
+        amount_cents INTEGER NOT NULL,
+        expense_date DATE NOT NULL,
+        receipt_url TEXT,
+        receipt_pathname TEXT,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      );
+      CREATE INDEX IF NOT EXISTS idx_park_expenses_park_date ON park_expenses(park_id, expense_date);
+
       CREATE TABLE IF NOT EXISTS seasonal_rates (
         id TEXT PRIMARY KEY,
         site_id TEXT NOT NULL REFERENCES sites(id) ON DELETE CASCADE,
@@ -1563,6 +1581,91 @@ export async function deleteSiteMedia(mediaId, siteId, parkId) {
   );
   if (!res.rows.length) throw new Error('Unknown media item');
   return res.rows[0].pathname;
+}
+
+/* ---------------------------------------------------------------- */
+/* Operating expenses — the missing half of a real income/expense    */
+/* report (revenue was already tracked via real bookings). Combined  */
+/* with revenue in getIncomeExpenseSummary() to produce Net           */
+/* Operating Income for a period, not just a revenue figure.         */
+/* ---------------------------------------------------------------- */
+
+// Fixed category list rather than free-text — a buyer's accountant needs
+// consistent categories across months to make sense of a P&L; letting
+// every entry use an arbitrary label would defeat the purpose of "good
+// records" this feature exists to provide.
+export const EXPENSE_CATEGORIES = [
+  'Utilities', 'Payroll', 'Insurance', 'Property Tax', 'Maintenance & Repairs',
+  'Marketing', 'Supplies', 'Management Fees', 'Loan/Mortgage Interest', 'Other',
+];
+
+function mapExpense(row) {
+  return {
+    id: row.id, parkId: row.park_id, category: row.category, description: row.description,
+    amountCents: row.amount_cents, expenseDate: row.expense_date,
+    receiptUrl: row.receipt_url, receiptPathname: row.receipt_pathname,
+    createdAt: row.created_at.toISOString(),
+  };
+}
+
+export async function addExpense(parkId, { category, description, amountCents, expenseDate, receiptUrl, receiptPathname }) {
+  if (!EXPENSE_CATEGORIES.includes(category)) throw new Error('Unknown expense category');
+  const cents = Number(amountCents);
+  if (isNaN(cents) || cents <= 0) throw new Error('Amount must be a positive number');
+  if (!expenseDate) throw new Error('Expense date is required');
+
+  const parkExists = await query('SELECT 1 FROM parks WHERE id = $1', [parkId]);
+  if (!parkExists.rows.length) throw new Error('Unknown park');
+
+  const id = `expense-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const res = await query(
+    `INSERT INTO park_expenses (id, park_id, category, description, amount_cents, expense_date, receipt_url, receipt_pathname)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
+    [id, parkId, category, description || '', cents, expenseDate, receiptUrl || null, receiptPathname || null]
+  );
+  return mapExpense(res.rows[0]);
+}
+
+export async function getExpensesForPark(parkId, startDate = null, endDate = null) {
+  const params = [parkId];
+  let whereClause = 'park_id = $1';
+  if (startDate) { params.push(startDate); whereClause += ` AND expense_date >= $${params.length}`; }
+  if (endDate) { params.push(endDate); whereClause += ` AND expense_date <= $${params.length}`; }
+  const res = await query(`SELECT * FROM park_expenses WHERE ${whereClause} ORDER BY expense_date DESC, created_at DESC`, params);
+  return res.rows.map(mapExpense);
+}
+
+// Returns the deleted row's receipt pathname (if any) so the caller can
+// also remove the underlying Blob file, same pattern as deleteSiteMedia.
+export async function deleteExpense(expenseId, parkId) {
+  const res = await query('DELETE FROM park_expenses WHERE id = $1 AND park_id = $2 RETURNING receipt_pathname', [expenseId, parkId]);
+  if (!res.rows.length) throw new Error('Unknown expense');
+  return res.rows[0].receipt_pathname;
+}
+
+// Combines real booking revenue with real recorded expenses for a date
+// range into Net Operating Income — this is the number a buyer's
+// accountant (or Marie's) actually needs, not revenue alone.
+export async function getIncomeExpenseSummary(parkId, startDate, endDate) {
+  const reservations = await getReservationsForParkInRange(parkId, startDate, endDate);
+  const confirmed = reservations.filter((r) => r.status === 'confirmed' || r.status === 'confirmed-deposit');
+  const totalRevenueCents = confirmed.reduce((sum, r) => sum + r.totalCents, 0);
+
+  const expenses = await getExpensesForPark(parkId, startDate, endDate);
+  const totalExpenseCents = expenses.reduce((sum, e) => sum + e.amountCents, 0);
+
+  const byCategory = {};
+  for (const cat of EXPENSE_CATEGORIES) byCategory[cat] = 0;
+  for (const e of expenses) byCategory[e.category] = (byCategory[e.category] || 0) + e.amountCents;
+
+  return {
+    startDate, endDate,
+    totalRevenueCents, totalExpenseCents,
+    netOperatingIncomeCents: totalRevenueCents - totalExpenseCents,
+    expensesByCategory: byCategory,
+    reservationCount: confirmed.length,
+    expenseCount: expenses.length,
+  };
 }
 
 // Seasonal/holiday rate overrides — a date range that replaces a site's

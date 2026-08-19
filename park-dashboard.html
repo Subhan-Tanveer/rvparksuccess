@@ -22,6 +22,7 @@
 <link rel="stylesheet" href="/src/css/ml-optimization.css">
 <link rel="stylesheet" href="/src/css/occupancy-forecasting.css">
 <link rel="stylesheet" href="/src/css/site-media.css">
+<link rel="stylesheet" href="/src/css/expenses-dashboard.css">
 <style>
   .admin-topbar { display: flex; align-items: center; justify-content: space-between; padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--border-glass); flex-wrap: wrap; gap: var(--sp-2); }
   .admin-wrap { max-width: 1100px; margin: 0 auto; padding: var(--sp-6) var(--sp-4); }
@@ -166,6 +167,7 @@
     <a href="#calendar-link">Calendar</a>
     <a href="#reservations">Reservations</a>
     <a href="#payouts">Payouts</a>
+    <a href="#expenses">Expenses</a>
     <a href="#waitlist">Waitlist</a>
     <a href="#promo-codes">Promo Codes</a>
     <a href="#park-settings">Park Settings</a>
@@ -377,6 +379,16 @@
       </div>
     </div>
     <p class="form-note" style="margin-top: var(--sp-3);">"Owed to You" above reflects money already collected. Bookings made before you connected your account (or with a park that hasn't connected) are still paid out manually based on this number.</p>
+  </div>
+
+  <!-- Expenses & Net Operating Income -->
+  <div class="admin-section glass dash-page" id="expenses" data-reveal>
+    <div class="section-head" style="margin-bottom: var(--sp-3);">
+      <p class="eyebrow">Money</p>
+      <h2 style="font-size: 1.375rem;">Expenses</h2>
+      <p class="sub">Real income + expense records — the kind a buyer's accountant can actually trust when it's time to sell.</p>
+    </div>
+    <div id="expensesDashboard"></div>
   </div>
 
   <!-- Waitlist -->

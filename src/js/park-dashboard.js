@@ -6,6 +6,7 @@ import { initPricingDashboard } from './pricing-dashboard.js';
 import AnalyticsDashboard from './analytics-dashboard.js';
 import { initCrmDashboard } from './crm-dashboard.js';
 import { openSiteMediaModal } from './site-media-modal.js';
+import { initExpensesDashboard } from './expenses-dashboard.js';
 import { loadGoogleMaps } from './google-maps-loader.js';
 // Campaigns, Social Media, and Competitors are intentionally not wired
 // into the dashboard nav — the Marketing CRM (GoHighLevel) tab below covers
@@ -228,6 +229,9 @@ async function loadDashboard() {
   // separate from the Marketing CRM tab above, which just links out to
   // GoHighLevel.
   await initCrmDashboard(currentPark);
+
+  // Initialize expenses + Net Operating Income
+  await initExpensesDashboard('expensesDashboard');
 
   // Initialize booking rules dashboard
   initBookingRulesDashboard();

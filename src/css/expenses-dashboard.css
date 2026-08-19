@@ -1,0 +1,80 @@
+/* ============================================================ */
+/* Expenses & Net Operating Income                                */
+/* ============================================================ */
+
+.exp-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-3);
+}
+
+.exp-period-selector {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.exp-period-btn {
+  padding: 6px 12px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-glass);
+  background: var(--surface-glass);
+  color: var(--cream-dim);
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+.exp-period-btn.is-active {
+  border-color: var(--amber-light);
+  color: var(--amber-light);
+  background: rgba(46, 155, 84, 0.12);
+}
+
+.exp-noi-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-4);
+}
+
+@media (max-width: 640px) {
+  .exp-noi-grid { grid-template-columns: 1fr; }
+}
+
+.exp-category-breakdown {
+  margin-bottom: var(--sp-4);
+}
+
+.exp-category-breakdown h4 {
+  font-size: 0.9375rem;
+  color: var(--cream-dim);
+  margin-bottom: var(--sp-2);
+}
+
+.exp-category-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.exp-category-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-glass);
+  font-size: 0.875rem;
+}
+
+.exp-category-name {
+  color: var(--cream);
+}
+
+.exp-category-amount {
+  font-family: var(--font-mono);
+  color: var(--amber-light);
+}

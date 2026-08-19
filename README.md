@@ -71,6 +71,10 @@ Park staff can upload up to 8 photos and 1 video per site (Park Settings → Sit
 2. Connect it to this project, with **Production**, **Preview**, and **Development** environments checked — Vercel auto-injects `BLOB_READ_WRITE_TOKEN`.
 3. That's it — nothing else to configure. Without this step, clicking "+ Add Photos"/"+ Add Video" will fail with an upload-token error, which is expected until Blob is connected.
 
+### Expenses & Net Operating Income
+
+`park-dashboard.html`'s Expenses tab is real income/expense tracking, not a mockup — this is what turns "revenue history" into an actual P&L a buyer's accountant can use when a park owner wants to sell. Real bookings were already the income side; this adds real operating expenses (fixed categories — Utilities, Payroll, Insurance, Property Tax, Maintenance, Marketing, Supplies, Management Fees, Loan/Mortgage Interest, Other — so a category stays consistent across months instead of every entry using a different label) with an optional receipt upload (same Vercel Blob setup as site photos above — no separate setup needed if that's already connected). Net Operating Income = real revenue minus real recorded expenses for whatever period is selected.
+
 ### How the booking flow works today
 
 1. Guest picks check-in/check-out dates on `reservations.html` and clicks **Check Availability** → calls `GET /api/reservations/availability`, which checks every site at the park against existing confirmed/pending reservations for date overlap and returns what's actually open, with pricing.

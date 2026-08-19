@@ -132,6 +132,8 @@ export default async function handler(req, res) {
       return aiInsightHandler(req, res);
     case 'site-media':
       return siteMediaHandler(req, res);
+    case 'expenses':
+      return expensesHandler(req, res);
     default:
       return res.status(400).json({ error: 'Unknown or missing resource parameter' });
   }
@@ -1759,5 +1761,81 @@ async function siteMediaHandler(req, res) {
   }
 
   res.setHeader('Allow', 'POST, DELETE');
+  return res.status(405).json({ error: 'Method not allowed' });
+}
+
+/* ================================================================== */
+/* expenses — operating expense tracking + Net Operating Income, the   */
+/* missing half of a real income/expense report (revenue was already   */
+/* tracked via real bookings). Receipt upload reuses the same direct   */
+/* browser -> Blob pattern as site-media, above.                       */
+/* ================================================================== */
+
+async function expensesHandler(req, res) {
+  const session = requireSession(req, res, { role: 'park-staff' });
+  if (!session) return;
+
+  const { action } = req.query;
+
+  if (req.method === 'GET') {
+    const { startDate, endDate } = req.query;
+    try {
+      const expenses = await store.getExpensesForPark(session.parkId, startDate || null, endDate || null);
+      // Only compute the NOI summary when a real range was given — an
+      // unbounded "all time" summary would be misleading to show as a
+      // headline number without the reader knowing what period it covers.
+      const summary = (startDate && endDate)
+        ? await store.getIncomeExpenseSummary(session.parkId, startDate, endDate)
+        : null;
+      return res.status(200).json({ expenses, summary, categories: store.EXPENSE_CATEGORIES });
+    } catch (err) {
+      console.error('Expenses list error:', err.message);
+      return res.status(500).json({ error: 'Could not load expenses' });
+    }
+  }
+
+  if (req.method === 'POST' && action === 'upload-token') {
+    try {
+      const jsonResponse = await handleUpload({
+        request: req,
+        body: req.body,
+        onBeforeGenerateToken: async () => ({
+          allowedContentTypes: ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'],
+          maximumSizeInBytes: 8 * 1024 * 1024,
+          addRandomSuffix: true,
+        }),
+      });
+      return res.status(200).json(jsonResponse);
+    } catch (err) {
+      console.error('Expense receipt upload-token error:', err.message);
+      return res.status(400).json({ error: err.message });
+    }
+  }
+
+  if (req.method === 'POST' && action === 'create') {
+    const { category, description, amountCents, expenseDate, receiptUrl, receiptPathname } = req.body || {};
+    try {
+      const expense = await store.addExpense(session.parkId, { category, description, amountCents, expenseDate, receiptUrl, receiptPathname });
+      return res.status(200).json({ expense });
+    } catch (err) {
+      return res.status(400).json({ error: err.message });
+    }
+  }
+
+  if (req.method === 'DELETE') {
+    const { expenseId } = req.query;
+    if (!expenseId) return res.status(400).json({ error: 'expenseId is required' });
+    try {
+      const receiptPathname = await store.deleteExpense(expenseId, session.parkId);
+      if (receiptPathname) {
+        await deleteBlob(receiptPathname).catch((err) => console.error('Receipt blob delete failed (DB row already removed):', err.message));
+      }
+      return res.status(200).json({ ok: true });
+    } catch (err) {
+      return res.status(400).json({ error: err.message });
+    }
+  }
+
+  res.setHeader('Allow', 'GET, POST, DELETE');
   return res.status(405).json({ error: 'Method not allowed' });
 }
