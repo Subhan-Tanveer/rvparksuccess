@@ -104,6 +104,7 @@ import { OTAManager } from '../_lib/ota-manager.js';
 import * as store from '../_lib/reservations-store.js';
 import RateOptimizer, { serializeModel, deserializeModel } from '../_lib/ml-rate-optimizer.js';
 import { generateNarrative } from '../_lib/ai-insights.js';
+import { handleUpload, del as deleteBlob } from '@vercel/blob';
 
 export default async function handler(req, res) {
   const { resource } = req.query;
@@ -129,6 +130,8 @@ export default async function handler(req, res) {
       return adminUsersHandler(req, res);
     case 'ai-insight':
       return aiInsightHandler(req, res);
+    case 'site-media':
+      return siteMediaHandler(req, res);
     default:
       return res.status(400).json({ error: 'Unknown or missing resource parameter' });
   }
@@ -1665,4 +1668,96 @@ async function aiInsightHandler(req, res) {
     console.error('AI insight error:', err.message);
     return res.status(502).json({ error: err.message });
   }
+}
+
+/* ================================================================== */
+/* site-media — per-site photos + one video, stored in Vercel Blob.     */
+/* Upload happens directly browser -> Blob (handleUpload only issues a  */
+/* short-lived token); this server never receives the file bytes.      */
+/* ================================================================== */
+
+async function siteMediaHandler(req, res) {
+  const session = requireSession(req, res, { role: 'park-staff' });
+  if (!session) return;
+
+  const { action } = req.query;
+
+  if (req.method === 'POST' && action === 'upload-token') {
+    try {
+      const jsonResponse = await handleUpload({
+        request: req,
+        body: req.body,
+        onBeforeGenerateToken: async (pathname, clientPayload) => {
+          const payload = JSON.parse(clientPayload || '{}');
+          const { siteId, type } = payload;
+          if (!siteId || (type !== 'image' && type !== 'video')) {
+            throw new Error('siteId and a valid media type are required');
+          }
+          // session.parkId (never anything the client sends) is what
+          // actually authorizes this — a park-staff session can only ever
+          // upload media for a site that belongs to their own park.
+          const site = await store.getSite(siteId);
+          if (!site || site.parkId !== session.parkId) throw new Error('Unknown site');
+
+          const existingCount = await store.countSiteMedia(siteId, type);
+          const max = type === 'image' ? store.SITE_MEDIA_MAX_IMAGES : store.SITE_MEDIA_MAX_VIDEOS;
+          if (existingCount >= max) {
+            throw new Error(type === 'image'
+              ? `This site already has the maximum of ${store.SITE_MEDIA_MAX_IMAGES} photos — remove one before adding another.`
+              : 'This site already has a video — remove it before uploading a new one.');
+          }
+
+          return {
+            allowedContentTypes: type === 'image'
+              ? ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+              : ['video/mp4', 'video/quicktime', 'video/webm'],
+            maximumSizeInBytes: type === 'image' ? 8 * 1024 * 1024 : 200 * 1024 * 1024,
+            addRandomSuffix: true,
+            tokenPayload: JSON.stringify({ siteId, type }),
+          };
+        },
+        // onUploadCompleted is intentionally not implemented — it requires
+        // Vercel Blob to call back to a publicly reachable URL, which
+        // never works against localhost during local dev/testing. The
+        // client calls action=attach itself right after upload() resolves
+        // instead, using the exact blob URL/pathname it already has
+        // synchronously — no server-to-server callback needed.
+      });
+      return res.status(200).json(jsonResponse);
+    } catch (err) {
+      console.error('Site media upload-token error:', err.message);
+      return res.status(400).json({ error: err.message });
+    }
+  }
+
+  if (req.method === 'POST' && action === 'attach') {
+    const { siteId, type, url, pathname } = req.body || {};
+    if (!siteId || !type || !url || !pathname) {
+      return res.status(400).json({ error: 'siteId, type, url, and pathname are required' });
+    }
+    try {
+      const media = await store.addSiteMedia(siteId, session.parkId, { type, url, pathname });
+      return res.status(200).json({ media });
+    } catch (err) {
+      return res.status(400).json({ error: err.message });
+    }
+  }
+
+  if (req.method === 'DELETE') {
+    const { mediaId, siteId } = req.query;
+    if (!mediaId || !siteId) return res.status(400).json({ error: 'mediaId and siteId are required' });
+    try {
+      const pathname = await store.deleteSiteMedia(mediaId, siteId, session.parkId);
+      // The DB row is already gone at this point — a failed blob delete
+      // just leaves an orphaned file (a storage cost, not a data-integrity
+      // problem), so it's logged rather than failing the whole request.
+      await deleteBlob(pathname).catch((err) => console.error('Blob delete failed (DB row already removed):', err.message));
+      return res.status(200).json({ ok: true });
+    } catch (err) {
+      return res.status(400).json({ error: err.message });
+    }
+  }
+
+  res.setHeader('Allow', 'POST, DELETE');
+  return res.status(405).json({ error: 'Method not allowed' });
 }

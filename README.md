@@ -63,6 +63,14 @@ Prices are hardcoded in two places that must be kept in sync — `src/js/service
 3. That's it — Vercel auto-injects the connection env vars; the schema creates itself the first time any API route runs a query.
 4. To test locally: `npx vercel link` (pick this project), then `npx vercel env pull .env.development.local`, then `npx vercel dev`.
 
+### Site photos & video setup (one-time, done by you)
+
+Park staff can upload up to 8 photos and 1 video per site (Park Settings → Sites & Rates → "Photos" button on any site) — files go straight from the browser to Vercel Blob storage; this app's server never touches the file bytes.
+
+1. In the Vercel project dashboard → **Storage** tab → **Create Database** → pick **Blob** → Free plan (same place you set up Neon above).
+2. Connect it to this project, with **Production**, **Preview**, and **Development** environments checked — Vercel auto-injects `BLOB_READ_WRITE_TOKEN`.
+3. That's it — nothing else to configure. Without this step, clicking "+ Add Photos"/"+ Add Video" will fail with an upload-token error, which is expected until Blob is connected.
+
 ### How the booking flow works today
 
 1. Guest picks check-in/check-out dates on `reservations.html` and clicks **Check Availability** → calls `GET /api/reservations/availability`, which checks every site at the park against existing confirmed/pending reservations for date overlap and returns what's actually open, with pricing.

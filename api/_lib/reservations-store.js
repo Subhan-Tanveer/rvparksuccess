@@ -150,6 +150,22 @@ function ensureSchema() {
       );
       CREATE INDEX IF NOT EXISTS idx_sites_park ON sites(park_id);
 
+      -- Photos + one video per site, so a guest can actually see what
+      -- they're booking instead of just a text description. Files live in
+      -- Vercel Blob storage; 'pathname' (not just 'url') is kept so a
+      -- delete can also remove the underlying blob, not just the DB row.
+      CREATE TABLE IF NOT EXISTS site_media (
+        id TEXT PRIMARY KEY,
+        site_id TEXT NOT NULL REFERENCES sites(id) ON DELETE CASCADE,
+        park_id TEXT NOT NULL REFERENCES parks(id) ON DELETE CASCADE,
+        type TEXT NOT NULL CHECK (type IN ('image', 'video')),
+        url TEXT NOT NULL,
+        pathname TEXT NOT NULL,
+        sort_order INTEGER NOT NULL DEFAULT 0,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      );
+      CREATE INDEX IF NOT EXISTS idx_site_media_site ON site_media(site_id, sort_order);
+
       CREATE TABLE IF NOT EXISTS seasonal_rates (
         id TEXT PRIMARY KEY,
         site_id TEXT NOT NULL REFERENCES sites(id) ON DELETE CASCADE,
@@ -795,13 +811,18 @@ function mapPromo(row) {
   return { id: row.id, code: row.code, type: row.type, value: Number(row.value) };
 }
 
-function mapSite(row, seasonalRates = []) {
+function mapSite(row, seasonalRates = [], media = []) {
   return {
     id: row.id, parkId: row.park_id, name: row.name, type: row.type,
     capacity: row.capacity, nightlyRateCents: row.nightly_rate_cents,
     priceModifier: Number(row.price_modifier) || 1.0,
     seasonalRates: seasonalRates.map(mapSeason),
+    media: media.map(mapSiteMedia),
   };
+}
+
+function mapSiteMedia(row) {
+  return { id: row.id, siteId: row.site_id, type: row.type, url: row.url, sortOrder: row.sort_order };
 }
 
 function mapSeason(row) {
@@ -996,7 +1017,12 @@ async function loadSitesWithSeasons(whereClause, params) {
   if (!sitesRes.rows.length) return [];
   const ids = sitesRes.rows.map((s) => s.id);
   const seasonsRes = await query('SELECT * FROM seasonal_rates WHERE site_id = ANY($1::text[])', [ids]);
-  return sitesRes.rows.map((row) => mapSite(row, seasonsRes.rows.filter((s) => s.site_id === row.id)));
+  const mediaRes = await query('SELECT * FROM site_media WHERE site_id = ANY($1::text[]) ORDER BY sort_order ASC, created_at ASC', [ids]);
+  return sitesRes.rows.map((row) => mapSite(
+    row,
+    seasonsRes.rows.filter((s) => s.site_id === row.id),
+    mediaRes.rows.filter((m) => m.site_id === row.id)
+  ));
 }
 
 export async function getAvailableSites(parkId, checkIn, checkOut, promoCode = null, guestEmail = null) {
@@ -1492,6 +1518,51 @@ export async function updateSite(siteId, parkId, updates) {
 export async function deleteSite(siteId, parkId) {
   const res = await query('DELETE FROM sites WHERE id = $1 AND park_id = $2', [siteId, parkId]);
   if (res.rowCount === 0) throw new Error('Unknown site');
+}
+
+export const SITE_MEDIA_MAX_IMAGES = 8;
+export const SITE_MEDIA_MAX_VIDEOS = 1;
+
+// Counts existing media by type for a site — used to enforce the image/
+// video caps BEFORE authorizing a Blob upload token, not just at insert
+// time, so a guest never sees a half-uploaded 9th photo get rejected only
+// after the file transfer already completed.
+export async function countSiteMedia(siteId, type) {
+  const res = await query('SELECT COUNT(*)::int as count FROM site_media WHERE site_id = $1 AND type = $2', [siteId, type]);
+  return res.rows[0]?.count || 0;
+}
+
+export async function addSiteMedia(siteId, parkId, { type, url, pathname }) {
+  if (type !== 'image' && type !== 'video') throw new Error('type must be image or video');
+  const siteExists = await query('SELECT 1 FROM sites WHERE id = $1 AND park_id = $2', [siteId, parkId]);
+  if (!siteExists.rows.length) throw new Error('Unknown site');
+
+  const existingCount = await countSiteMedia(siteId, type);
+  const max = type === 'image' ? SITE_MEDIA_MAX_IMAGES : SITE_MEDIA_MAX_VIDEOS;
+  if (existingCount >= max) {
+    throw new Error(type === 'image'
+      ? `This site already has the maximum of ${SITE_MEDIA_MAX_IMAGES} photos — remove one before adding another.`
+      : 'This site already has a video — remove it before uploading a new one.');
+  }
+
+  const id = `media-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const res = await query(
+    'INSERT INTO site_media (id, site_id, park_id, type, url, pathname, sort_order) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *',
+    [id, siteId, parkId, type, url, pathname, existingCount]
+  );
+  return mapSiteMedia(res.rows[0]);
+}
+
+// Returns the deleted row's pathname so the caller can also remove the
+// underlying Blob file — deleting only the DB row would leave orphaned
+// files silently consuming storage forever.
+export async function deleteSiteMedia(mediaId, siteId, parkId) {
+  const res = await query(
+    'DELETE FROM site_media WHERE id = $1 AND site_id = $2 AND park_id = $3 RETURNING pathname',
+    [mediaId, siteId, parkId]
+  );
+  if (!res.rows.length) throw new Error('Unknown media item');
+  return res.rows[0].pathname;
 }
 
 // Seasonal/holiday rate overrides — a date range that replaces a site's

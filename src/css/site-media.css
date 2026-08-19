@@ -1,0 +1,152 @@
+/* ============================================================ */
+/* Site Photos & Video modal                                     */
+/* ============================================================ */
+
+.sm-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  background: rgba(8, 12, 8, 0.75);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--sp-3);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.25s ease, visibility 0.25s ease;
+}
+
+.sm-backdrop.is-open {
+  opacity: 1;
+  visibility: visible;
+}
+
+.sm-modal {
+  width: 100%;
+  max-width: 720px;
+  max-height: 88vh;
+  overflow-y: auto;
+  border-radius: var(--radius-lg);
+  padding: var(--sp-4) var(--sp-5) var(--sp-5);
+  background: var(--forest-light);
+  border: 1px solid var(--border-amber);
+  transform: scale(0.96) translateY(10px);
+  transition: transform 0.3s var(--ease-spring);
+}
+
+.sm-backdrop.is-open .sm-modal {
+  transform: scale(1) translateY(0);
+}
+
+.sm-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--sp-3);
+}
+
+.sm-modal-head h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  color: var(--cream);
+}
+
+.sm-close {
+  background: transparent;
+  border: none;
+  color: var(--cream-dim);
+  font-size: 1.75rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 4px;
+}
+
+.sm-close:hover {
+  color: var(--cream);
+}
+
+.sm-error {
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--radius-sm);
+  background: rgba(217, 60, 46, 0.1);
+  border: 1px solid rgba(217, 60, 46, 0.4);
+  color: #f0a89a;
+  font-size: 0.875rem;
+  margin-bottom: var(--sp-3);
+}
+
+.sm-section {
+  margin-bottom: var(--sp-4);
+}
+
+.sm-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--sp-2);
+  font-size: 0.9375rem;
+  color: var(--cream-dim);
+}
+
+.sm-upload-label {
+  cursor: pointer;
+}
+
+.sm-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: var(--sp-2);
+}
+
+.sm-empty {
+  font-size: 0.875rem;
+  color: var(--cream-dim);
+  font-style: italic;
+  margin: 0;
+}
+
+.sm-cell {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--surface-glass);
+  border: 1px solid var(--border-glass);
+}
+
+.sm-cell img,
+.sm-cell video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.sm-cell-delete {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(8, 12, 8, 0.75);
+  color: var(--cream);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sm-cell-delete:hover {
+  background: rgba(217, 60, 46, 0.85);
+}
+
+.sm-progress {
+  font-size: 0.875rem;
+  color: var(--amber-light);
+  margin: var(--sp-2) 0 0;
+}

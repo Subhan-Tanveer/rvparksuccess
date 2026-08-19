@@ -5,6 +5,7 @@ import { PACKAGES, formatUsd as formatUsdWhole } from './services-data.js';
 import { initPricingDashboard } from './pricing-dashboard.js';
 import AnalyticsDashboard from './analytics-dashboard.js';
 import { initCrmDashboard } from './crm-dashboard.js';
+import { openSiteMediaModal } from './site-media-modal.js';
 import { loadGoogleMaps } from './google-maps-loader.js';
 // Campaigns, Social Media, and Competitors are intentionally not wired
 // into the dashboard nav — the Marketing CRM (GoHighLevel) tab below covers
@@ -350,6 +351,7 @@ function renderSites(sites) {
       <td style="text-align:right; white-space:nowrap;">
         <button type="button" class="btn btn-ghost btn-sm" data-edit-site="${s.id}">Edit Rate</button>
         <button type="button" class="btn btn-ghost btn-sm" data-add-season="${s.id}">+ Season</button>
+        <button type="button" class="btn btn-ghost btn-sm" data-media-site="${s.id}">Photos${(s.media || []).length ? ` (${s.media.length})` : ''}</button>
         <button type="button" class="btn btn-ghost btn-sm" data-delete-site="${s.id}">Delete</button>
       </td>
     </tr>`).join('');
@@ -360,6 +362,14 @@ document.getElementById('sitesTableBody').addEventListener('click', async (e) =>
   const deleteBtn = e.target.closest('[data-delete-site]');
   const addSeasonBtn = e.target.closest('[data-add-season]');
   const removeSeasonBtn = e.target.closest('[data-remove-season]');
+  const mediaBtn = e.target.closest('[data-media-site]');
+
+  if (mediaBtn) {
+    const site = currentSites.find((s) => s.id === mediaBtn.dataset.mediaSite);
+    const changed = await openSiteMediaModal(site);
+    if (changed) loadDashboard();
+    return;
+  }
 
   if (addSeasonBtn) {
     const site = currentSites.find((s) => s.id === addSeasonBtn.dataset.addSeason);
