@@ -2679,8 +2679,16 @@ export async function getGuestsForPark(parkId, limit = 50, offset = 0) {
       [profile.guestEmail, parkId]
     );
 
+    // Phone and last-booking date live on reservations, not guest_profiles
+    // (a CRM-specific table keyed only by email) — the CRM table used to
+    // show a hardcoded "--" for both because nothing ever queried for
+    // them. Pull the phone from the guest's most recent reservation (a
+    // guest_profiles row has no phone column of its own) alongside the
+    // existing booking-count query.
     const bookingsRes = await query(
-      'SELECT COUNT(*) as count FROM reservations WHERE guest_email = $1 AND park_id = $2 AND status IN ($3, $4)',
+      `SELECT COUNT(*) as count, MAX(check_in) as last_booking,
+              (array_agg(guest_phone ORDER BY created_at DESC))[1] as guest_phone
+       FROM reservations WHERE guest_email = $1 AND park_id = $2 AND status IN ($3, $4)`,
       [profile.guestEmail, parkId, 'confirmed', 'confirmed-deposit']
     );
 
@@ -2688,6 +2696,8 @@ export async function getGuestsForPark(parkId, limit = 50, offset = 0) {
       ...profile,
       tags: tagsRes.rows.map(mapGuestTag),
       bookingCount: Number(bookingsRes.rows[0]?.count || 0),
+      guestPhone: bookingsRes.rows[0]?.guest_phone || null,
+      lastBooking: bookingsRes.rows[0]?.last_booking || null,
     };
   }));
 

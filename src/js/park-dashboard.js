@@ -4,11 +4,14 @@ import { confirmDialog, formDialog, alertDialog, withLoading } from './ui-dialog
 import { PACKAGES, formatUsd as formatUsdWhole } from './services-data.js';
 import { initPricingDashboard } from './pricing-dashboard.js';
 import AnalyticsDashboard from './analytics-dashboard.js';
-// CRM, Campaigns, Social Media, and Competitors are intentionally not wired
+import { initCrmDashboard } from './crm-dashboard.js';
+// Campaigns, Social Media, and Competitors are intentionally not wired
 // into the dashboard nav — the Marketing CRM (GoHighLevel) tab below covers
-// this for Growth/Maximum plans instead. The modules themselves are still
-// on disk (crm-dashboard.js, campaigns-dashboard.js, social-dashboard.js,
-// competitive-intelligence-dashboard.js) in case we bring them back.
+// that ground for Growth/Maximum plans instead. Those modules are still on
+// disk (campaigns-dashboard.js, social-dashboard.js,
+// competitive-intelligence-dashboard.js) in case we bring them back. The
+// native CRM (guest profiles/tags/risk-scoring, not marketing) is its own
+// thing and stays wired in regardless of plan.
 import { initBookingRulesDashboard } from './booking-rules-dashboard.js';
 import { initMLOptimizationDashboard } from './ml-optimization-dashboard.js';
 import { initializeOccupancyForecastingDashboard } from './occupancy-forecasting-dashboard.js';
@@ -209,6 +212,11 @@ async function loadDashboard() {
   window.__analyticsDashboard = analyticsDashboard;
 
   renderGhlCrmTab(currentPark);
+
+  // Initialize the native guest CRM (profiles, tags, risk scoring) —
+  // separate from the Marketing CRM tab above, which just links out to
+  // GoHighLevel.
+  await initCrmDashboard(currentPark);
 
   // Initialize booking rules dashboard
   initBookingRulesDashboard();

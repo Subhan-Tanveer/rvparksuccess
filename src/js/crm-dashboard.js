@@ -243,12 +243,13 @@ function attachEventListeners() {
     }
   });
 
-  document.getElementById('nextPageBtn').addEventListener('click', async () => {
-    const { guests } = await fetch(`/api/admin/features?resource=crm&action=guests&page=${currentPage + 1}`).then(r => r.json());
-    if (guests.length > 0) {
-      currentPage++;
-      await loadGuestList();
-    }
+  // updatePaginationControls() already disables this button once
+  // currentPage is the last page (computed from totalGuests, which
+  // loadGuestList() already fetched) — no need for a second fetch here
+  // just to re-derive the same answer.
+  document.getElementById('nextPageBtn').addEventListener('click', () => {
+    currentPage++;
+    loadGuestList();
   });
 
   // Guest detail modal close
@@ -411,7 +412,7 @@ function renderGuestTable(guests) {
     <tr class="crm-table-row">
       <td>${guest.guestEmail.split('@')[0]}</td>
       <td><a href="javascript:void(0)" onclick="window.crmViewGuest('${guest.guestEmail}')" class="crm-link">${guest.guestEmail}</a></td>
-      <td>--</td>
+      <td>${guest.guestPhone || '—'}</td>
       <td>${guest.bookingCount}</td>
       <td>${formatUsd(guest.lifetimeValueCents)}</td>
       <td>
@@ -419,7 +420,7 @@ function renderGuestTable(guests) {
           ${riskBadgeLabel(guest.riskScore)}
         </span>
       </td>
-      <td>--</td>
+      <td>${guest.lastBooking ? formatDate(guest.lastBooking) : '—'}</td>
       <td>
         <div class="crm-tags-row">
           ${guest.tags.map(t => `<span class="crm-tag">${t.tagName}</span>`).join('')}
