@@ -6,7 +6,7 @@ import { initPricingDashboard } from './pricing-dashboard.js';
 import AnalyticsDashboard from './analytics-dashboard.js';
 import { initCrmDashboard } from './crm-dashboard.js';
 import { initExpensesDashboard } from './expenses-dashboard.js';
-import { openParkMediaModal } from './park-media-modal.js';
+import { initParkMediaPanel } from './park-media-panel.js';
 
 // Common RV park amenities — a fixed checklist rather than free text, so
 // this stays scannable for a guest deciding whether to book (a wall of
@@ -210,6 +210,7 @@ async function loadDashboard() {
   document.getElementById('stDescription').value = currentPark.description || '';
   if (currentPark.description) document.getElementById('stDescription').classList.add('has-value');
   renderParkFeaturesChecklist(currentPark.features || []);
+  initParkMediaPanel('parkMediaPanel', currentPark);
   renderPromoCodes(currentPark.promoCodes || []);
   renderWaitlist(data.waitlist || []);
   document.getElementById('payoutNet').textContent = formatUsd(data.payout.netOwedToParkCents);
@@ -750,11 +751,6 @@ function renderParkFeaturesChecklist(selectedFeatures) {
       <span>${feature}</span>
     </label>`).join('');
 }
-
-document.getElementById('parkPhotosBtn').addEventListener('click', async () => {
-  const changed = await openParkMediaModal(currentPark);
-  if (changed) loadDashboard();
-});
 
 settingsForm.addEventListener('submit', async (e) => {
   e.preventDefault();

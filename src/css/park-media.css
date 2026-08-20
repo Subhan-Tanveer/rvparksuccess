@@ -41,78 +41,8 @@
 }
 
 /* ============================================================ */
-/* Park Photos & Video modal                                     */
+/* Park Photos & Video — inline in Park Settings (not a modal)   */
 /* ============================================================ */
-
-.pm-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 500;
-  background: rgba(8, 12, 8, 0.75);
-  backdrop-filter: blur(6px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: var(--sp-3);
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.25s ease, visibility 0.25s ease;
-}
-
-.pm-backdrop.is-open {
-  opacity: 1;
-  visibility: visible;
-}
-
-.pm-modal {
-  width: 100%;
-  max-width: 720px;
-  max-height: 88vh;
-  overflow-y: auto;
-  border-radius: var(--radius-lg);
-  padding: var(--sp-4) var(--sp-5) var(--sp-5);
-  background: var(--forest-light);
-  border: 1px solid var(--border-amber);
-  transform: scale(0.96) translateY(10px);
-  transition: transform 0.3s var(--ease-spring);
-}
-
-.pm-backdrop.is-open .pm-modal {
-  transform: scale(1) translateY(0);
-}
-
-.pm-modal-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 4px;
-}
-
-.pm-modal-head h3 {
-  margin: 0;
-  font-size: 1.25rem;
-  color: var(--cream);
-}
-
-.pm-hint {
-  font-size: 0.875rem;
-  color: var(--cream-dim);
-  margin: 0 0 var(--sp-3);
-}
-
-.pm-close {
-  background: transparent;
-  border: none;
-  color: var(--cream-dim);
-  font-size: 1.75rem;
-  line-height: 1;
-  cursor: pointer;
-  padding: 0 4px;
-}
-
-.pm-close:hover {
-  color: var(--cream);
-}
 
 .pm-error {
   padding: var(--sp-2) var(--sp-3);
