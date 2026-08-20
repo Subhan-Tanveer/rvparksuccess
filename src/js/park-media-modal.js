@@ -1,67 +1,68 @@
-// "Photos & Video" modal for a single site — lets park staff upload real
-// image/video files (direct browser -> Vercel Blob, this app's server
-// never touches the file bytes) and remove them. Exposes
-// openSiteMediaModal(site), which resolves true if anything actually
-// changed (so the caller knows to refresh its site list) or false if the
+// "Photos & Video" modal for the PARK as a whole (not per-site) — lets
+// park staff upload real image/video files (direct browser -> Vercel
+// Blob, this app's server never touches the file bytes) and remove them.
+// Exposes openParkMediaModal(park), which resolves true if anything
+// actually changed (so the caller knows to refresh) or false if the
 // owner just closed it without touching anything.
 import { upload } from '@vercel/blob/client';
 import { alertDialog, confirmDialog } from './ui-dialogs.js';
 
-const MAX_IMAGES = 8;
+const MAX_IMAGES = 10;
 const MAX_VIDEOS = 1;
 
-export function openSiteMediaModal(site) {
+export function openParkMediaModal(park) {
   return new Promise((resolve) => {
     let changed = false;
-    let mediaList = [...(site.media || [])];
+    let mediaList = [...(park.media || [])];
 
     const backdrop = document.createElement('div');
-    backdrop.className = 'sm-backdrop';
+    backdrop.className = 'pm-backdrop';
     backdrop.innerHTML = `
-      <div class="sm-modal">
-        <div class="sm-modal-head">
-          <h3>Photos &amp; Video — ${escapeHtml(site.name)}</h3>
-          <button type="button" class="sm-close" aria-label="Close">&times;</button>
+      <div class="pm-modal">
+        <div class="pm-modal-head">
+          <h3>Park Photos &amp; Video</h3>
+          <button type="button" class="pm-close" aria-label="Close">&times;</button>
         </div>
-        <div class="sm-error" id="smError" style="display:none;"></div>
+        <p class="pm-hint">These show guests what the whole park looks like before they book — not tied to any one site.</p>
+        <div class="pm-error" id="pmError" style="display:none;"></div>
 
-        <div class="sm-section">
-          <div class="sm-section-head">
-            <span>Photos (<span id="smImageCount">0</span>/${MAX_IMAGES})</span>
-            <label class="btn btn-ghost btn-sm sm-upload-label">
+        <div class="pm-section">
+          <div class="pm-section-head">
+            <span>Photos (<span id="pmImageCount">0</span>/${MAX_IMAGES})</span>
+            <label class="btn btn-ghost btn-sm pm-upload-label">
               <span>+ Add Photos</span>
-              <input type="file" id="smImageInput" accept="image/*" multiple hidden>
+              <input type="file" id="pmImageInput" accept="image/*" multiple hidden>
             </label>
           </div>
-          <div class="sm-grid" id="smImageGrid"></div>
+          <div class="pm-grid" id="pmImageGrid"></div>
         </div>
 
-        <div class="sm-section">
-          <div class="sm-section-head">
-            <span>Video (<span id="smVideoCount">0</span>/${MAX_VIDEOS})</span>
-            <label class="btn btn-ghost btn-sm sm-upload-label" id="smVideoUploadWrap">
+        <div class="pm-section">
+          <div class="pm-section-head">
+            <span>Video (<span id="pmVideoCount">0</span>/${MAX_VIDEOS})</span>
+            <label class="btn btn-ghost btn-sm pm-upload-label" id="pmVideoUploadWrap">
               <span>+ Add Video</span>
-              <input type="file" id="smVideoInput" accept="video/*" hidden>
+              <input type="file" id="pmVideoInput" accept="video/*" hidden>
             </label>
           </div>
-          <div class="sm-grid" id="smVideoGrid"></div>
+          <div class="pm-grid" id="pmVideoGrid"></div>
         </div>
 
-        <p class="sm-progress" id="smProgress" style="display:none;"></p>
+        <p class="pm-progress" id="pmProgress" style="display:none;"></p>
       </div>
     `;
     document.body.appendChild(backdrop);
     requestAnimationFrame(() => backdrop.classList.add('is-open'));
 
-    const errorEl = backdrop.querySelector('#smError');
-    const progressEl = backdrop.querySelector('#smProgress');
-    const imageGrid = backdrop.querySelector('#smImageGrid');
-    const videoGrid = backdrop.querySelector('#smVideoGrid');
-    const imageCountEl = backdrop.querySelector('#smImageCount');
-    const videoCountEl = backdrop.querySelector('#smVideoCount');
-    const imageInput = backdrop.querySelector('#smImageInput');
-    const videoInput = backdrop.querySelector('#smVideoInput');
-    const videoUploadWrap = backdrop.querySelector('#smVideoUploadWrap');
+    const errorEl = backdrop.querySelector('#pmError');
+    const progressEl = backdrop.querySelector('#pmProgress');
+    const imageGrid = backdrop.querySelector('#pmImageGrid');
+    const videoGrid = backdrop.querySelector('#pmVideoGrid');
+    const imageCountEl = backdrop.querySelector('#pmImageCount');
+    const videoCountEl = backdrop.querySelector('#pmVideoCount');
+    const imageInput = backdrop.querySelector('#pmImageInput');
+    const videoInput = backdrop.querySelector('#pmVideoInput');
+    const videoUploadWrap = backdrop.querySelector('#pmVideoUploadWrap');
 
     const showError = (message) => {
       errorEl.textContent = message;
@@ -80,11 +81,11 @@ export function openSiteMediaModal(site) {
 
       imageCountEl.textContent = images.length;
       videoCountEl.textContent = videos.length;
-      imageInput.closest('.sm-upload-label').style.display = images.length >= MAX_IMAGES ? 'none' : '';
+      imageInput.closest('.pm-upload-label').style.display = images.length >= MAX_IMAGES ? 'none' : '';
       videoUploadWrap.style.display = videos.length >= MAX_VIDEOS ? 'none' : '';
 
-      imageGrid.innerHTML = images.map((m) => mediaCellHtml(m)).join('') || '<p class="sm-empty">No photos yet.</p>';
-      videoGrid.innerHTML = videos.map((m) => mediaCellHtml(m)).join('') || '<p class="sm-empty">No video yet.</p>';
+      imageGrid.innerHTML = images.map((m) => mediaCellHtml(m)).join('') || '<p class="pm-empty">No photos yet.</p>';
+      videoGrid.innerHTML = videos.map((m) => mediaCellHtml(m)).join('') || '<p class="pm-empty">No video yet.</p>';
     }
 
     function mediaCellHtml(m) {
@@ -92,24 +93,24 @@ export function openSiteMediaModal(site) {
         ? `<img src="${escapeAttr(m.url)}" alt="" loading="lazy">`
         : `<video src="${escapeAttr(m.url)}" controls preload="metadata"></video>`;
       return `
-        <div class="sm-cell" data-media-id="${escapeAttr(m.id)}">
+        <div class="pm-cell" data-media-id="${escapeAttr(m.id)}">
           ${preview}
-          <button type="button" class="sm-cell-delete" data-delete-media="${escapeAttr(m.id)}" aria-label="Remove">&times;</button>
+          <button type="button" class="pm-cell-delete" data-delete-media="${escapeAttr(m.id)}" aria-label="Remove">&times;</button>
         </div>`;
     }
 
     async function uploadOne(file, type) {
       const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-      const blob = await upload(`sites/${site.id}/${type}-${Date.now()}-${safeName}`, file, {
+      const blob = await upload(`parks/${park.id}/${type}-${Date.now()}-${safeName}`, file, {
         access: 'public',
-        handleUploadUrl: '/api/admin/ops?resource=site-media&action=upload-token',
-        clientPayload: JSON.stringify({ siteId: site.id, type }),
+        handleUploadUrl: '/api/admin/ops?resource=park-media&action=upload-token',
+        clientPayload: JSON.stringify({ type }),
       });
 
-      const res = await fetch('/api/admin/ops?resource=site-media&action=attach', {
+      const res = await fetch('/api/admin/ops?resource=park-media&action=attach', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ siteId: site.id, type, url: blob.url, pathname: blob.pathname }),
+        body: JSON.stringify({ type, url: blob.url, pathname: blob.pathname }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Could not save this file');
@@ -150,7 +151,7 @@ export function openSiteMediaModal(site) {
         const ok = await confirmDialog({ title: 'Remove this file?', message: 'This deletes it permanently — guests will no longer see it.', confirmLabel: 'Remove', danger: true });
         if (!ok) return;
         try {
-          const delRes = await fetch(`/api/admin/ops?resource=site-media&mediaId=${encodeURIComponent(mediaId)}&siteId=${encodeURIComponent(site.id)}`, { method: 'DELETE' });
+          const delRes = await fetch(`/api/admin/ops?resource=park-media&mediaId=${encodeURIComponent(mediaId)}`, { method: 'DELETE' });
           if (!delRes.ok) throw new Error((await delRes.json()).error || 'Could not remove file');
           mediaList = mediaList.filter((m) => m.id !== mediaId);
           changed = true;
@@ -161,7 +162,7 @@ export function openSiteMediaModal(site) {
         return;
       }
 
-      if (e.target === backdrop || e.target.closest('.sm-close')) {
+      if (e.target === backdrop || e.target.closest('.pm-close')) {
         close();
       }
     });
@@ -185,10 +186,6 @@ export function openSiteMediaModal(site) {
   });
 }
 
-function escapeHtml(str) {
-  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-}
-
 function escapeAttr(str) {
-  return escapeHtml(str).replace(/"/g, '&quot;');
+  return String(str).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }

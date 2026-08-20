@@ -130,8 +130,8 @@ export default async function handler(req, res) {
       return adminUsersHandler(req, res);
     case 'ai-insight':
       return aiInsightHandler(req, res);
-    case 'site-media':
-      return siteMediaHandler(req, res);
+    case 'park-media':
+      return parkMediaHandler(req, res);
     case 'expenses':
       return expensesHandler(req, res);
     default:
@@ -1673,12 +1673,13 @@ async function aiInsightHandler(req, res) {
 }
 
 /* ================================================================== */
-/* site-media — per-site photos + one video, stored in Vercel Blob.     */
-/* Upload happens directly browser -> Blob (handleUpload only issues a  */
-/* short-lived token); this server never receives the file bytes.      */
+/* park-media — park-level photos + one video (NOT per-site), stored    */
+/* in Vercel Blob. Upload happens directly browser -> Blob (handleUpload */
+/* only issues a short-lived token); this server never receives the     */
+/* file bytes.                                                          */
 /* ================================================================== */
 
-async function siteMediaHandler(req, res) {
+async function parkMediaHandler(req, res) {
   const session = requireSession(req, res, { role: 'park-staff' });
   if (!session) return;
 
@@ -1691,22 +1692,18 @@ async function siteMediaHandler(req, res) {
         body: req.body,
         onBeforeGenerateToken: async (pathname, clientPayload) => {
           const payload = JSON.parse(clientPayload || '{}');
-          const { siteId, type } = payload;
-          if (!siteId || (type !== 'image' && type !== 'video')) {
-            throw new Error('siteId and a valid media type are required');
-          }
+          const { type } = payload;
+          if (type !== 'image' && type !== 'video') throw new Error('A valid media type is required');
+
           // session.parkId (never anything the client sends) is what
           // actually authorizes this — a park-staff session can only ever
-          // upload media for a site that belongs to their own park.
-          const site = await store.getSite(siteId);
-          if (!site || site.parkId !== session.parkId) throw new Error('Unknown site');
-
-          const existingCount = await store.countSiteMedia(siteId, type);
-          const max = type === 'image' ? store.SITE_MEDIA_MAX_IMAGES : store.SITE_MEDIA_MAX_VIDEOS;
+          // upload media for their own park.
+          const existingCount = await store.countParkMedia(session.parkId, type);
+          const max = type === 'image' ? store.PARK_MEDIA_MAX_IMAGES : store.PARK_MEDIA_MAX_VIDEOS;
           if (existingCount >= max) {
             throw new Error(type === 'image'
-              ? `This site already has the maximum of ${store.SITE_MEDIA_MAX_IMAGES} photos — remove one before adding another.`
-              : 'This site already has a video — remove it before uploading a new one.');
+              ? `The park already has the maximum of ${store.PARK_MEDIA_MAX_IMAGES} photos — remove one before adding another.`
+              : 'The park already has a video — remove it before uploading a new one.');
           }
 
           return {
@@ -1715,7 +1712,7 @@ async function siteMediaHandler(req, res) {
               : ['video/mp4', 'video/quicktime', 'video/webm'],
             maximumSizeInBytes: type === 'image' ? 8 * 1024 * 1024 : 200 * 1024 * 1024,
             addRandomSuffix: true,
-            tokenPayload: JSON.stringify({ siteId, type }),
+            tokenPayload: JSON.stringify({ type }),
           };
         },
         // onUploadCompleted is intentionally not implemented — it requires
@@ -1727,18 +1724,18 @@ async function siteMediaHandler(req, res) {
       });
       return res.status(200).json(jsonResponse);
     } catch (err) {
-      console.error('Site media upload-token error:', err.message);
+      console.error('Park media upload-token error:', err.message);
       return res.status(400).json({ error: err.message });
     }
   }
 
   if (req.method === 'POST' && action === 'attach') {
-    const { siteId, type, url, pathname } = req.body || {};
-    if (!siteId || !type || !url || !pathname) {
-      return res.status(400).json({ error: 'siteId, type, url, and pathname are required' });
+    const { type, url, pathname } = req.body || {};
+    if (!type || !url || !pathname) {
+      return res.status(400).json({ error: 'type, url, and pathname are required' });
     }
     try {
-      const media = await store.addSiteMedia(siteId, session.parkId, { type, url, pathname });
+      const media = await store.addParkMedia(session.parkId, { type, url, pathname });
       return res.status(200).json({ media });
     } catch (err) {
       return res.status(400).json({ error: err.message });
@@ -1746,10 +1743,10 @@ async function siteMediaHandler(req, res) {
   }
 
   if (req.method === 'DELETE') {
-    const { mediaId, siteId } = req.query;
-    if (!mediaId || !siteId) return res.status(400).json({ error: 'mediaId and siteId are required' });
+    const { mediaId } = req.query;
+    if (!mediaId) return res.status(400).json({ error: 'mediaId is required' });
     try {
-      const pathname = await store.deleteSiteMedia(mediaId, siteId, session.parkId);
+      const pathname = await store.deleteParkMedia(mediaId, session.parkId);
       // The DB row is already gone at this point — a failed blob delete
       // just leaves an orphaned file (a storage cost, not a data-integrity
       // problem), so it's logged rather than failing the whole request.

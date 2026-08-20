@@ -2,6 +2,7 @@ import '../css/tokens.css';
 import { initCore } from './core.js';
 import { enforceGuestIdleTimeout, markGuestLoggedIn } from './guest-session.js';
 import { renderDirectionsPanel } from './directions-panel.js';
+import { renderParkProfilePanel } from './park-profile-panel.js';
 
 initCore();
 
@@ -73,6 +74,10 @@ async function searchAvailability() {
     if (data.park) {
       document.getElementById('resParkHeading').textContent = `Book Your Stay at ${data.park.name}`;
       document.title = `Book a Site — ${data.park.name}`;
+      // Photos, description, and amenities for the park as a whole — shown
+      // while a guest is still deciding whether to book, same reasoning as
+      // the directions panel below.
+      renderParkProfilePanel(document.getElementById('resParkProfile'), data.park);
       // "How far is this from me" is part of deciding whether to book at
       // all, so the map shows as soon as a park is picked — not just
       // after paying. The live arrival-greeting toggle stays gated to a
@@ -93,31 +98,6 @@ async function searchAvailability() {
 }
 
 let lastSites = [];
-
-// Cover photo + thumbnail strip + video, if the owner has uploaded any —
-// returns '' (no markup at all) for a site with nothing uploaded yet, so
-// existing cards look exactly as before this feature existed.
-function siteMediaHtml(site) {
-  const images = (site.media || []).filter((m) => m.type === 'image');
-  const video = (site.media || []).find((m) => m.type === 'video');
-  if (!images.length && !video) return '';
-
-  const coverHtml = images.length
-    ? `<img class="res-site-cover" data-site-cover src="${escapeAttr(images[0].url)}" alt="${escapeAttr(site.name)}" loading="lazy">`
-    : '';
-  const thumbsHtml = images.length > 1
-    ? `<div class="res-site-thumbs">${images.map((m, i) => `<button type="button" class="res-site-thumb${i === 0 ? ' is-active' : ''}" data-site-thumb="${escapeAttr(m.url)}"><img src="${escapeAttr(m.url)}" alt="" loading="lazy"></button>`).join('')}</div>`
-    : '';
-  const videoHtml = video
-    ? `<video class="res-site-video" src="${escapeAttr(video.url)}" controls preload="metadata"></video>`
-    : '';
-
-  return `<div class="res-site-media">${coverHtml}${thumbsHtml}${videoHtml}</div>`;
-}
-
-function escapeAttr(str) {
-  return String(str).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-}
 
 function renderResults(sites, checkIn, checkOut) {
   lastSites = sites || [];
@@ -173,7 +153,6 @@ function renderResults(sites, checkIn, checkOut) {
     </div>
     <div class="res-grid">${sites.map((s) => `
       <div class="tilt-card res-site-card">
-        ${siteMediaHtml(s)}
         <h3>${s.name}</h3>
         <div class="res-site-type">${s.type}</div>
         <div class="res-site-meta">Sleeps up to ${s.capacity}</div>
@@ -301,15 +280,6 @@ function renderModalSummary(site) {
 }
 
 resultsEl.addEventListener('click', (e) => {
-  const thumbBtn = e.target.closest('[data-site-thumb]');
-  if (thumbBtn) {
-    const card = thumbBtn.closest('.res-site-card');
-    const cover = card.querySelector('[data-site-cover]');
-    if (cover) cover.src = thumbBtn.dataset.siteThumb;
-    card.querySelectorAll('[data-site-thumb]').forEach((t) => t.classList.toggle('is-active', t === thumbBtn));
-    return;
-  }
-
   const btn = e.target.closest('[data-book-site]');
   if (!btn) return;
   selectedSiteId = btn.dataset.bookSite;

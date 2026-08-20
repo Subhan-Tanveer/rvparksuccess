@@ -5,8 +5,18 @@ import { PACKAGES, formatUsd as formatUsdWhole } from './services-data.js';
 import { initPricingDashboard } from './pricing-dashboard.js';
 import AnalyticsDashboard from './analytics-dashboard.js';
 import { initCrmDashboard } from './crm-dashboard.js';
-import { openSiteMediaModal } from './site-media-modal.js';
 import { initExpensesDashboard } from './expenses-dashboard.js';
+import { openParkMediaModal } from './park-media-modal.js';
+
+// Common RV park amenities — a fixed checklist rather than free text, so
+// this stays scannable for a guest deciding whether to book (a wall of
+// custom phrases is harder to skim than a short list of icons/labels).
+const PARK_FEATURES = [
+  'Full Hookups', 'Pull-Through Sites', 'Wifi', 'Pool', 'Hot Tub',
+  'Pet Friendly', 'Dog Park', 'Playground', 'Fishing', 'Boat Ramp',
+  'Clubhouse', 'General Store', 'Laundry', 'Propane', 'Cable TV',
+  'ADA Accessible', 'Dump Station', 'Fitness Center', 'Restrooms & Showers', 'Firewood For Sale',
+];
 import { loadGoogleMaps } from './google-maps-loader.js';
 // Campaigns, Social Media, and Competitors are intentionally not wired
 // into the dashboard nav — the Marketing CRM (GoHighLevel) tab below covers
@@ -197,6 +207,9 @@ async function loadDashboard() {
     ? { lat: currentPark.latitude, lng: currentPark.longitude }
     : null;
   initParkAddressAutocomplete(stAddressEl);
+  document.getElementById('stDescription').value = currentPark.description || '';
+  if (currentPark.description) document.getElementById('stDescription').classList.add('has-value');
+  renderParkFeaturesChecklist(currentPark.features || []);
   renderPromoCodes(currentPark.promoCodes || []);
   renderWaitlist(data.waitlist || []);
   document.getElementById('payoutNet').textContent = formatUsd(data.payout.netOwedToParkCents);
@@ -355,7 +368,6 @@ function renderSites(sites) {
       <td style="text-align:right; white-space:nowrap;">
         <button type="button" class="btn btn-ghost btn-sm" data-edit-site="${s.id}">Edit Rate</button>
         <button type="button" class="btn btn-ghost btn-sm" data-add-season="${s.id}">+ Season</button>
-        <button type="button" class="btn btn-ghost btn-sm" data-media-site="${s.id}">Photos${(s.media || []).length ? ` (${s.media.length})` : ''}</button>
         <button type="button" class="btn btn-ghost btn-sm" data-delete-site="${s.id}">Delete</button>
       </td>
     </tr>`).join('');
@@ -366,14 +378,6 @@ document.getElementById('sitesTableBody').addEventListener('click', async (e) =>
   const deleteBtn = e.target.closest('[data-delete-site]');
   const addSeasonBtn = e.target.closest('[data-add-season]');
   const removeSeasonBtn = e.target.closest('[data-remove-season]');
-  const mediaBtn = e.target.closest('[data-media-site]');
-
-  if (mediaBtn) {
-    const site = currentSites.find((s) => s.id === mediaBtn.dataset.mediaSite);
-    const changed = await openSiteMediaModal(site);
-    if (changed) loadDashboard();
-    return;
-  }
 
   if (addSeasonBtn) {
     const site = currentSites.find((s) => s.id === addSeasonBtn.dataset.addSeason);
@@ -738,6 +742,20 @@ function initParkAddressAutocomplete(inputEl) {
     .catch((err) => console.error('Address autocomplete unavailable:', err.message));
 }
 
+function renderParkFeaturesChecklist(selectedFeatures) {
+  const grid = document.getElementById('stFeaturesGrid');
+  grid.innerHTML = PARK_FEATURES.map((feature) => `
+    <label class="park-feature-check">
+      <input type="checkbox" value="${feature}" ${selectedFeatures.includes(feature) ? 'checked' : ''}>
+      <span>${feature}</span>
+    </label>`).join('');
+}
+
+document.getElementById('parkPhotosBtn').addEventListener('click', async () => {
+  const changed = await openParkMediaModal(currentPark);
+  if (changed) loadDashboard();
+});
+
 settingsForm.addEventListener('submit', async (e) => {
   e.preventDefault();
   settingsAlert.classList.remove('is-visible', 'is-success', 'is-error');
@@ -745,11 +763,14 @@ settingsForm.addEventListener('submit', async (e) => {
   await withLoading(saveSettingsBtn, async () => {
     try {
       const addressValue = document.getElementById('stAddress').value.trim();
+      const selectedFeatures = Array.from(document.querySelectorAll('#stFeaturesGrid input:checked')).map((el) => el.value);
       const res = await fetch('/api/admin/dashboard', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           taxRatePercent: parseFloat(document.getElementById('stTaxRate').value),
+          description: document.getElementById('stDescription').value,
+          features: selectedFeatures,
           // Only send address if the field actually has a value — matches
           // updateParkSettings' "field !== undefined means update it"
           // convention, so leaving the address blank never wipes it.

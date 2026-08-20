@@ -1,8 +1,50 @@
 /* ============================================================ */
-/* Site Photos & Video modal                                     */
+/* Park profile (description, amenities, photos button)          */
 /* ============================================================ */
 
-.sm-backdrop {
+.park-profile-media {
+  padding: var(--sp-3);
+  border-radius: var(--radius-md);
+  background: var(--surface-glass);
+  border: 1px solid var(--border-glass);
+  margin-bottom: var(--sp-4);
+}
+
+.park-features-field {
+  margin: var(--sp-2) 0 var(--sp-4);
+}
+
+.park-features-label {
+  display: block;
+  font-size: 0.8125rem;
+  color: var(--cream-dim);
+  margin-bottom: var(--sp-2);
+}
+
+.park-features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 8px;
+}
+
+.park-feature-check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.875rem;
+  color: var(--cream);
+  cursor: pointer;
+}
+
+.park-feature-check input {
+  accent-color: var(--amber-light);
+}
+
+/* ============================================================ */
+/* Park Photos & Video modal                                     */
+/* ============================================================ */
+
+.pm-backdrop {
   position: fixed;
   inset: 0;
   z-index: 500;
@@ -17,12 +59,12 @@
   transition: opacity 0.25s ease, visibility 0.25s ease;
 }
 
-.sm-backdrop.is-open {
+.pm-backdrop.is-open {
   opacity: 1;
   visibility: visible;
 }
 
-.sm-modal {
+.pm-modal {
   width: 100%;
   max-width: 720px;
   max-height: 88vh;
@@ -35,24 +77,30 @@
   transition: transform 0.3s var(--ease-spring);
 }
 
-.sm-backdrop.is-open .sm-modal {
+.pm-backdrop.is-open .pm-modal {
   transform: scale(1) translateY(0);
 }
 
-.sm-modal-head {
+.pm-modal-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: var(--sp-3);
+  margin-bottom: 4px;
 }
 
-.sm-modal-head h3 {
+.pm-modal-head h3 {
   margin: 0;
   font-size: 1.25rem;
   color: var(--cream);
 }
 
-.sm-close {
+.pm-hint {
+  font-size: 0.875rem;
+  color: var(--cream-dim);
+  margin: 0 0 var(--sp-3);
+}
+
+.pm-close {
   background: transparent;
   border: none;
   color: var(--cream-dim);
@@ -62,11 +110,11 @@
   padding: 0 4px;
 }
 
-.sm-close:hover {
+.pm-close:hover {
   color: var(--cream);
 }
 
-.sm-error {
+.pm-error {
   padding: var(--sp-2) var(--sp-3);
   border-radius: var(--radius-sm);
   background: rgba(217, 60, 46, 0.1);
@@ -76,11 +124,11 @@
   margin-bottom: var(--sp-3);
 }
 
-.sm-section {
+.pm-section {
   margin-bottom: var(--sp-4);
 }
 
-.sm-section-head {
+.pm-section-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -89,24 +137,24 @@
   color: var(--cream-dim);
 }
 
-.sm-upload-label {
+.pm-upload-label {
   cursor: pointer;
 }
 
-.sm-grid {
+.pm-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
   gap: var(--sp-2);
 }
 
-.sm-empty {
+.pm-empty {
   font-size: 0.875rem;
   color: var(--cream-dim);
   font-style: italic;
   margin: 0;
 }
 
-.sm-cell {
+.pm-cell {
   position: relative;
   aspect-ratio: 4 / 3;
   border-radius: var(--radius-md);
@@ -115,15 +163,15 @@
   border: 1px solid var(--border-glass);
 }
 
-.sm-cell img,
-.sm-cell video {
+.pm-cell img,
+.pm-cell video {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
 }
 
-.sm-cell-delete {
+.pm-cell-delete {
   position: absolute;
   top: 4px;
   right: 4px;
@@ -141,11 +189,11 @@
   justify-content: center;
 }
 
-.sm-cell-delete:hover {
+.pm-cell-delete:hover {
   background: rgba(217, 60, 46, 0.85);
 }
 
-.sm-progress {
+.pm-progress {
   font-size: 0.875rem;
   color: var(--amber-light);
   margin: var(--sp-2) 0 0;

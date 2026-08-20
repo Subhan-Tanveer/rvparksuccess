@@ -63,9 +63,9 @@ Prices are hardcoded in two places that must be kept in sync — `src/js/service
 3. That's it — Vercel auto-injects the connection env vars; the schema creates itself the first time any API route runs a query.
 4. To test locally: `npx vercel link` (pick this project), then `npx vercel env pull .env.development.local`, then `npx vercel dev`.
 
-### Site photos & video setup (one-time, done by you)
+### Park profile: photos, video, description & amenities (one-time Blob setup, done by you)
 
-Park staff can upload up to 8 photos and 1 video per site (Park Settings → Sites & Rates → "Photos" button on any site) — files go straight from the browser to Vercel Blob storage; this app's server never touches the file bytes.
+Park Settings has a "Photos & Video" button, a description field, and an amenities checklist — all for the PARK as a whole (not per-site; a guest deciding whether to book cares about the whole property before they care about one specific site). Up to 10 photos and 1 video, uploaded straight from the browser to Vercel Blob storage — this app's server never touches the file bytes. Guests see all of it on the booking page before they pick a site, not just after paying.
 
 1. In the Vercel project dashboard → **Storage** tab → **Create Database** → pick **Blob** → Free plan (same place you set up Neon above).
 2. Connect it to this project, with **Production**, **Preview**, and **Development** environments checked — Vercel auto-injects `BLOB_READ_WRITE_TOKEN`.
@@ -73,7 +73,7 @@ Park staff can upload up to 8 photos and 1 video per site (Park Settings → Sit
 
 ### Expenses & Net Operating Income
 
-`park-dashboard.html`'s Expenses tab is real income/expense tracking, not a mockup — this is what turns "revenue history" into an actual P&L a buyer's accountant can use when a park owner wants to sell. Real bookings were already the income side; this adds real operating expenses (fixed categories — Utilities, Payroll, Insurance, Property Tax, Maintenance, Marketing, Supplies, Management Fees, Loan/Mortgage Interest, Other — so a category stays consistent across months instead of every entry using a different label) with an optional receipt upload (same Vercel Blob setup as site photos above — no separate setup needed if that's already connected). Net Operating Income = real revenue minus real recorded expenses for whatever period is selected.
+`park-dashboard.html`'s Expenses tab is real income/expense tracking, not a mockup — this is what turns "revenue history" into an actual P&L a buyer's accountant can use when a park owner wants to sell. Real bookings were already the income side; this adds real operating expenses (fixed categories — Utilities, Payroll, Insurance, Property Tax, Maintenance, Marketing, Supplies, Management Fees, Loan/Mortgage Interest, Other — so a category stays consistent across months instead of every entry using a different label) with an optional receipt upload (same Vercel Blob setup as the park profile above — no separate setup needed if that's already connected). Net Operating Income = real revenue minus real recorded expenses for whatever period is selected.
 
 ### How the booking flow works today
 

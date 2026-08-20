@@ -125,6 +125,25 @@ function ensureSchema() {
       ALTER TABLE parks ADD COLUMN IF NOT EXISTS address TEXT;
       ALTER TABLE parks ADD COLUMN IF NOT EXISTS latitude NUMERIC;
       ALTER TABLE parks ADD COLUMN IF NOT EXISTS longitude NUMERIC;
+      -- Guest-facing park profile: what the whole park is (photos, a real
+      -- description, amenities) rather than per-site details. A guest
+      -- deciding whether to book cares about the park as a whole first.
+      ALTER TABLE parks ADD COLUMN IF NOT EXISTS description TEXT;
+      ALTER TABLE parks ADD COLUMN IF NOT EXISTS features TEXT[] NOT NULL DEFAULT '{}';
+
+      -- Park-level photos + one video (NOT per-site — a park's overall
+      -- gallery, shown to a guest deciding whether to book at all). Mirrors
+      -- site_media's shape but keyed only by park_id.
+      CREATE TABLE IF NOT EXISTS park_media (
+        id TEXT PRIMARY KEY,
+        park_id TEXT NOT NULL REFERENCES parks(id) ON DELETE CASCADE,
+        type TEXT NOT NULL CHECK (type IN ('image', 'video')),
+        url TEXT NOT NULL,
+        pathname TEXT NOT NULL,
+        sort_order INTEGER NOT NULL DEFAULT 0,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      );
+      CREATE INDEX IF NOT EXISTS idx_park_media_park ON park_media(park_id, sort_order);
 
       -- Named platform-admin accounts. Alongside SUPER_ADMIN_PASSWORD (kept
       -- as a bootstrap/recovery login), this lets more than one real person
@@ -149,22 +168,6 @@ function ensureSchema() {
         price_modifier NUMERIC NOT NULL DEFAULT 1.0
       );
       CREATE INDEX IF NOT EXISTS idx_sites_park ON sites(park_id);
-
-      -- Photos + one video per site, so a guest can actually see what
-      -- they're booking instead of just a text description. Files live in
-      -- Vercel Blob storage; 'pathname' (not just 'url') is kept so a
-      -- delete can also remove the underlying blob, not just the DB row.
-      CREATE TABLE IF NOT EXISTS site_media (
-        id TEXT PRIMARY KEY,
-        site_id TEXT NOT NULL REFERENCES sites(id) ON DELETE CASCADE,
-        park_id TEXT NOT NULL REFERENCES parks(id) ON DELETE CASCADE,
-        type TEXT NOT NULL CHECK (type IN ('image', 'video')),
-        url TEXT NOT NULL,
-        pathname TEXT NOT NULL,
-        sort_order INTEGER NOT NULL DEFAULT 0,
-        created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-      );
-      CREATE INDEX IF NOT EXISTS idx_site_media_site ON site_media(site_id, sort_order);
 
       -- Operating expenses — the missing half of a real income/expense
       -- report. Revenue was already tracked (every booking is a real
@@ -820,6 +823,8 @@ function mapPark(row, promoCodes = []) {
     address: row.address,
     latitude: row.latitude !== null ? Number(row.latitude) : null,
     longitude: row.longitude !== null ? Number(row.longitude) : null,
+    description: row.description,
+    features: row.features || [],
     createdAt: row.created_at.toISOString(),
     promoCodes: promoCodes.map(mapPromo),
   };
@@ -829,18 +834,13 @@ function mapPromo(row) {
   return { id: row.id, code: row.code, type: row.type, value: Number(row.value) };
 }
 
-function mapSite(row, seasonalRates = [], media = []) {
+function mapSite(row, seasonalRates = []) {
   return {
     id: row.id, parkId: row.park_id, name: row.name, type: row.type,
     capacity: row.capacity, nightlyRateCents: row.nightly_rate_cents,
     priceModifier: Number(row.price_modifier) || 1.0,
     seasonalRates: seasonalRates.map(mapSeason),
-    media: media.map(mapSiteMedia),
   };
-}
-
-function mapSiteMedia(row) {
-  return { id: row.id, siteId: row.site_id, type: row.type, url: row.url, sortOrder: row.sort_order };
 }
 
 function mapSeason(row) {
@@ -1006,6 +1006,17 @@ export async function getPark(parkId) {
   return mapPark(parkRes.rows[0], promoRes.rows);
 }
 
+// getPark() is called from dozens of places that never need the media
+// gallery (checkout, pricing, ML optimization, ...) — fetching it there
+// unconditionally would be a wasted query on almost every call. Only the
+// park-dashboard "profile" view and the guest-facing availability
+// response actually display it, so they call this instead.
+export async function getParkWithMedia(parkId) {
+  const park = await getPark(parkId);
+  if (!park) return null;
+  return { ...park, media: await getParkMedia(parkId) };
+}
+
 export async function listParks(locationQuery = '') {
   const q = locationQuery.trim();
   // name IS NOT NULL excludes owner accounts that haven't registered their
@@ -1035,12 +1046,7 @@ async function loadSitesWithSeasons(whereClause, params) {
   if (!sitesRes.rows.length) return [];
   const ids = sitesRes.rows.map((s) => s.id);
   const seasonsRes = await query('SELECT * FROM seasonal_rates WHERE site_id = ANY($1::text[])', [ids]);
-  const mediaRes = await query('SELECT * FROM site_media WHERE site_id = ANY($1::text[]) ORDER BY sort_order ASC, created_at ASC', [ids]);
-  return sitesRes.rows.map((row) => mapSite(
-    row,
-    seasonsRes.rows.filter((s) => s.site_id === row.id),
-    mediaRes.rows.filter((m) => m.site_id === row.id)
-  ));
+  return sitesRes.rows.map((row) => mapSite(row, seasonsRes.rows.filter((s) => s.site_id === row.id)));
 }
 
 export async function getAvailableSites(parkId, checkIn, checkOut, promoCode = null, guestEmail = null) {
@@ -1362,7 +1368,7 @@ export async function setParkPlan(parkId, { planKey, stripeCustomerId, stripeSub
 // pinpoint address behind the guest-facing "Get Directions" feature.
 // Scoped by parkId from the session, same as site management, so a staff
 // member can only ever edit their own park.
-export async function updateParkSettings(parkId, { taxRatePercent, depositPercent, address, latitude, longitude } = {}) {
+export async function updateParkSettings(parkId, { taxRatePercent, depositPercent, address, latitude, longitude, description, features } = {}) {
   const sets = [];
   const params = [parkId];
   if (taxRatePercent !== undefined) {
@@ -1391,6 +1397,15 @@ export async function updateParkSettings(parkId, { taxRatePercent, depositPercen
     sets.push(`latitude = $${params.length}`);
     params.push(longitude ?? null);
     sets.push(`longitude = $${params.length}`);
+  }
+  if (description !== undefined) {
+    params.push(description || null);
+    sets.push(`description = $${params.length}`);
+  }
+  if (features !== undefined) {
+    if (!Array.isArray(features)) throw new Error('features must be an array');
+    params.push(features);
+    sets.push(`features = $${params.length}`);
   }
   if (!sets.length) {
     const park = await getPark(parkId);
@@ -1538,47 +1553,55 @@ export async function deleteSite(siteId, parkId) {
   if (res.rowCount === 0) throw new Error('Unknown site');
 }
 
-export const SITE_MEDIA_MAX_IMAGES = 8;
-export const SITE_MEDIA_MAX_VIDEOS = 1;
+// Park-level photos + one video — NOT per-site. A guest deciding whether
+// to book cares about the park as a whole (the pool, the grounds, the
+// clubhouse) before they care about one specific site's individual look.
+export const PARK_MEDIA_MAX_IMAGES = 10;
+export const PARK_MEDIA_MAX_VIDEOS = 1;
 
-// Counts existing media by type for a site — used to enforce the image/
-// video caps BEFORE authorizing a Blob upload token, not just at insert
-// time, so a guest never sees a half-uploaded 9th photo get rejected only
-// after the file transfer already completed.
-export async function countSiteMedia(siteId, type) {
-  const res = await query('SELECT COUNT(*)::int as count FROM site_media WHERE site_id = $1 AND type = $2', [siteId, type]);
+function mapParkMedia(row) {
+  return { id: row.id, parkId: row.park_id, type: row.type, url: row.url, sortOrder: row.sort_order };
+}
+
+export async function getParkMedia(parkId) {
+  const res = await query('SELECT * FROM park_media WHERE park_id = $1 ORDER BY sort_order ASC, created_at ASC', [parkId]);
+  return res.rows.map(mapParkMedia);
+}
+
+// Counts existing media by type BEFORE authorizing a Blob upload token,
+// not just at insert time, so an owner never sees a half-uploaded 11th
+// photo get rejected only after the file transfer already completed.
+export async function countParkMedia(parkId, type) {
+  const res = await query('SELECT COUNT(*)::int as count FROM park_media WHERE park_id = $1 AND type = $2', [parkId, type]);
   return res.rows[0]?.count || 0;
 }
 
-export async function addSiteMedia(siteId, parkId, { type, url, pathname }) {
+export async function addParkMedia(parkId, { type, url, pathname }) {
   if (type !== 'image' && type !== 'video') throw new Error('type must be image or video');
-  const siteExists = await query('SELECT 1 FROM sites WHERE id = $1 AND park_id = $2', [siteId, parkId]);
-  if (!siteExists.rows.length) throw new Error('Unknown site');
+  const parkExists = await query('SELECT 1 FROM parks WHERE id = $1', [parkId]);
+  if (!parkExists.rows.length) throw new Error('Unknown park');
 
-  const existingCount = await countSiteMedia(siteId, type);
-  const max = type === 'image' ? SITE_MEDIA_MAX_IMAGES : SITE_MEDIA_MAX_VIDEOS;
+  const existingCount = await countParkMedia(parkId, type);
+  const max = type === 'image' ? PARK_MEDIA_MAX_IMAGES : PARK_MEDIA_MAX_VIDEOS;
   if (existingCount >= max) {
     throw new Error(type === 'image'
-      ? `This site already has the maximum of ${SITE_MEDIA_MAX_IMAGES} photos — remove one before adding another.`
-      : 'This site already has a video — remove it before uploading a new one.');
+      ? `The park already has the maximum of ${PARK_MEDIA_MAX_IMAGES} photos — remove one before adding another.`
+      : 'The park already has a video — remove it before uploading a new one.');
   }
 
-  const id = `media-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const id = `pmedia-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   const res = await query(
-    'INSERT INTO site_media (id, site_id, park_id, type, url, pathname, sort_order) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *',
-    [id, siteId, parkId, type, url, pathname, existingCount]
+    'INSERT INTO park_media (id, park_id, type, url, pathname, sort_order) VALUES ($1,$2,$3,$4,$5,$6) RETURNING *',
+    [id, parkId, type, url, pathname, existingCount]
   );
-  return mapSiteMedia(res.rows[0]);
+  return mapParkMedia(res.rows[0]);
 }
 
 // Returns the deleted row's pathname so the caller can also remove the
 // underlying Blob file — deleting only the DB row would leave orphaned
 // files silently consuming storage forever.
-export async function deleteSiteMedia(mediaId, siteId, parkId) {
-  const res = await query(
-    'DELETE FROM site_media WHERE id = $1 AND site_id = $2 AND park_id = $3 RETURNING pathname',
-    [mediaId, siteId, parkId]
-  );
+export async function deleteParkMedia(mediaId, parkId) {
+  const res = await query('DELETE FROM park_media WHERE id = $1 AND park_id = $2 RETURNING pathname', [mediaId, parkId]);
   if (!res.rows.length) throw new Error('Unknown media item');
   return res.rows[0].pathname;
 }

@@ -8,7 +8,7 @@
 // limit.
 import Stripe from 'stripe';
 import { requireSession } from '../_lib/auth.js';
-import { getPark, getSitesForPark, getReservationsForPark, updateParkSettings, getParkStats, addPromoCode, removePromoCode, getWaitlistForPark, removeWaitlistEntry, getPayoutSummary, setParkStripeAccount, registerPark, getPropertiesForUser, addSite, updateSite, deleteSite, addSeasonalRate, removeSeasonalRate, createStaffReservation } from '../_lib/reservations-store.js';
+import { getPark, getParkWithMedia, getSitesForPark, getReservationsForPark, updateParkSettings, getParkStats, addPromoCode, removePromoCode, getWaitlistForPark, removeWaitlistEntry, getPayoutSummary, setParkStripeAccount, registerPark, getPropertiesForUser, addSite, updateSite, deleteSite, addSeasonalRate, removeSeasonalRate, createStaffReservation } from '../_lib/reservations-store.js';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -209,7 +209,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const park = await getPark(session.parkId);
+  const park = await getParkWithMedia(session.parkId);
   if (!park) return res.status(404).json({ error: 'Park not found' });
   const { passwordHash, ...safePark } = park;
 

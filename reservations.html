@@ -36,14 +36,19 @@
   .res-results { margin-top: var(--sp-6); }
   .res-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--sp-3); }
   .res-site-card { padding: var(--sp-4); display: flex; flex-direction: column; }
-  .res-site-media { margin: calc(var(--sp-4) * -1) calc(var(--sp-4) * -1) var(--sp-3); }
-  .res-site-cover { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; display: block; border-radius: var(--radius-lg) var(--radius-lg) 0 0; }
-  .res-site-thumbs { display: flex; gap: 4px; padding: 6px var(--sp-4) 0; overflow-x: auto; }
-  .res-site-thumb { width: 44px; height: 44px; flex-shrink: 0; border-radius: var(--radius-sm); overflow: hidden; border: 2px solid transparent; padding: 0; cursor: pointer; background: none; }
-  .res-site-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
-  .res-site-thumb.is-active { border-color: var(--amber-light); }
-  .res-site-video { width: 100%; display: block; margin-top: var(--sp-2); border-radius: var(--radius-sm); max-height: 220px; }
   .res-site-card h3 { font-size: 1.0625rem; }
+
+  .res-park-profile { padding: var(--sp-4); border-radius: var(--radius-lg); margin-bottom: var(--sp-4); }
+  .park-profile-media { margin: calc(var(--sp-4) * -1) calc(var(--sp-4) * -1) var(--sp-3); }
+  .park-profile-cover { width: 100%; max-height: 360px; aspect-ratio: 16 / 9; object-fit: cover; display: block; border-radius: var(--radius-lg) var(--radius-lg) 0 0; }
+  .park-profile-thumbs { display: flex; gap: 6px; padding: 8px var(--sp-4) 0; overflow-x: auto; }
+  .park-profile-thumb { width: 56px; height: 56px; flex-shrink: 0; border-radius: var(--radius-sm); overflow: hidden; border: 2px solid transparent; padding: 0; cursor: pointer; background: none; }
+  .park-profile-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .park-profile-thumb.is-active { border-color: var(--amber-light); }
+  .park-profile-video { width: 100%; display: block; margin-top: var(--sp-3); border-radius: var(--radius-sm); max-height: 320px; }
+  .park-profile-description { font-size: 0.9375rem; line-height: 1.6; color: var(--cream-dim); margin: 0 0 var(--sp-3); white-space: pre-line; }
+  .park-profile-features { display: flex; flex-wrap: wrap; gap: 8px; }
+  .park-profile-feature { font-size: 0.8125rem; padding: 4px 12px; border-radius: var(--radius-pill); background: var(--surface-glass); border: 1px solid var(--border-glass); color: var(--cream); }
   .res-site-type { font-size: 0.8125rem; color: var(--amber-light); font-family: var(--font-mono); margin-top: 2px; }
   .res-site-meta { font-size: 0.8125rem; color: var(--cream-dim); margin-top: var(--sp-2); }
   .res-site-price { margin-top: var(--sp-3); padding-top: var(--sp-3); border-top: 1px solid var(--border-glass); }
@@ -138,6 +143,7 @@
 <section class="section" style="padding-top:0;">
   <div class="wrap">
     <div class="res-banner" id="resBanner"></div>
+    <div class="res-park-profile glass" id="resParkProfile" style="display:none;"></div>
     <div class="res-directions glass" id="resDirections" style="display:none;"></div>
     <div class="res-search glass dot-grid" data-reveal>
       <div class="res-search-row">
