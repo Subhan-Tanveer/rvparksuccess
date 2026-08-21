@@ -49,25 +49,27 @@ class AnalyticsDashboard {
           </div>
         </div>
 
+        <p class="form-note analytics-scope-note">Everything below looks <strong>backward</strong> from today over the period selected above — a different direction than the "Occupancy (Next 30d)" tile on the Overview tab, which looks forward instead.</p>
+
         <!-- KPI Cards -->
         <div class="kpi-grid">
           <div class="kpi-card glass">
-            <div class="kpi-label">Total Revenue</div>
+            <div class="kpi-label">Total Revenue ${infoIcon('Total revenue collected from confirmed bookings during the selected period (e.g. "Last 30 days" = the 30 days ending today).')}</div>
             <div class="kpi-value" id="kpiRevenue">$0</div>
             <div class="kpi-sub" id="kpiRevenueTrend"></div>
           </div>
           <div class="kpi-card glass">
-            <div class="kpi-label">Occupancy %</div>
+            <div class="kpi-label">Occupancy % ${infoIcon('Of all the site-nights available during the selected period, the percent that were actually booked — looking backward, ending today. Different from "Occupancy (Next 30d)" on the Overview tab, which looks forward at upcoming bookings instead.')}</div>
             <div class="kpi-value" id="kpiOccupancy">0%</div>
             <div class="kpi-sub" id="kpiOccupancyTrend"></div>
           </div>
           <div class="kpi-card glass">
-            <div class="kpi-label">Average Daily Rate</div>
+            <div class="kpi-label">Average Daily Rate ${infoIcon('Average nightly rate guests actually paid, across confirmed bookings in the selected period.')}</div>
             <div class="kpi-value" id="kpiAdr">$0</div>
             <div class="kpi-sub" id="kpiAdrTrend"></div>
           </div>
           <div class="kpi-card glass">
-            <div class="kpi-label">Repeat Guest %</div>
+            <div class="kpi-label">Repeat Guest % ${infoIcon('Percent of guests in this period who had booked with this park before.')}</div>
             <div class="kpi-value" id="kpiRepeatGuests">0%</div>
             <div class="kpi-sub" id="kpiRepeatGuestsSub"></div>
           </div>
@@ -794,7 +796,10 @@ class AnalyticsDashboard {
     const sign = value > 0 ? '+' : '';
     const color = value > 0 ? 'var(--amber-light)' : '#f0a89a';
     const suffix = unit === 'pts' ? 'pts' : '%';
-    return `<span style="color: ${color}; font-size: 0.875rem;">${sign}${value}${suffix} vs prev period</span>`;
+    const title = unit === 'pts'
+      ? `Occupancy was ${sign}${value} percentage points vs. the same-length period before this one (e.g. 20% → 36.7% shows as "+16.7pts").`
+      : `Change vs. the same-length period right before this one.`;
+    return `<span title="${title}" style="color: ${color}; font-size: 0.875rem; cursor: help;">${sign}${value}${suffix} vs prev period</span>`;
   }
 
   // Sunday-to-Saturday week containing today, shifted by heatmapWeekOffset
