@@ -17,6 +17,10 @@
   margin-bottom: var(--sp-3);
 }
 
+.park-profile-cover-wrap {
+  position: relative;
+}
+
 .park-profile-cover {
   display: block;
   width: 100%;
@@ -24,6 +28,61 @@
   object-fit: cover;
   border-radius: var(--radius-md);
   background: var(--surface-glass);
+}
+
+.park-profile-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid rgba(245, 240, 232, 0.25);
+  background: rgba(8, 12, 8, 0.45);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: var(--cream);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  opacity: 0;
+  transition: opacity 0.2s ease, background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.park-profile-nav svg {
+  width: 20px;
+  height: 20px;
+}
+
+.park-profile-cover-wrap:hover .park-profile-nav,
+.park-profile-nav:focus-visible {
+  opacity: 1;
+}
+
+.park-profile-nav:hover {
+  background: rgba(46, 155, 84, 0.35);
+  border-color: var(--amber-light);
+}
+
+.park-profile-nav:active {
+  transform: translateY(-50%) scale(0.92);
+}
+
+.park-profile-nav-prev {
+  left: var(--sp-2);
+}
+
+.park-profile-nav-next {
+  right: var(--sp-2);
+}
+
+@media (hover: none) {
+  /* No hover on touch devices — keep the arrows visible so they're reachable. */
+  .park-profile-nav {
+    opacity: 1;
+  }
 }
 
 .park-profile-thumbs {

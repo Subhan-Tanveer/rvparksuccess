@@ -20,8 +20,20 @@ export function renderParkProfilePanel(container, park) {
 
   container.style.display = 'block';
 
+  const navArrowsHtml = images.length > 1
+    ? `
+      <button type="button" class="park-profile-nav park-profile-nav-prev" data-park-nav="-1" aria-label="Previous photo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <button type="button" class="park-profile-nav park-profile-nav-next" data-park-nav="1" aria-label="Next photo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+      </button>`
+    : '';
   const coverHtml = images.length
-    ? `<img class="park-profile-cover" data-park-cover src="${escapeAttr(images[0].url)}" alt="${escapeAttr(park.name || '')}" loading="lazy">`
+    ? `<div class="park-profile-cover-wrap">
+        <img class="park-profile-cover" data-park-cover src="${escapeAttr(images[0].url)}" alt="${escapeAttr(park.name || '')}" loading="lazy">
+        ${navArrowsHtml}
+      </div>`
     : '';
   const thumbsHtml = images.length > 1
     ? `<div class="park-profile-thumbs">${images.map((m, i) => `<button type="button" class="park-profile-thumb${i === 0 ? ' is-active' : ''}" data-park-thumb="${escapeAttr(m.url)}"><img src="${escapeAttr(m.url)}" alt="" loading="lazy"></button>`).join('')}</div>`
@@ -52,12 +64,25 @@ export function renderParkProfilePanel(container, park) {
     </div>
   `;
 
-  container.querySelectorAll('[data-park-thumb]').forEach((thumb) => {
-    thumb.addEventListener('click', () => {
-      const cover = container.querySelector('[data-park-cover]');
-      if (cover) cover.src = thumb.dataset.parkThumb;
-      container.querySelectorAll('[data-park-thumb]').forEach((t) => t.classList.toggle('is-active', t === thumb));
-    });
+  const thumbs = Array.from(container.querySelectorAll('[data-park-thumb]'));
+  const cover = container.querySelector('[data-park-cover]');
+  let activeIndex = 0;
+
+  function setActiveIndex(index) {
+    if (!images.length) return;
+    activeIndex = ((index % images.length) + images.length) % images.length;
+    if (cover) cover.src = images[activeIndex].url;
+    thumbs.forEach((t, i) => t.classList.toggle('is-active', i === activeIndex));
+    const activeThumb = thumbs[activeIndex];
+    if (activeThumb) activeThumb.scrollIntoView({ behavior: 'smooth', inline: 'nearest', block: 'nearest' });
+  }
+
+  thumbs.forEach((thumb, i) => {
+    thumb.addEventListener('click', () => setActiveIndex(i));
+  });
+
+  container.querySelectorAll('[data-park-nav]').forEach((btn) => {
+    btn.addEventListener('click', () => setActiveIndex(activeIndex + Number(btn.dataset.parkNav)));
   });
 }
 
