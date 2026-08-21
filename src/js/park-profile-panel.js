@@ -11,8 +11,9 @@ export function renderParkProfilePanel(container, park) {
   const video = (park.media || []).find((m) => m.type === 'video');
   const hasDescription = !!(park.description && park.description.trim());
   const hasFeatures = !!(park.features && park.features.length);
+  const hasLogo = !!park.logoUrl;
 
-  if (!images.length && !video && !hasDescription && !hasFeatures) {
+  if (!images.length && !video && !hasDescription && !hasFeatures && !hasLogo) {
     container.style.display = 'none';
     return;
   }
@@ -28,6 +29,9 @@ export function renderParkProfilePanel(container, park) {
   const videoHtml = video
     ? `<video class="park-profile-video" src="${escapeAttr(video.url)}" controls preload="metadata"></video>`
     : '';
+  const logoHtml = hasLogo
+    ? `<img class="park-profile-logo" src="${escapeAttr(park.logoUrl)}" alt="${escapeAttr(park.name || '')} logo">`
+    : '';
   const descriptionHtml = hasDescription
     ? `<p class="park-profile-description">${escapeHtml(park.description)}</p>`
     : '';
@@ -38,6 +42,7 @@ export function renderParkProfilePanel(container, park) {
   container.innerHTML = `
     <div class="park-profile-media">${coverHtml}${thumbsHtml}${videoHtml}</div>
     <div class="park-profile-body">
+      ${logoHtml}
       ${descriptionHtml}
       ${featuresHtml}
     </div>

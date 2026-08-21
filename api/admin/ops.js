@@ -1693,24 +1693,28 @@ async function parkMediaHandler(req, res) {
         onBeforeGenerateToken: async (pathname, clientPayload) => {
           const payload = JSON.parse(clientPayload || '{}');
           const { type } = payload;
-          if (type !== 'image' && type !== 'video') throw new Error('A valid media type is required');
+          if (type !== 'image' && type !== 'video' && type !== 'logo') throw new Error('A valid media type is required');
 
           // session.parkId (never anything the client sends) is what
           // actually authorizes this — a park-staff session can only ever
-          // upload media for their own park.
-          const existingCount = await store.countParkMedia(session.parkId, type);
-          const max = type === 'image' ? store.PARK_MEDIA_MAX_IMAGES : store.PARK_MEDIA_MAX_VIDEOS;
-          if (existingCount >= max) {
-            throw new Error(type === 'image'
-              ? `The park already has the maximum of ${store.PARK_MEDIA_MAX_IMAGES} photos — remove one before adding another.`
-              : 'The park already has a video — remove it before uploading a new one.');
+          // upload media for their own park. Logo is a single dedicated
+          // field (not part of the gallery), so it has no count cap —
+          // uploading a new one just replaces whichever one exists.
+          if (type !== 'logo') {
+            const existingCount = await store.countParkMedia(session.parkId, type);
+            const max = type === 'image' ? store.PARK_MEDIA_MAX_IMAGES : store.PARK_MEDIA_MAX_VIDEOS;
+            if (existingCount >= max) {
+              throw new Error(type === 'image'
+                ? `The park already has the maximum of ${store.PARK_MEDIA_MAX_IMAGES} photos — remove one before adding another.`
+                : 'The park already has a video — remove it before uploading a new one.');
+            }
           }
 
           return {
-            allowedContentTypes: type === 'image'
-              ? ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
-              : ['video/mp4', 'video/quicktime', 'video/webm'],
-            maximumSizeInBytes: type === 'image' ? 8 * 1024 * 1024 : 200 * 1024 * 1024,
+            allowedContentTypes: type === 'video'
+              ? ['video/mp4', 'video/quicktime', 'video/webm']
+              : ['image/jpeg', 'image/png', 'image/webp', 'image/gif'],
+            maximumSizeInBytes: type === 'video' ? 200 * 1024 * 1024 : (type === 'logo' ? 4 * 1024 * 1024 : 8 * 1024 * 1024),
             addRandomSuffix: true,
             tokenPayload: JSON.stringify({ type }),
           };
@@ -1735,8 +1739,27 @@ async function parkMediaHandler(req, res) {
       return res.status(400).json({ error: 'type, url, and pathname are required' });
     }
     try {
+      if (type === 'logo') {
+        const { park, oldPathname } = await store.setParkLogo(session.parkId, { url, pathname });
+        if (oldPathname) {
+          await deleteBlob(oldPathname).catch((err) => console.error('Old logo blob delete failed:', err.message));
+        }
+        return res.status(200).json({ park });
+      }
       const media = await store.addParkMedia(session.parkId, { type, url, pathname });
       return res.status(200).json({ media });
+    } catch (err) {
+      return res.status(400).json({ error: err.message });
+    }
+  }
+
+  if (req.method === 'DELETE' && action === 'remove-logo') {
+    try {
+      const { park, oldPathname } = await store.removeParkLogo(session.parkId);
+      if (oldPathname) {
+        await deleteBlob(oldPathname).catch((err) => console.error('Logo blob delete failed (DB field already cleared):', err.message));
+      }
+      return res.status(200).json({ park });
     } catch (err) {
       return res.status(400).json({ error: err.message });
     }

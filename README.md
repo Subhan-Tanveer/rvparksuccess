@@ -71,6 +71,10 @@ Park Settings has a "Photos & Video" button, a description field, and an ameniti
 2. Connect it to this project, with **Production**, **Preview**, and **Development** environments checked — Vercel auto-injects `BLOB_READ_WRITE_TOKEN`.
 3. That's it — nothing else to configure. Without this step, clicking "+ Add Photos"/"+ Add Video" will fail with an upload-token error, which is expected until Blob is connected.
 
+### Park name & logo
+
+Park Settings also has an editable **Park Name** field and a single **Park Logo** control, above the Photos & Video panel. The park name can be changed any time (it updates the dashboard's own heading immediately after saving); the logo is one dedicated image — not part of the 10-photo gallery — uploaded/replaced/removed the same direct-to-Blob way as the gallery photos, so it needs the same Blob setup above and nothing extra. Replacing or removing a logo deletes the old file from Blob storage so nothing is left orphaned. It's shown to guests as the park's own brand mark on the booking page, next to the description and amenities — it does not replace the RVPark Success logo in this dashboard's own header, which is this app's own product branding and stays fixed regardless of which park is logged in.
+
 ### Expenses & Net Operating Income
 
 `park-dashboard.html`'s Expenses tab is real income/expense tracking, not a mockup — this is what turns "revenue history" into an actual P&L a buyer's accountant can use when a park owner wants to sell. Real bookings were already the income side; this adds real operating expenses (fixed categories — Utilities, Payroll, Insurance, Property Tax, Maintenance, Marketing, Supplies, Management Fees, Loan/Mortgage Interest, Other — so a category stays consistent across months instead of every entry using a different label) with an optional receipt upload (same Vercel Blob setup as the park profile above — no separate setup needed if that's already connected). Net Operating Income = real revenue minus real recorded expenses for whatever period is selected.

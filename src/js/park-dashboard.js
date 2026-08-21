@@ -7,6 +7,7 @@ import AnalyticsDashboard from './analytics-dashboard.js';
 import { initCrmDashboard } from './crm-dashboard.js';
 import { initExpensesDashboard } from './expenses-dashboard.js';
 import { initParkMediaPanel } from './park-media-panel.js';
+import { initParkLogoPanel } from './park-logo-panel.js';
 
 // Common RV park amenities — a fixed checklist rather than free text, so
 // this stays scannable for a guest deciding whether to book (a wall of
@@ -211,6 +212,9 @@ async function loadDashboard() {
   if (currentPark.description) document.getElementById('stDescription').classList.add('has-value');
   renderParkFeaturesChecklist(currentPark.features || []);
   initParkMediaPanel('parkMediaPanel', currentPark);
+  initParkLogoPanel('parkLogoPanel', currentPark);
+  document.getElementById('stParkName').value = currentPark.name || '';
+  if (currentPark.name) document.getElementById('stParkName').classList.add('has-value');
   renderPromoCodes(currentPark.promoCodes || []);
   renderWaitlist(data.waitlist || []);
   document.getElementById('payoutNet').textContent = formatUsd(data.payout.netOwedToParkCents);
@@ -764,6 +768,7 @@ settingsForm.addEventListener('submit', async (e) => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          name: document.getElementById('stParkName').value,
           taxRatePercent: parseFloat(document.getElementById('stTaxRate').value),
           description: document.getElementById('stDescription').value,
           features: selectedFeatures,
@@ -778,6 +783,10 @@ settingsForm.addEventListener('submit', async (e) => {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Could not save settings');
       currentPark = data.park;
+      // The topbar heading shows the park name from the moment the page
+      // loaded — without this it would keep showing the old name until a
+      // full page reload, even though the save itself succeeded.
+      document.getElementById('parkNameHeading').textContent = `${currentPark.name} — Staff`;
       settingsAlert.textContent = 'Settings saved.';
       settingsAlert.classList.add('is-visible', 'is-success');
     } catch (err) {

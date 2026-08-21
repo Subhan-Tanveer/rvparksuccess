@@ -443,10 +443,15 @@
       <h2 style="font-size: 1.375rem;">Park Settings</h2>
     </div>
     <div class="park-profile-media">
+      <p class="form-note" style="margin-bottom: var(--sp-2);">Your park's own brand mark, shown to guests — separate from the RVPark Success logo in this dashboard's own header above.</p>
+      <div id="parkLogoPanel"></div>
+    </div>
+    <div class="park-profile-media">
       <p class="form-note" style="margin-bottom: var(--sp-2);">Photos and a video guests see when deciding whether to book — the whole park, not one specific site.</p>
       <div id="parkMediaPanel"></div>
     </div>
     <form id="settingsForm">
+      <div class="field-float"><input id="stParkName" type="text" required placeholder=" "><label for="stParkName">Park Name</label></div>
       <div class="field-float"><input id="stAddress" type="text" autocomplete="off" placeholder=" "><label for="stAddress">Park Address</label></div>
       <p class="form-note">Start typing and pick your park from the suggestions — this is what powers the "Get Directions" map guests see after booking. A vague address (just a city) won't route them anywhere useful.</p>
       <div class="field-float"><textarea id="stDescription" rows="4" placeholder=" "></textarea><label for="stDescription">Park Description</label></div>

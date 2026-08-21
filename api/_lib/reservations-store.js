@@ -130,6 +130,11 @@ function ensureSchema() {
       -- deciding whether to book cares about the park as a whole first.
       ALTER TABLE parks ADD COLUMN IF NOT EXISTS description TEXT;
       ALTER TABLE parks ADD COLUMN IF NOT EXISTS features TEXT[] NOT NULL DEFAULT '{}';
+      -- The park's own brand mark shown to guests (booking pages, the
+      -- park profile panel) — distinct from RVPark Success's own product
+      -- logo, which stays fixed in the staff dashboard's own chrome.
+      ALTER TABLE parks ADD COLUMN IF NOT EXISTS logo_url TEXT;
+      ALTER TABLE parks ADD COLUMN IF NOT EXISTS logo_pathname TEXT;
 
       -- Park-level photos + one video (NOT per-site — a park's overall
       -- gallery, shown to a guest deciding whether to book at all). Mirrors
@@ -825,6 +830,7 @@ function mapPark(row, promoCodes = []) {
     longitude: row.longitude !== null ? Number(row.longitude) : null,
     description: row.description,
     features: row.features || [],
+    logoUrl: row.logo_url,
     createdAt: row.created_at.toISOString(),
     promoCodes: promoCodes.map(mapPromo),
   };
@@ -1368,9 +1374,15 @@ export async function setParkPlan(parkId, { planKey, stripeCustomerId, stripeSub
 // pinpoint address behind the guest-facing "Get Directions" feature.
 // Scoped by parkId from the session, same as site management, so a staff
 // member can only ever edit their own park.
-export async function updateParkSettings(parkId, { taxRatePercent, depositPercent, address, latitude, longitude, description, features } = {}) {
+export async function updateParkSettings(parkId, { name, taxRatePercent, depositPercent, address, latitude, longitude, description, features } = {}) {
   const sets = [];
   const params = [parkId];
+  if (name !== undefined) {
+    const trimmed = (name || '').trim();
+    if (!trimmed) throw new Error('Park name cannot be empty');
+    params.push(trimmed);
+    sets.push(`name = $${params.length}`);
+  }
   if (taxRatePercent !== undefined) {
     const rate = Number(taxRatePercent);
     if (isNaN(rate) || rate < 0 || rate > 30) throw new Error('Tax rate must be between 0 and 30%');
@@ -1415,6 +1427,29 @@ export async function updateParkSettings(parkId, { taxRatePercent, depositPercen
   const res = await query(`UPDATE parks SET ${sets.join(', ')} WHERE id = $1 RETURNING *`, params);
   if (!res.rows[0]) throw new Error('Unknown park');
   return getPark(parkId);
+}
+
+// Park logo — a single dedicated image field (not part of the 10-photo
+// gallery in park_media), shown as the park's own brand mark on guest-
+// facing pages. Returns the OLD pathname (if any) so the caller can also
+// delete that Blob file when replacing a logo — otherwise every re-upload
+// would leave the previous file orphaned in storage forever.
+export async function setParkLogo(parkId, { url, pathname }) {
+  const existing = await query('SELECT logo_pathname FROM parks WHERE id = $1', [parkId]);
+  if (!existing.rows.length) throw new Error('Unknown park');
+  const oldPathname = existing.rows[0].logo_pathname;
+
+  const res = await query('UPDATE parks SET logo_url = $2, logo_pathname = $3 WHERE id = $1 RETURNING *', [parkId, url, pathname]);
+  return { park: mapPark(res.rows[0]), oldPathname };
+}
+
+export async function removeParkLogo(parkId) {
+  const existing = await query('SELECT logo_pathname FROM parks WHERE id = $1', [parkId]);
+  if (!existing.rows.length) throw new Error('Unknown park');
+  const oldPathname = existing.rows[0].logo_pathname;
+
+  const res = await query('UPDATE parks SET logo_url = NULL, logo_pathname = NULL WHERE id = $1 RETURNING *', [parkId]);
+  return { park: mapPark(res.rows[0]), oldPathname };
 }
 
 // Stores the park's Stripe Connect account id once they start onboarding.

@@ -40,6 +40,44 @@
   accent-color: var(--amber-light);
 }
 
+.park-logo-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+}
+
+.park-logo-preview {
+  width: 72px;
+  height: 72px;
+  flex-shrink: 0;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--surface-glass);
+  border: 1px solid var(--border-glass);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.park-logo-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.park-logo-placeholder {
+  font-size: 0.75rem;
+  color: var(--cream-dim);
+  text-align: center;
+}
+
+.park-logo-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 /* ============================================================ */
 /* Park Photos & Video — inline in Park Settings (not a modal)   */
 /* ============================================================ */
