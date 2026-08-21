@@ -224,7 +224,7 @@ async function analyticsTrends(res, parkId, park, sites, currentPeriod, metric) 
     currentDateRange: { start: currentStart, end: currentEnd },
     previousDateRange: { start: previousStartStr, end: previousEndStr },
     revenueTrendPercent: trends.revenueTrendPercent,
-    occupancyTrendPercent: trends.occupancyTrendPercent,
+    occupancyTrendPoints: trends.occupancyTrendPoints,
     bookingsTrendPercent: trends.bookingsTrendPercent,
     adrTrendPercent: trends.adrTrendPercent,
     currentMetrics: { revenue: trends.currentRevenue },

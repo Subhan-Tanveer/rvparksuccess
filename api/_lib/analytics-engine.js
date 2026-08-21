@@ -157,6 +157,11 @@ export function calculateTrends(current, previous, siteCount, currentStart, curr
     ? Math.round(((currentRevenue.totalRevenueCents - previousRevenue.totalRevenueCents) / previousRevenue.totalRevenueCents) * 1000) / 10
     : 0;
 
+  // Percentage-point delta, not a relative percent change like the other
+  // three trends below — occupancy is already a percentage, so "current% -
+  // previous%" is the natural comparison. Keeping it out of the
+  // "...TrendPercent" naming convention (see occupancyTrendPoints below)
+  // stops it from being formatted/described as a relative % change.
   const occupancyTrend = Math.round((currentOccupancy.occupancyPercent - previousOccupancy.occupancyPercent) * 10) / 10;
 
   const bookingsTrend = previousRevenue.bookingCount > 0
@@ -169,7 +174,7 @@ export function calculateTrends(current, previous, siteCount, currentStart, curr
 
   return {
     revenueTrendPercent: revenueTrend,
-    occupancyTrendPercent: occupancyTrend,
+    occupancyTrendPoints: occupancyTrend,
     bookingsTrendPercent: bookingsTrend,
     adrTrendPercent: adrTrend,
     currentRevenue,

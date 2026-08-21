@@ -69,7 +69,6 @@ export function forecastOccupancy(reservations, totalSites, days = 90, options =
 
     // Confidence interval (widens with distance into future)
     const confidenceMargin = 5 + (i * 0.3); // 5% to ~35% over 90 days
-    const trend = trendComponent.slope > 0.5 ? 'improving' : trendComponent.slope < -0.5 ? 'declining' : 'stable';
 
     forecast.push({
       date: dateStr,
@@ -79,7 +78,6 @@ export function forecastOccupancy(reservations, totalSites, days = 90, options =
       confidenceUpper: Math.min(100, Math.round((forecastOccupancy + confidenceMargin) * 10) / 10),
       confidenceMargin: Math.round(confidenceMargin * 10) / 10,
       season: detectSeason(forecastDate),
-      trend,
       components: {
         baseOccupancy: Math.round(baseOccupancy * 10) / 10,
         seasonalInfluence: Math.round(seasonalFactor * 10) / 10,
@@ -88,6 +86,21 @@ export function forecastOccupancy(reservations, totalSites, days = 90, options =
       },
     });
   }
+
+  // `trendComponent` above measures *historical* momentum (was past occupancy
+  // rising or falling?) and feeds into the day-by-day forecast math via
+  // trendAdjustment — that's correct to keep. But labeling every day's
+  // `trend` field with that backward-looking value was wrong: it doesn't
+  // describe what this forecast curve itself does, which is what a caller
+  // (chart, AI narrative) actually wants when it reads `trend`. Recomputing
+  // it from the forecast curve's own shape keeps the two honest — a curve
+  // that visibly slides from ~100% to ~70% is now labeled 'declining' even
+  // if last year's occupancy trend was flat.
+  const forecastSlope = linearRegression(
+    forecast.map((f, i) => ({ x: i, y: f.forecastOccupancy }))
+  ).slope;
+  const forecastTrend = forecastSlope > 0.15 ? 'improving' : forecastSlope < -0.15 ? 'declining' : 'stable';
+  forecast.forEach((f) => { f.trend = forecastTrend; });
 
   return forecast;
 }

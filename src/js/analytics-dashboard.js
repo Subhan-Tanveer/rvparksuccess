@@ -316,7 +316,7 @@ class AnalyticsDashboard {
     // Occupancy
     const occupancyPercent = overview.occupancy?.occupancyPercent || 0;
     document.getElementById('kpiOccupancy').textContent = `${occupancyPercent}%`;
-    document.getElementById('kpiOccupancyTrend').innerHTML = this.formatTrend(trends.occupancyTrendPercent);
+    document.getElementById('kpiOccupancyTrend').innerHTML = this.formatTrend(trends.occupancyTrendPoints, 'pts');
 
     // ADR
     const adrCents = overview.revenue?.adrCents || 0;
@@ -342,7 +342,7 @@ class AnalyticsDashboard {
       totalRevenueUsd: (overview.revenue?.totalRevenueCents || 0) / 100,
       revenueTrendPercent: trends.revenueTrendPercent,
       occupancyPercent: overview.occupancy?.occupancyPercent,
-      occupancyTrendPercent: trends.occupancyTrendPercent,
+      occupancyTrendPercentagePoints: trends.occupancyTrendPoints,
       adrUsd: (overview.revenue?.adrCents || 0) / 100,
       repeatGuestPercent: overview.guests?.repeatGuestPercent,
       uniqueGuestCount: overview.guests?.uniqueGuestCount,
@@ -785,11 +785,16 @@ class AnalyticsDashboard {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   }
 
-  formatTrend(percent) {
-    if (percent === undefined || percent === null) return '';
-    const sign = percent > 0 ? '+' : '';
-    const color = percent > 0 ? 'var(--amber-light)' : '#f0a89a';
-    return `<span style="color: ${color}; font-size: 0.875rem;">${sign}${percent}% vs prev period</span>`;
+  // unit defaults to a relative '%' change (revenue/ADR/bookings). Occupancy
+  // is already a percentage, so its trend is a percentage-POINT delta, not
+  // a relative percent change — pass unit: 'pts' there so e.g. "+16.7pts"
+  // doesn't read as "occupancy grew 16.7%", which is a different claim.
+  formatTrend(value, unit = '%') {
+    if (value === undefined || value === null) return '';
+    const sign = value > 0 ? '+' : '';
+    const color = value > 0 ? 'var(--amber-light)' : '#f0a89a';
+    const suffix = unit === 'pts' ? 'pts' : '%';
+    return `<span style="color: ${color}; font-size: 0.875rem;">${sign}${value}${suffix} vs prev period</span>`;
   }
 
   // Sunday-to-Saturday week containing today, shifted by heatmapWeekOffset
