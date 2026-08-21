@@ -1,0 +1,162 @@
+/* ============================================================ */
+/* Guest-facing park profile + directions panels (reservations.html) */
+/* Previously unstyled — cards had no padding/radius and the raw    */
+/* <img> logo rendered at native size with no layout constraints.  */
+/* ============================================================ */
+
+.res-park-profile,
+.res-directions {
+  padding: var(--sp-4);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--sp-3);
+}
+
+/* ---- Photo/video gallery ---- */
+
+.park-profile-media {
+  margin-bottom: var(--sp-3);
+}
+
+.park-profile-cover {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: var(--radius-md);
+  background: var(--surface-glass);
+}
+
+.park-profile-thumbs {
+  display: flex;
+  gap: 8px;
+  margin-top: var(--sp-2);
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.park-profile-thumb {
+  flex-shrink: 0;
+  width: 64px;
+  height: 64px;
+  padding: 0;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  border: 2px solid transparent;
+  background: none;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity 0.2s ease, border-color 0.2s ease;
+}
+
+.park-profile-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.park-profile-thumb:hover {
+  opacity: 1;
+}
+
+.park-profile-thumb.is-active {
+  opacity: 1;
+  border-color: var(--amber-light);
+}
+
+.park-profile-video {
+  display: block;
+  width: 100%;
+  max-height: 420px;
+  border-radius: var(--radius-md);
+  background: #000;
+  margin-top: var(--sp-2);
+}
+
+/* ---- Brand header: logo + park name ---- */
+
+.park-profile-header {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-2);
+}
+
+.park-profile-logo {
+  flex-shrink: 0;
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-md);
+  object-fit: contain;
+  background: var(--cream);
+  border: 1px solid var(--border-glass);
+  padding: 4px;
+}
+
+.park-profile-name {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--cream);
+}
+
+/* ---- Description + amenities ---- */
+
+.park-profile-description {
+  margin: 0 0 var(--sp-3);
+  color: var(--cream-dim);
+  line-height: 1.65;
+}
+
+.park-profile-features {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.park-profile-feature {
+  padding: 6px 14px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-glass);
+  border: 1px solid var(--border-glass);
+  font-size: 0.8125rem;
+  color: var(--cream-dim);
+}
+
+/* ---- Directions panel ---- */
+
+.res-directions-head {
+  margin-bottom: var(--sp-2);
+}
+
+.res-directions-head h3 {
+  margin: 0 0 4px;
+  font-size: 1.125rem;
+}
+
+.res-directions-head .sub {
+  margin: 0;
+  color: var(--cream-dim);
+  font-size: 0.875rem;
+}
+
+.res-directions-map {
+  margin-bottom: var(--sp-2);
+}
+
+.res-directions-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  align-items: center;
+}
+
+@media (max-width: 640px) {
+  .park-profile-cover {
+    aspect-ratio: 4 / 3;
+  }
+  .park-profile-thumb {
+    width: 52px;
+    height: 52px;
+  }
+}

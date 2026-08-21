@@ -39,10 +39,14 @@ export function renderParkProfilePanel(container, park) {
     ? `<div class="park-profile-features">${park.features.map((f) => `<span class="park-profile-feature">${escapeHtml(f)}</span>`).join('')}</div>`
     : '';
 
+  const headerHtml = (hasLogo || park.name)
+    ? `<div class="park-profile-header">${logoHtml}${park.name ? `<h3 class="park-profile-name">${escapeHtml(park.name)}</h3>` : ''}</div>`
+    : '';
+
   container.innerHTML = `
     <div class="park-profile-media">${coverHtml}${thumbsHtml}${videoHtml}</div>
     <div class="park-profile-body">
-      ${logoHtml}
+      ${headerHtml}
       ${descriptionHtml}
       ${featuresHtml}
     </div>
