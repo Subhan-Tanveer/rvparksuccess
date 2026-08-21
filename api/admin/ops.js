@@ -104,7 +104,8 @@ import { OTAManager } from '../_lib/ota-manager.js';
 import * as store from '../_lib/reservations-store.js';
 import RateOptimizer, { serializeModel, deserializeModel } from '../_lib/ml-rate-optimizer.js';
 import { generateNarrative } from '../_lib/ai-insights.js';
-import { handleUpload, del as deleteBlob } from '@vercel/blob';
+import { del as deleteBlob } from '@vercel/blob';
+import { handleUpload } from '@vercel/blob/client';
 
 export default async function handler(req, res) {
   const { resource } = req.query;
