@@ -736,6 +736,14 @@ class CalendarGrid {
         { id: 'guestEmail', label: 'Email (optional)', type: 'email', required: false },
         { id: 'checkInDate', label: 'Check-In', type: 'date', value: dateStr, required: true },
         { id: 'checkOutDate', label: 'Check-Out', type: 'date', value: defaultCheckOut.toISOString().split('T')[0], required: true },
+        {
+          id: 'paymentMethod', label: 'Payment Method', type: 'select', value: 'cash',
+          options: [
+            { value: 'cash', label: 'Cash — confirm now' },
+            { value: 'card-in-person', label: 'Card in person — confirm now' },
+            { value: 'pay-later-link', label: 'Pay later — hold the site 24h' },
+          ],
+        },
       ],
     });
 
@@ -758,7 +766,7 @@ class CalendarGrid {
           guestEmail: values.guestEmail || null,
           checkInDate: values.checkInDate,
           checkOutDate: values.checkOutDate,
-          paymentMethod: 'cash',
+          paymentMethod: values.paymentMethod,
         }),
       });
 

@@ -8,7 +8,7 @@
 // limit.
 import Stripe from 'stripe';
 import { requireSession } from '../_lib/auth.js';
-import { getPark, getParkWithMedia, getSitesForPark, getReservationsForPark, updateParkSettings, getParkStats, addPromoCode, removePromoCode, getWaitlistForPark, removeWaitlistEntry, getPayoutSummary, setParkStripeAccount, registerPark, getPropertiesForUser, addSite, updateSite, deleteSite, addSeasonalRate, removeSeasonalRate, createStaffReservation } from '../_lib/reservations-store.js';
+import { getPark, getParkWithMedia, getSitesForPark, getReservationsForPark, updateParkSettings, getParkStats, addPromoCode, removePromoCode, getWaitlistForPark, removeWaitlistEntry, getPayoutSummary, setParkStripeAccount, registerPark, getPropertiesForUser, addSite, updateSite, deleteSite, addSeasonalRate, removeSeasonalRate, createStaffReservation, updateReservationPaymentStatus } from '../_lib/reservations-store.js';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -27,6 +27,19 @@ export default async function handler(req, res) {
         guestName, guestEmail, guestPhone, paymentMethod, notes,
       });
       return res.status(201).json({ reservation });
+    } catch (err) {
+      return res.status(400).json({ error: err.message });
+    }
+  }
+
+  // resource: 'reservation-status' — lets staff correct a reservation's
+  // payment status after the fact (e.g. a "pay later" hold that actually
+  // got paid in cash, or a deposit balance that came in).
+  if (req.method === 'POST' && req.body?.resource === 'reservation-status') {
+    const { reservationId, status } = req.body || {};
+    try {
+      const reservation = await updateReservationPaymentStatus(session.parkId, reservationId, status);
+      return res.status(200).json({ reservation });
     } catch (err) {
       return res.status(400).json({ error: err.message });
     }

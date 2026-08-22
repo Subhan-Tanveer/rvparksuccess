@@ -2381,6 +2381,33 @@ export async function moveReservation(reservationId, newSiteId, newCheckInDate, 
   return mapReservation(res.rows[0]);
 }
 
+const RESERVATION_STATUSES = ['pending', 'confirmed', 'confirmed-deposit', 'canceled'];
+
+// Lets staff correct a reservation's payment status after the fact — e.g.
+// a "pay later" hold that the guest actually paid in cash at the desk, or
+// a deposit booking where the remaining balance came in. Scoped to
+// parkId so a staff session can never touch another park's reservation.
+// Moving TO 'confirmed' also zeroes the balance (matches what "fully
+// paid" means everywhere else this status is shown — the Reservations
+// table hides Balance Due entirely once status isn't 'confirmed-deposit'
+// anyway, but the stored value should agree, not just the display).
+// Moving TO 'canceled' stamps canceled_at, matching cancelReservation()
+// above; moving away from 'canceled' clears it, since it's no longer true.
+export async function updateReservationPaymentStatus(parkId, reservationId, newStatus) {
+  if (!RESERVATION_STATUSES.includes(newStatus)) throw new Error('Invalid status');
+
+  const sets = ['status = $3'];
+  if (newStatus === 'confirmed') sets.push('balance_cents = 0');
+  sets.push(newStatus === 'canceled' ? 'canceled_at = now()' : 'canceled_at = NULL');
+
+  const res = await query(
+    `UPDATE reservations SET ${sets.join(', ')} WHERE id = $1 AND park_id = $2 RETURNING *`,
+    [reservationId, parkId, newStatus]
+  );
+  if (!res.rows[0]) throw new Error('Unknown reservation');
+  return mapReservation(res.rows[0]);
+}
+
 export async function cancelReservation(reservationId) {
   const res = await query(
     `UPDATE reservations

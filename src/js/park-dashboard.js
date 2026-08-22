@@ -666,14 +666,54 @@ function renderReservations(reservations) {
   emptyEl.style.display = 'none';
   tbody.innerHTML = reservations.map((r) => `
     <tr>
-      <td>${r.guestName}</td>
+      <td>${escapeHtml(r.guestName)}</td>
       <td>${r.checkIn} → ${r.checkOut}</td>
       <td>${r.source === 'staff' ? 'Staff' : 'Website'}</td>
-      <td>${(() => { const c = statusChip(r.status); return `<span class="status-chip ${c.cls}">${c.label}</span>`; })()}</td>
+      <td>${statusSelectHtml(r)}</td>
       <td>${formatUsd(r.totalCents)}</td>
       <td>${r.status === 'confirmed-deposit' ? formatUsd(r.balanceCents) : '—'}</td>
     </tr>`).join('');
 }
+
+const RESERVATION_STATUS_OPTIONS = [
+  { value: 'pending', label: 'pending' },
+  { value: 'confirmed-deposit', label: 'deposit paid' },
+  { value: 'confirmed', label: 'confirmed' },
+  { value: 'canceled', label: 'canceled' },
+];
+
+// A real <select> (not just a colored label) so staff can correct a
+// reservation's payment status after the fact — e.g. a "pay later" hold
+// that actually got paid in cash, or a deposit balance that came in.
+function statusSelectHtml(r) {
+  const cls = statusChip(r.status).cls;
+  const options = RESERVATION_STATUS_OPTIONS.map((o) =>
+    `<option value="${o.value}" ${o.value === r.status ? 'selected' : ''}>${o.label}</option>`
+  ).join('');
+  return `<select class="status-select ${cls}" data-reservation-status="${r.id}">${options}</select>`;
+}
+
+document.getElementById('reservationsTableBody').addEventListener('change', async (e) => {
+  const select = e.target.closest('[data-reservation-status]');
+  if (!select) return;
+  const reservationId = select.dataset.reservationStatus;
+  const newStatus = select.value;
+
+  select.disabled = true;
+  try {
+    const res = await fetch('/api/admin/dashboard', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ resource: 'reservation-status', reservationId, status: newStatus }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Could not update status');
+    loadDashboard();
+  } catch (err) {
+    alertDialog({ title: 'Error', message: err.message });
+    select.disabled = false;
+  }
+});
 
 /* -- waitlist -- */
 function renderWaitlist(entries) {

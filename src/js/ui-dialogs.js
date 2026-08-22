@@ -144,7 +144,15 @@ export function formDialog({ title, fields, submitLabel = 'Save', cancelLabel = 
   return new Promise((resolve) => {
     titleEl.textContent = title;
     errorEl.classList.remove('is-visible');
-    bodyEl.innerHTML = fields.map((f) => `
+    bodyEl.innerHTML = fields.map((f) => f.type === 'select'
+      ? `
+      <div class="field-float" style="text-align:left;">
+        <select id="dlg-${f.id}" class="has-value">
+          ${f.options.map((o) => `<option value="${o.value}" ${o.value === f.value ? 'selected' : ''}>${o.label}</option>`).join('')}
+        </select>
+        <label for="dlg-${f.id}">${f.label}</label>
+      </div>`
+      : `
       <div class="field-float" style="text-align:left;">
         <input id="dlg-${f.id}" type="${f.type || 'text'}" ${f.step !== undefined ? `step="${f.step}"` : ''} ${f.min !== undefined ? `min="${f.min}"` : ''} value="${f.value ?? ''}" placeholder=" ">
         <label for="dlg-${f.id}">${f.label}</label>
@@ -152,6 +160,7 @@ export function formDialog({ title, fields, submitLabel = 'Save', cancelLabel = 
 
     fields.forEach((f) => {
       const el = document.getElementById(`dlg-${f.id}`);
+      if (f.type === 'select') return; // always has a value, no floating-label toggle needed
       if (el.value) el.classList.add('has-value');
       el.addEventListener('input', () => el.classList.toggle('has-value', !!el.value));
     });

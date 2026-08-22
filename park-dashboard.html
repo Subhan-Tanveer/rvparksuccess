@@ -41,6 +41,12 @@
   .status-chip.is-pending { background: rgba(217,127,46,0.15); color: #e0a86a; }
   .status-chip.is-deposit { background: rgba(96,165,250,0.15); color: #7db7ff; }
   .status-chip.is-canceled { background: rgba(217,60,46,0.12); color: #f0a89a; }
+  .status-select { font-size: 0.6875rem; font-family: var(--font-body); padding: 3px 22px 3px 9px; border-radius: var(--radius-pill); text-transform: uppercase; letter-spacing: 0.04em; border: none; cursor: pointer; appearance: none; -webkit-appearance: none; background-repeat: no-repeat; background-position: right 7px center; background-size: 8px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath fill='%23888' d='M0 0l5 6 5-6z'/%3E%3C/svg%3E"); }
+  .status-select.is-confirmed { background-color: rgba(46,155,84,0.15); color: var(--amber-light); }
+  .status-select.is-pending { background-color: rgba(217,127,46,0.15); color: #e0a86a; }
+  .status-select.is-deposit { background-color: rgba(96,165,250,0.15); color: #7db7ff; }
+  .status-select.is-canceled { background-color: rgba(217,60,46,0.12); color: #f0a89a; }
+  .status-select option { background: var(--black); color: var(--cream); text-transform: none; }
   .field-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: var(--sp-3); }
   @media (max-width: 720px) { .field-row-3 { grid-template-columns: 1fr; } }
   /* Sites & Rates "Add Site" form: an even, balanced 4-up grid (Site Name,
