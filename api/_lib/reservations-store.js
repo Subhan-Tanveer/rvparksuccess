@@ -1092,6 +1092,61 @@ export async function getAvailableSites(parkId, checkIn, checkOut, promoCode = n
     });
 }
 
+// When a search comes back empty, "nothing open" is a dead end for staff on
+// the phone with a guest — this finds the nearest windows (same length as
+// requested) that actually ARE open, so the UI can suggest them instead of
+// just saying no. Looks up to `lookaheadDays` past the requested check-in;
+// a site can appear more than once if it has multiple qualifying gaps.
+export async function suggestNearbyAvailability(parkId, checkIn, checkOut, { lookaheadDays = 180, maxSuggestions = 5 } = {}) {
+  if (!checkIn || !checkOut || new Date(checkOut) <= new Date(checkIn)) return [];
+  const nights = nightsBetween(checkIn, checkOut);
+  const sites = await loadSitesWithSeasons('park_id = $1', [parkId]);
+  if (!sites.length) return [];
+
+  const horizonEnd = new Date(checkIn);
+  horizonEnd.setDate(horizonEnd.getDate() + lookaheadDays);
+  const horizonEndStr = horizonEnd.toISOString().slice(0, 10);
+
+  const resRows = await query(
+    `SELECT site_id, check_in, check_out FROM reservations
+     WHERE park_id = $1 AND status = ANY($2::text[]) AND check_in < $4 AND check_out > $3
+     ORDER BY check_in ASC`,
+    [parkId, ACTIVE_STATUSES, checkIn, horizonEndStr]
+  );
+  const bySite = new Map();
+  for (const row of resRows.rows) {
+    if (!bySite.has(row.site_id)) bySite.set(row.site_id, []);
+    bySite.get(row.site_id).push({ checkIn: row.check_in, checkOut: row.check_out });
+  }
+
+  const suggestions = [];
+  for (const site of sites) {
+    const bookings = (bySite.get(site.id) || []).sort((a, b) => a.checkIn.localeCompare(b.checkIn));
+    let cursor = checkIn;
+    for (const booking of bookings) {
+      const gapNights = nightsBetween(cursor, booking.checkIn > horizonEndStr ? horizonEndStr : booking.checkIn);
+      if (gapNights >= nights) {
+        const suggestedCheckOut = new Date(cursor);
+        suggestedCheckOut.setDate(suggestedCheckOut.getDate() + nights);
+        suggestions.push({ siteId: site.id, siteName: site.name, checkIn: cursor, checkOut: suggestedCheckOut.toISOString().slice(0, 10) });
+      }
+      if (booking.checkOut > cursor) cursor = booking.checkOut;
+      if (cursor >= horizonEndStr) break;
+    }
+    if (cursor < horizonEndStr) {
+      const gapNights = nightsBetween(cursor, horizonEndStr);
+      if (gapNights >= nights) {
+        const suggestedCheckOut = new Date(cursor);
+        suggestedCheckOut.setDate(suggestedCheckOut.getDate() + nights);
+        suggestions.push({ siteId: site.id, siteName: site.name, checkIn: cursor, checkOut: suggestedCheckOut.toISOString().slice(0, 10) });
+      }
+    }
+  }
+
+  suggestions.sort((a, b) => a.checkIn.localeCompare(b.checkIn));
+  return suggestions.slice(0, maxSuggestions);
+}
+
 export async function getSite(siteId) {
   const [site] = await loadSitesWithSeasons('id = $1', [siteId]);
   return site || null;

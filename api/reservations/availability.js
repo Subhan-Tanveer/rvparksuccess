@@ -6,7 +6,7 @@
 // into this route (rather than a new file) to stay under Vercel's
 // Hobby-plan 12-function limit — it's already about availability for a
 // park+date range, so a waitlist join fits the same surface.
-import { getParkWithMedia, getAvailableSites, joinWaitlist } from '../_lib/reservations-store.js';
+import { getParkWithMedia, getAvailableSites, joinWaitlist, suggestNearbyAvailability } from '../_lib/reservations-store.js';
 
 export default async function handler(req, res) {
   if (req.method === 'POST') {
@@ -37,5 +37,11 @@ export default async function handler(req, res) {
   }
 
   const sites = await getAvailableSites(parkId, checkIn, checkOut, promo || null, guestEmail || null);
-  res.status(200).json({ park, checkIn, checkOut, sites });
+
+  // Only look for alternatives when the exact search came up empty — this
+  // is extra DB work, so skip it on the (much more common) case where the
+  // search already found something.
+  const suggestions = sites.length ? [] : await suggestNearbyAvailability(parkId, checkIn, checkOut);
+
+  res.status(200).json({ park, checkIn, checkOut, sites, suggestions });
 }

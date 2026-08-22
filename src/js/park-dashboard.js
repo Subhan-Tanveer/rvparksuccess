@@ -122,6 +122,14 @@ function formatUsd(cents) {
   return '$' + (cents / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+function formatDateShort(dateStr) {
+  return new Date(dateStr + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+function escapeHtml(str) {
+  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
 function statusChip(status) {
   if (status === 'confirmed') return { cls: 'is-confirmed', label: 'confirmed' };
   if (status === 'confirmed-deposit') return { cls: 'is-deposit', label: 'deposit paid' };
@@ -518,7 +526,18 @@ document.getElementById('checkAvailBtn').addEventListener('click', async () => {
   const data = await res.json();
 
   if (!data.sites.length) {
-    grid.innerHTML = '<div class="admin-empty">Nothing open for those dates.</div>';
+    const suggestions = data.suggestions || [];
+    grid.innerHTML = `
+      <div class="admin-empty">Nothing open for those exact dates.</div>
+      ${suggestions.length ? `
+        <p class="form-note" style="margin-top: var(--sp-2);">Nearest open dates instead:</p>
+        <div class="booking-suggestions">
+          ${suggestions.map((s) => `
+            <button type="button" class="booking-suggestion-btn" data-checkin="${s.checkIn}" data-checkout="${s.checkOut}">
+              ${escapeHtml(s.siteName)}: ${formatDateShort(s.checkIn)} – ${formatDateShort(s.checkOut)}
+            </button>`).join('')}
+        </div>` : ''}
+    `;
     return;
   }
   grid.innerHTML = data.sites.map((s) => `
@@ -527,6 +546,14 @@ document.getElementById('checkAvailBtn').addEventListener('click', async () => {
       <div class="meta">${s.type} · Sleeps ${s.capacity}</div>
       <div class="rate">${formatUsd(s.totalCents)} total</div>
     </div>`).join('');
+});
+
+document.getElementById('bookingSitesGrid').addEventListener('click', (e) => {
+  const suggestion = e.target.closest('.booking-suggestion-btn');
+  if (!suggestion) return;
+  document.getElementById('bkCheckIn').value = suggestion.dataset.checkin;
+  document.getElementById('bkCheckOut').value = suggestion.dataset.checkout;
+  document.getElementById('checkAvailBtn').click();
 });
 
 document.getElementById('bookingSitesGrid').addEventListener('click', (e) => {
