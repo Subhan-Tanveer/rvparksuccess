@@ -59,7 +59,10 @@
   .booking-site-btn .name { font-weight: 600; }
   .booking-site-btn .meta { font-size: 0.8125rem; color: var(--cream-dim); margin-top: 2px; }
   .booking-site-btn .rate { font-family: var(--font-mono); color: var(--amber-light); margin-top: 6px; font-weight: 700; }
-  .booking-suggestions { display: flex; flex-wrap: wrap; gap: var(--sp-2); margin-top: var(--sp-2); }
+  .booking-empty-state { grid-column: 1 / -1; text-align: left; }
+  .booking-empty-state .admin-empty { text-align: left; padding: 0; margin-bottom: var(--sp-2); }
+  .booking-empty-state .form-note { margin: 0 0 var(--sp-2); }
+  .booking-suggestions { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
   .booking-suggestion-btn { padding: 8px 14px; border-radius: var(--radius-pill); border: 1px solid var(--border-glass); background: var(--surface-glass); color: var(--cream); font-size: 0.8125rem; cursor: pointer; transition: border-color 0.2s ease, background 0.2s ease; }
   .booking-suggestion-btn:hover { border-color: var(--border-amber); background: rgba(46,155,84,0.12); }
   .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: var(--sp-3); margin-bottom: var(--sp-5); }

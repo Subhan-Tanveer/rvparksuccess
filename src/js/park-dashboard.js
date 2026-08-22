@@ -527,16 +527,23 @@ document.getElementById('checkAvailBtn').addEventListener('click', async () => {
 
   if (!data.sites.length) {
     const suggestions = data.suggestions || [];
+    // .booking-sites-grid is a multi-column grid meant for laying out site
+    // cards side by side — text content placed directly inside it becomes
+    // separate grid columns instead of stacking, which is why this whole
+    // block lives in one wrapper that spans every column and lays its own
+    // children out normally (block flow), independent of the parent grid.
     grid.innerHTML = `
-      <div class="admin-empty">Nothing open for those exact dates.</div>
-      ${suggestions.length ? `
-        <p class="form-note" style="margin-top: var(--sp-2);">Nearest open dates instead:</p>
-        <div class="booking-suggestions">
-          ${suggestions.map((s) => `
-            <button type="button" class="booking-suggestion-btn" data-checkin="${s.checkIn}" data-checkout="${s.checkOut}">
-              ${escapeHtml(s.siteName)}: ${formatDateShort(s.checkIn)} – ${formatDateShort(s.checkOut)}
-            </button>`).join('')}
-        </div>` : ''}
+      <div class="booking-empty-state">
+        <div class="admin-empty">Nothing open for those exact dates.</div>
+        ${suggestions.length ? `
+          <p class="form-note">Nearest open dates instead:</p>
+          <div class="booking-suggestions">
+            ${suggestions.map((s) => `
+              <button type="button" class="booking-suggestion-btn" data-checkin="${s.checkIn}" data-checkout="${s.checkOut}">
+                ${escapeHtml(s.siteName)}: ${formatDateShort(s.checkIn)} – ${formatDateShort(s.checkOut)}
+              </button>`).join('')}
+          </div>` : ''}
+      </div>
     `;
     return;
   }
