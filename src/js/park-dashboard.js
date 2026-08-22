@@ -29,6 +29,7 @@ import { loadGoogleMaps } from './google-maps-loader.js';
 import { initBookingRulesDashboard } from './booking-rules-dashboard.js';
 import { initMLOptimizationDashboard } from './ml-optimization-dashboard.js';
 import { initializeOccupancyForecastingDashboard } from './occupancy-forecasting-dashboard.js';
+import { CalendarGrid } from './calendar-grid.js';
 
 initCore();
 
@@ -140,6 +141,7 @@ function statusChip(status) {
 let currentPark = null;
 let currentSites = [];
 let selectedSiteId = null;
+let newBookingCalendarInited = false;
 
 /* -- subscription management -- */
 let subscriptionDetails = null;
@@ -221,6 +223,19 @@ async function loadDashboard() {
   renderParkFeaturesChecklist(currentPark.features || []);
   initParkMediaPanel('parkMediaPanel', currentPark);
   initParkLogoPanel('parkLogoPanel', currentPark);
+  // Instantiated once, not on every loadDashboard() re-run (e.g. after
+  // saving settings or adding a site) — CalendarGrid attaches its own
+  // document-level listeners (ESC to close, click-outside for its context
+  // menu) that never get cleaned up, so re-creating it on every reload
+  // would pile up duplicate handlers instead of just refreshing.
+  if (!newBookingCalendarInited) {
+    newBookingCalendarInited = true;
+    new CalendarGrid('newBookingCalendar', {
+      viewMode: 'month',
+      parkId: currentPark.id,
+      onReservationChange: () => loadDashboard(),
+    });
+  }
   document.getElementById('stParkName').value = currentPark.name || '';
   if (currentPark.name) document.getElementById('stParkName').classList.add('has-value');
   renderPromoCodes(currentPark.promoCodes || []);

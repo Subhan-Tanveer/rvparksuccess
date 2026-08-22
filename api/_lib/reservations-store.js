@@ -2395,46 +2395,6 @@ export async function cancelReservation(reservationId) {
   return mapReservation(res.rows[0]);
 }
 
-export async function createReservation({ parkId, siteId, guestName, guestPhone, guestEmail, checkInDate, checkOutDate, source = 'staff', status = 'confirmed', paymentMethod = 'cash' }) {
-  const checkInStr = checkInDate instanceof Date ? checkInDate.toISOString().split('T')[0] : checkInDate;
-  const checkOutStr = checkOutDate instanceof Date ? checkOutDate.toISOString().split('T')[0] : checkOutDate;
-
-  const nights = Math.ceil((new Date(checkOutStr) - new Date(checkInStr)) / (1000 * 60 * 60 * 24));
-
-  // Get site rate
-  const siteRes = await query('SELECT nightly_rate_cents FROM sites WHERE id = $1', [siteId]);
-  if (!siteRes.rows[0]) throw new Error('Site not found');
-  const nightlyRateCents = siteRes.rows[0].nightly_rate_cents;
-
-  const subtotalCents = nightlyRateCents * nights;
-  const feeCents = BOOKING_FEE_CENTS;
-  const taxCents = 0; // TODO: Calculate based on park tax rate
-  const totalCents = subtotalCents + feeCents + taxCents;
-
-  const id = `res-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-
-  const res = await query(
-    `INSERT INTO reservations (
-       id, park_id, site_id, check_in, check_out, nights,
-       guest_name, guest_email, guest_phone,
-       subtotal_cents, fee_cents, total_cents,
-       tax_cents, deposit_cents, status,
-       source, payment_method
-     )
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
-     RETURNING *`,
-    [
-      id, parkId, siteId, checkInStr, checkOutStr, nights,
-      guestName, guestEmail || '', guestPhone || '',
-      subtotalCents, feeCents, totalCents,
-      taxCents, 0, status,
-      source, paymentMethod,
-    ]
-  );
-
-  return mapReservation(res.rows[0]);
-}
-
 /* ================================================================ */
 /* Campaign Management — Promotional campaigns, A/B testing, ROI     */
 /* ================================================================ */

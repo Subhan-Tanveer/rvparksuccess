@@ -31,7 +31,7 @@ import {
   getReservationsForPark,
   getReservationsForParkInRange,
   getBlockedDatesForPark,
-  createReservation,
+  createStaffReservation,
   moveReservation,
   cancelReservation,
   addBlockedDate,
@@ -374,21 +374,25 @@ async function calendarHandler(req, res) {
 
       if (action === 'create-reservation') {
         if (!siteId || !guestName || !checkInDate || !checkOutDate) return res.status(400).json({ error: 'Missing required fields' });
-        const checkIn = new Date(checkInDate + 'T00:00:00Z');
-        const checkOut = new Date(checkOutDate + 'T00:00:00Z');
-        if (checkOut <= checkIn) return res.status(400).json({ error: 'Invalid dates' });
+        if (new Date(checkOutDate) <= new Date(checkInDate)) return res.status(400).json({ error: 'Invalid dates' });
 
-        const reservation = await createReservation({
-          parkId: session.parkId, siteId, guestName, guestPhone: guestPhone || null, guestEmail: null,
-          checkInDate: checkIn, checkOutDate: checkOut, source: 'staff', status: 'confirmed', paymentMethod: 'cash',
+        // createStaffReservation (not the old createReservation, now
+        // removed) is what actually checks the site is still free for
+        // these dates before booking it, locks the site during that check
+        // so two staff clicking the same open day at once can't both win,
+        // and prices the stay correctly (seasonal rates, tax) instead of
+        // a flat nightly rate with tax hardcoded to 0.
+        const reservation = await createStaffReservation({
+          parkId: session.parkId, siteId, checkIn: checkInDate, checkOut: checkOutDate,
+          guestName, guestPhone: guestPhone || null, guestEmail: null, paymentMethod: 'cash',
         });
 
         return res.status(201).json({
           success: true,
           reservation: {
             id: reservation.id, siteId: reservation.siteId, guestName: reservation.guestName,
-            checkInDate: toDateStr(reservation.checkIn),
-            checkOutDate: toDateStr(reservation.checkOut),
+            checkInDate: reservation.checkIn,
+            checkOutDate: reservation.checkOut,
             totalCents: reservation.totalCents,
           },
         });
@@ -411,7 +415,11 @@ async function calendarHandler(req, res) {
       return res.status(400).json({ error: 'Unknown action' });
     } catch (err) {
       console.error('Calendar POST error:', err);
-      return res.status(500).json({ error: 'Failed to process request' });
+      // Surface the real reason (e.g. "Site is no longer available for
+      // those dates" from createStaffReservation) instead of a generic
+      // failure message — staff need to know WHY a click-to-book failed,
+      // same as everywhere else booking errors are shown in this app.
+      return res.status(400).json({ error: err.message || 'Could not process request' });
     }
   }
 
