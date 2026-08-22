@@ -1147,6 +1147,36 @@ export async function suggestNearbyAvailability(parkId, checkIn, checkOut, { loo
   return suggestions.slice(0, maxSuggestions);
 }
 
+// The other half of "nothing open" — WHY. Without this, staff have to go
+// cross-reference the Reservations tab themselves to figure out which
+// booking is in the way, which is exactly the confusion this was built to
+// remove. Returns, per site, the specific reservation(s) overlapping the
+// requested range so the UI can say "Site A1 is already booked Sep 3-23 by
+// Subhan Tanveer" instead of leaving staff to guess.
+export async function getBlockingReservations(parkId, checkIn, checkOut) {
+  if (!checkIn || !checkOut || new Date(checkOut) <= new Date(checkIn)) return [];
+  const sites = await loadSitesWithSeasons('park_id = $1', [parkId]);
+  if (!sites.length) return [];
+  const siteNameById = new Map(sites.map((s) => [s.id, s.name]));
+
+  const resRows = await query(
+    `SELECT site_id, check_in, check_out, guest_name FROM reservations
+     WHERE park_id = $1 AND status = ANY($2::text[]) AND check_in < $4 AND check_out > $3
+     ORDER BY check_in ASC`,
+    [parkId, ACTIVE_STATUSES, checkIn, checkOut]
+  );
+
+  return resRows.rows
+    .filter((row) => siteNameById.has(row.site_id))
+    .map((row) => ({
+      siteId: row.site_id,
+      siteName: siteNameById.get(row.site_id),
+      guestName: row.guest_name,
+      checkIn: row.check_in,
+      checkOut: row.check_out,
+    }));
+}
+
 export async function getSite(siteId) {
   const [site] = await loadSitesWithSeasons('id = $1', [siteId]);
   return site || null;

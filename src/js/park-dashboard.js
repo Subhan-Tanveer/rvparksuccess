@@ -535,6 +535,7 @@ document.getElementById('checkAvailBtn').addEventListener('click', async () => {
     grid.innerHTML = `
       <div class="booking-empty-state">
         <div class="admin-empty">Nothing open for those exact dates.</div>
+        <div id="bookingBlockersList"></div>
         ${suggestions.length ? `
           <p class="form-note">Nearest open dates instead:</p>
           <div class="booking-suggestions">
@@ -545,6 +546,27 @@ document.getElementById('checkAvailBtn').addEventListener('click', async () => {
           </div>` : ''}
       </div>
     `;
+
+    // Say WHY, not just that it's blocked — fetched separately (rather than
+    // folded into the public availability response above) because it names
+    // the specific guest whose booking is in the way, which only this
+    // park's own logged-in staff should see, not any anonymous visitor.
+    try {
+      const blockersRes = await fetch(`/api/admin/ops?resource=availability-blockers&checkIn=${checkIn}&checkOut=${checkOut}`);
+      const blockersData = await blockersRes.json();
+      const blockersList = document.getElementById('bookingBlockersList');
+      if (blockersRes.ok && blockersList && blockersData.blockers?.length) {
+        blockersList.innerHTML = `
+          <p class="form-note">Why: already booked by —</p>
+          <ul class="booking-blockers-list">
+            ${blockersData.blockers.map((b) => `
+              <li>${escapeHtml(b.siteName)}: ${escapeHtml(b.guestName || 'a guest')}, ${formatDateShort(b.checkIn)} – ${formatDateShort(b.checkOut)}</li>`).join('')}
+          </ul>
+        `;
+      }
+    } catch (err) {
+      console.error('Could not load availability blockers:', err.message);
+    }
     return;
   }
   grid.innerHTML = data.sites.map((s) => `

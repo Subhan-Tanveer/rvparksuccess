@@ -135,6 +135,8 @@ export default async function handler(req, res) {
       return parkMediaHandler(req, res);
     case 'expenses':
       return expensesHandler(req, res);
+    case 'availability-blockers':
+      return availabilityBlockersHandler(req, res);
     default:
       return res.status(400).json({ error: 'Unknown or missing resource parameter' });
   }
@@ -1671,6 +1673,35 @@ async function aiInsightHandler(req, res) {
     console.error('AI insight error:', err.message);
     return res.status(502).json({ error: err.message });
   }
+}
+
+/* ================================================================== */
+/* availability-blockers — staff-only. When New Booking's search comes  */
+/* back empty, this says WHICH reservation(s) are in the way, so staff  */
+/* don't have to go cross-reference the Reservations tab themselves.    */
+/* Deliberately NOT part of the public /api/reservations/availability   */
+/* endpoint — that one is reachable by any anonymous guest, and this    */
+/* includes other guests' names, which only this park's own staff       */
+/* should see (staff already see every guest name in the Reservations   */
+/* table, so nothing new is exposed here, just surfaced sooner).        */
+/* ================================================================== */
+
+async function availabilityBlockersHandler(req, res) {
+  const session = requireSession(req, res, { role: 'park-staff' });
+  if (!session) return;
+
+  if (req.method !== 'GET') {
+    res.setHeader('Allow', 'GET');
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  const { checkIn, checkOut } = req.query;
+  if (!checkIn || !checkOut) {
+    return res.status(400).json({ error: 'checkIn and checkOut are required' });
+  }
+
+  const blockers = await store.getBlockingReservations(session.parkId, checkIn, checkOut);
+  return res.status(200).json({ blockers });
 }
 
 /* ================================================================== */
