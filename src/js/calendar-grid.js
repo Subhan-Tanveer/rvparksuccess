@@ -724,22 +724,27 @@ class CalendarGrid {
 
   async quickBookDialog(siteId, dateStr) {
     const site = this.sites.find((s) => s.id === siteId);
+    const defaultCheckOut = new Date(dateStr + 'T00:00:00');
+    defaultCheckOut.setDate(defaultCheckOut.getDate() + 1);
+
     const values = await formDialog({
       title: `Quick Book — ${site.name}`,
       submitLabel: 'Book Now',
       fields: [
         { id: 'guestName', label: 'Guest Name', required: true },
-        { id: 'guestPhone', label: 'Phone (optional)' },
+        { id: 'guestPhone', label: 'Phone (optional)', required: false },
+        { id: 'guestEmail', label: 'Email (optional)', type: 'email', required: false },
         { id: 'checkInDate', label: 'Check-In', type: 'date', value: dateStr, required: true },
-        { id: 'nights', label: 'Nights', type: 'number', min: 1, value: '1', required: true },
+        { id: 'checkOutDate', label: 'Check-Out', type: 'date', value: defaultCheckOut.toISOString().split('T')[0], required: true },
       ],
     });
 
     if (!values) return;
 
-    const checkOutDate = new Date(values.checkInDate);
-    checkOutDate.setDate(checkOutDate.getDate() + parseInt(values.nights));
-    const checkOutStr = checkOutDate.toISOString().split('T')[0];
+    if (new Date(values.checkOutDate) <= new Date(values.checkInDate)) {
+      alertDialog({ title: 'Error', message: 'Check-Out must be after Check-In.' });
+      return;
+    }
 
     await withLoading(null, async () => {
       const res = await fetch('/api/admin/ops?resource=calendar', {
@@ -750,8 +755,9 @@ class CalendarGrid {
           siteId,
           guestName: values.guestName,
           guestPhone: values.guestPhone || null,
+          guestEmail: values.guestEmail || null,
           checkInDate: values.checkInDate,
-          checkOutDate: checkOutStr,
+          checkOutDate: values.checkOutDate,
           paymentMethod: 'cash',
         }),
       });
@@ -775,7 +781,7 @@ class CalendarGrid {
       fields: [
         { id: 'startDate', label: 'Start Date', type: 'date', value: dateStr, required: true },
         { id: 'endDate', label: 'End Date', type: 'date', value: dateStr, required: true },
-        { id: 'reason', label: 'Reason (optional)' },
+        { id: 'reason', label: 'Reason (optional)', required: false },
       ],
     });
 

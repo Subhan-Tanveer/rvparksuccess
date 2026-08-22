@@ -369,7 +369,7 @@ async function calendarHandler(req, res) {
 
   if (req.method === 'POST') {
     try {
-      const { action, siteId, guestName, guestPhone, checkInDate, checkOutDate, reason } = req.body;
+      const { action, siteId, guestName, guestPhone, guestEmail, checkInDate, checkOutDate, reason } = req.body;
       if (!action) return res.status(400).json({ error: 'Missing action' });
 
       if (action === 'create-reservation') {
@@ -384,7 +384,7 @@ async function calendarHandler(req, res) {
         // a flat nightly rate with tax hardcoded to 0.
         const reservation = await createStaffReservation({
           parkId: session.parkId, siteId, checkIn: checkInDate, checkOut: checkOutDate,
-          guestName, guestPhone: guestPhone || null, guestEmail: null, paymentMethod: 'cash',
+          guestName, guestPhone: guestPhone || null, guestEmail: guestEmail || null, paymentMethod: 'cash',
         });
 
         return res.status(201).json({
