@@ -57,19 +57,19 @@ function renderLayout(container) {
         </div>
         <div class="ocf-info-row">
           <span class="info-item">
-            <span class="info-label">Today's Occupancy:</span>
+            <span class="info-label">Today's Occupancy: ${infoIcon('The predicted occupancy for the nearest day in the 90-day forecast above — a forward-looking prediction, not a count of guests already checked in today.')}</span>
             <span class="info-value" id="todayOccupancy">—</span>
           </span>
           <span class="info-item">
-            <span class="info-label">30-Day Average:</span>
+            <span class="info-label">30-Day Average: ${infoIcon('Average of the predicted occupancy for the first 30 days of the forecast above — a forward-looking number, not a look back at past occupancy.')}</span>
             <span class="info-value" id="avg30Occupancy">—</span>
           </span>
           <span class="info-item">
-            <span class="info-label">90-Day Average:</span>
+            <span class="info-label">90-Day Average: ${infoIcon('Average of the predicted occupancy across the full 90-day forecast above.')}</span>
             <span class="info-value" id="avg90Occupancy">—</span>
           </span>
           <span class="info-item">
-            <span class="info-label">Trend:</span>
+            <span class="info-label">Trend: ${infoIcon('Whether the 90-day forecast curve above is trending up, down, or flat, based on the shape of that forecast curve itself — not a look back at last year\'s occupancy history (see "Occupancy Trend (365 days)" below for that).')}</span>
             <span class="info-value" id="occupancyTrend">—</span>
           </span>
         </div>
@@ -94,17 +94,17 @@ function renderLayout(container) {
         </div>
         <div class="pace-grid" id="paceGrid">
           <div class="pace-card">
-            <div class="pace-label">Booking Pace</div>
+            <div class="pace-label">Booking Pace ${infoIcon('How many sites are currently booked for about 30 days from now, compared with how many were typically booked at the same lead time in the past year. 100% = right on pace; higher means booking faster than usual, lower means slower.')}</div>
             <div class="pace-index" id="paceIndex">—</div>
             <div class="pace-sub" id="paceInterpretation">—</div>
           </div>
           <div class="pace-card">
-            <div class="pace-label">Avg. Lead Time</div>
+            <div class="pace-label">Avg. Lead Time ${infoIcon('An estimate of typical booking lead time, scaled from the Booking Pace figure to the left — not a direct average of your reservations\' actual lead times.')}</div>
             <div class="pace-days" id="paceLeadDays">—</div>
             <div class="pace-sub">days in advance</div>
           </div>
           <div class="pace-card">
-            <div class="pace-label">Anomalies</div>
+            <div class="pace-label">Anomalies ${infoIcon('Reservations from the last 90 days that stand out from your typical booking pattern: unusually long stays, unusually high or low booking values, or a surge of bookings for the same check-in date.')}</div>
             <div class="pace-count" id="anomalyCount">—</div>
             <div class="pace-sub">unusual bookings</div>
           </div>
@@ -127,15 +127,15 @@ function renderLayout(container) {
           </div>
           <div class="gauge-details" id="gaugeDetails">
             <div class="detail-row">
-              <span class="detail-label">Target:</span>
+              <span class="detail-label">Target: ${infoIcon('The occupancy level this park is aiming to hit over the next 30 days.')}</span>
               <span class="detail-value">85%</span>
             </div>
             <div class="detail-row">
-              <span class="detail-label">Current:</span>
+              <span class="detail-label">Current: ${infoIcon('Percentage of available site-nights over the next 30 days that are already booked — the same figure shown in the gauge above.')}</span>
               <span class="detail-value" id="currentUtilization">—</span>
             </div>
             <div class="detail-row">
-              <span class="detail-label">Gap:</span>
+              <span class="detail-label">Gap: ${infoIcon('How far Current is below the 85% target, or confirmation the target has already been met.')}</span>
               <span class="detail-value" id="utilizationGap">—</span>
             </div>
           </div>
@@ -199,19 +199,19 @@ function renderLayout(container) {
         </div>
         <div class="trend-analysis" id="trendAnalysis">
           <div class="trend-stat">
-            <span class="trend-label">Direction:</span>
+            <span class="trend-label">Direction: ${infoIcon('Whether last year\'s real occupancy history has been trending up, down, or flat overall — looking backward, not the forward-looking forecast above.')}</span>
             <span class="trend-value" id="trendDirection">—</span>
           </div>
           <div class="trend-stat">
-            <span class="trend-label">Slope:</span>
+            <span class="trend-label">Slope: ${infoIcon('The average daily change in occupancy percentage points, from fitting a trend line through the last 365 days of real occupancy history — the raw number behind Direction.')}</span>
             <span class="trend-value" id="trendSlope">—</span>
           </div>
           <div class="trend-stat">
-            <span class="trend-label">Change (year):</span>
+            <span class="trend-label">Change (year): ${infoIcon('The total change in occupancy percentage points that trend line projects over a full year, based on that same historical slope.')}</span>
             <span class="trend-value" id="trendChange">—</span>
           </div>
           <div class="trend-stat">
-            <span class="trend-label">Model Fit (R²):</span>
+            <span class="trend-label">Model Fit (R²): ${infoIcon('How closely that trend line actually fits your real historical data, from 0 (no relationship) to 1 (a perfect fit).')}</span>
             <span class="trend-value" id="trendR2">—</span>
           </div>
         </div>

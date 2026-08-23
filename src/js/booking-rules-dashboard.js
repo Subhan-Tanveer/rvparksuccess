@@ -4,6 +4,7 @@
  */
 
 import { confirmDialog, formDialog, alertDialog, withLoading } from './ui-dialogs.js';
+import { infoIcon } from './info-icon.js';
 
 export function initBookingRulesDashboard() {
   const container = document.getElementById('bookingRulesDashboard');
@@ -18,7 +19,7 @@ export function initBookingRulesDashboard() {
     <div class="booking-rules-section">
       <div class="section-head" style="margin-bottom: var(--sp-3);">
         <p class="eyebrow">Booking Control</p>
-        <h2 style="font-size: 1.375rem;">Booking Rules</h2>
+        <h2 style="font-size: 1.375rem;">Booking Rules ${infoIcon("Define policies like stay length, booking window, group size, blackout dates, cancellation refunds, and seasonal rules for this park. Important: none of these rules are currently checked automatically when a guest books, cancels, or a price is calculated on the live site — they only take effect when you run them yourself using the 'Test Booking' tool below.")}</h2>
       </div>
 
       <!-- Site Selector -->
@@ -45,7 +46,9 @@ export function initBookingRulesDashboard() {
       <div style="display: flex; gap: var(--sp-2); margin-bottom: var(--sp-4); flex-wrap: wrap;">
         <button id="createRuleBtn" class="btn btn-primary btn-sm">+ New Rule</button>
         <button id="validateBookingBtn" class="btn btn-secondary btn-sm">Test Booking</button>
+        ${infoIcon("Runs a what-if check: pick a site, dates, and guest count, and this shows which active rules would block or warn about that booking, plus the estimated cost. It only previews the result here — it does not affect real availability or actually enforce anything on the live booking site.")}
         <button id="blackoutDatesBtn" class="btn btn-secondary btn-sm">Blackout Dates</button>
+        ${infoIcon("Lets you record date ranges you want blocked off, and they'll show as blocked if you run Test Booking for those dates. They are not yet wired into the live booking site, so guests can currently still book sites during a blackout period through the real checkout flow.")}
       </div>
 
       <!-- Rules Table -->
@@ -213,7 +216,7 @@ export function initBookingRulesDashboard() {
 
         <div class="modal-body">
           <div class="form-group">
-            <label>Rule Type *</label>
+            <label>Rule Type * ${infoIcon("Pick what kind of policy this is: Minimum/Maximum Stay (nights allowed), Booking Window (how far ahead a guest can or must book), Group Size Limit, Cancellation Policy (refund by days before check-in), or Seasonal Rules. Whichever you pick, it's only checked by this dashboard's Test Booking tool, not the real guest checkout.")}</label>
             <select id="ruleTypeSelect" ${ruleId ? 'disabled' : ''} style="width: 100%; padding: var(--sp-2); border: 1px solid var(--border-glass); border-radius: var(--radius-md); background: var(--surface-glass); color: var(--cream);">
               <option value="">-- Select --</option>
               <option value="min_stay" ${config.nights !== undefined && rule?.rule_type === 'min_stay' ? 'selected' : ''}>Minimum Stay</option>
@@ -226,7 +229,7 @@ export function initBookingRulesDashboard() {
           </div>
 
           <div class="form-group">
-            <label>Apply to Site</label>
+            <label>Apply to Site ${infoIcon("Choose a single site to scope this rule to just that site, or leave it 'Park-wide' to apply to all sites when Test Booking is run for any of them.")}</label>
             <select id="ruleSiteSelect" style="width: 100%; padding: var(--sp-2); border: 1px solid var(--border-glass); border-radius: var(--radius-md); background: var(--surface-glass); color: var(--cream);">
               <option value="">Park-wide (all sites)</option>
               ${sites.map((s) => `<option value="${s.id}" ${rule?.site_id === s.id ? 'selected' : ''}>${s.name}</option>`).join('')}
@@ -277,46 +280,46 @@ export function initBookingRulesDashboard() {
     const configs = {
       min_stay: `
         <div class="form-group">
-          <label>Minimum Nights</label>
+          <label>Minimum Nights ${infoIcon("The shortest stay Test Booking will allow — a test date range shorter than this is flagged as blocked. If it's longer than an existing Maximum Stay rule, saving will fail with a conflict error.")}</label>
           <input type="number" id="configMinNights" value="${config.nights || 1}" min="1" style="width: 100%; padding: var(--sp-2); border: 1px solid var(--border-glass); border-radius: var(--radius-md); background: var(--surface-glass); color: var(--cream);" />
         </div>
       `,
       max_stay: `
         <div class="form-group">
-          <label>Maximum Nights</label>
+          <label>Maximum Nights ${infoIcon("The longest stay Test Booking will allow — a test date range longer than this is flagged as blocked. If it's shorter than an existing Minimum Stay rule, saving will fail with a conflict error.")}</label>
           <input type="number" id="configMaxNights" value="${config.nights || 30}" min="1" style="width: 100%; padding: var(--sp-2); border: 1px solid var(--border-glass); border-radius: var(--radius-md); background: var(--surface-glass); color: var(--cream);" />
         </div>
       `,
       booking_window: `
         <div class="form-group">
-          <label>Days in Advance</label>
+          <label>Days in Advance ${infoIcon("The furthest out a guest can book, in days before check-in (e.g. 180 = up to 6 months ahead). Test Booking flags a check-in date further out than this as blocked.")}</label>
           <input type="number" id="configDaysAdvance" value="${config.days_in_advance || 180}" min="1" style="width: 100%; padding: var(--sp-2); border: 1px solid var(--border-glass); border-radius: var(--radius-md); background: var(--surface-glass); color: var(--cream);" />
         </div>
         <div class="form-group">
-          <label>Minimum Days Before Checkin</label>
+          <label>Minimum Days Before Checkin ${infoIcon("Requires the check-in date to be at least this many days from today, blocking last-minute test bookings that are too close. Leave at 0 to allow booking right up to check-in day.")}</label>
           <input type="number" id="configMinDaysBefore" value="${config.min_days_before || 0}" min="0" style="width: 100%; padding: var(--sp-2); border: 1px solid var(--border-glass); border-radius: var(--radius-md); background: var(--surface-glass); color: var(--cream);" />
         </div>
       `,
       group_size: `
         <div class="form-group">
-          <label>Minimum People</label>
+          <label>Minimum People ${infoIcon("Test Booking flags a booking with fewer guests than this as blocked.")}</label>
           <input type="number" id="configMinPeople" value="${config.min_people || 1}" min="1" style="width: 100%; padding: var(--sp-2); border: 1px solid var(--border-glass); border-radius: var(--radius-md); background: var(--surface-glass); color: var(--cream);" />
         </div>
         <div class="form-group">
-          <label>Maximum People</label>
+          <label>Maximum People ${infoIcon("Test Booking flags a booking with more guests than this as blocked.")}</label>
           <input type="number" id="configMaxPeople" value="${config.max_people || 8}" min="1" style="width: 100%; padding: var(--sp-2); border: 1px solid var(--border-glass); border-radius: var(--radius-md); background: var(--surface-glass); color: var(--cream);" />
         </div>
       `,
       cancellation: `
         <div class="form-group">
-          <label>Refund Tiers (JSON)</label>
+          <label>Refund Tiers (JSON) ${infoIcon("Sets what percentage of the total is refunded based on how many days before check-in the cancellation happens — the first tier whose 'days before check-in' the cancellation date meets, checked top to bottom, is the one used. This only feeds the cancellation preview in this dashboard; when a guest cancels their own booking from their account, no refund is calculated or issued automatically, so staff must process it separately.")}</label>
           <textarea id="configCancelTiers" style="width: 100%; padding: var(--sp-2); border: 1px solid var(--border-glass); border-radius: var(--radius-md); background: var(--surface-glass); color: var(--cream); font-family: monospace; font-size: 0.8125rem; height: 150px;">${JSON.stringify(config.tiers || [{ days_before_checkin: 14, refund_percent: 100 }, { days_before_checkin: 7, refund_percent: 50 }, { days_before_checkin: 0, refund_percent: 0 }], null, 2)}</textarea>
           <small style="color: var(--cream-dim);">Format: [{days_before_checkin: 14, refund_percent: 100}, ...]</small>
         </div>
       `,
       seasonal: `
         <div class="form-group">
-          <label>Season</label>
+          <label>Season ${infoIcon("The months this rule applies to (Spring = Mar-May, Summer = Jun-Aug, Fall = Sep-Nov, Winter = Dec-Feb) — used to decide when the 'Weekends only' check below applies.")}</label>
           <select id="configSeason" style="width: 100%; padding: var(--sp-2); border: 1px solid var(--border-glass); border-radius: var(--radius-md); background: var(--surface-glass); color: var(--cream);">
             <option value="spring" ${config.season === 'spring' ? 'selected' : ''}>Spring (Mar-May)</option>
             <option value="summer" ${config.season === 'summer' ? 'selected' : ''}>Summer (Jun-Aug)</option>
@@ -325,11 +328,11 @@ export function initBookingRulesDashboard() {
           </select>
         </div>
         <div class="form-group">
-          <label>Price Multiplier</label>
+          <label>Price Multiplier ${infoIcon("Not currently used anywhere in the system — changing this number has no effect on any price shown to guests or in Test Booking's cost estimate.")}</label>
           <input type="number" id="configSeasonMultiplier" value="${config.multiplier || 1.0}" min="0.1" step="0.1" style="width: 100%; padding: var(--sp-2); border: 1px solid var(--border-glass); border-radius: var(--radius-md); background: var(--surface-glass); color: var(--cream);" />
         </div>
         <div class="form-group">
-          <label><input type="checkbox" id="configWeekendsOnly" ${config.weekends_only ? 'checked' : ''} /> Weekends only</label>
+          <label><input type="checkbox" id="configWeekendsOnly" ${config.weekends_only ? 'checked' : ''} /> Weekends only ${infoIcon("If checked, Test Booking shows a warning (not a block) when a tested check-in date falls in this season on a weekday instead of a weekend.")}</label>
         </div>
       `,
     };
@@ -422,7 +425,7 @@ export function initBookingRulesDashboard() {
       <div class="modal-overlay"></div>
       <div class="modal-content">
         <div class="modal-header">
-          <h2>Test Booking Validation</h2>
+          <h2>Test Booking Validation ${infoIcon("Simulates a booking against your active rules and blackout dates for the chosen site, dates, and guest count, and shows what would happen. This is a preview only — it does not create a real booking and does not reflect what the live checkout flow currently enforces.")}</h2>
           <button class="modal-close">&times;</button>
         </div>
 
@@ -544,7 +547,7 @@ export function initBookingRulesDashboard() {
       <div class="modal-overlay"></div>
       <div class="modal-content" style="max-height: 80vh; overflow-y: auto;">
         <div class="modal-header">
-          <h2>Blackout Dates</h2>
+          <h2>Blackout Dates ${infoIcon("Records date ranges you don't want booked. Right now, dates listed here only get flagged as blocked when you run Test Booking — they don't stop guests from booking those dates on the live site.")}</h2>
           <button class="modal-close">&times;</button>
         </div>
 

@@ -2,6 +2,7 @@
 // Includes guest list, detail modal, segmentation view, and communication timeline
 
 import { confirmDialog, alertDialog, withLoading } from './ui-dialogs.js';
+import { infoIcon } from './info-icon.js';
 
 const RISK_COLORS = {
   low: '#2e9b54',    // green
@@ -86,10 +87,10 @@ function renderCrmContainer() {
                 <th>Name</th>
                 <th>Email</th>
                 <th>Phone</th>
-                <th>Visits</th>
-                <th>Lifetime Value</th>
-                <th>Risk Score</th>
-                <th>Last Booking</th>
+                <th>Visits ${infoIcon('Number of confirmed bookings this guest has made at this park.')}</th>
+                <th>Lifetime Value ${infoIcon('Meant to be the total this guest has ever spent across all their bookings. This is not automatically calculated yet, so it currently shows $0.00 for every guest.')}</th>
+                <th>Risk Score ${infoIcon('Meant to be a 0-100 score flagging guests likely to cancel or not return. This is not automatically calculated yet, so every guest currently shows as Low (0).')}</th>
+                <th>Last Booking ${infoIcon('Check-in date of this guest\'s most recent confirmed booking.')}</th>
                 <th>Tags</th>
                 <th>Actions</th>
               </tr>
@@ -109,22 +110,22 @@ function renderCrmContainer() {
       <div id="segmentsTabs" class="crm-tab-content" style="display: none;">
         <div class="crm-segments-grid">
           <div class="crm-segment-card" data-segment="loyal">
-            <div class="crm-segment-label">Loyal</div>
+            <div class="crm-segment-label">Loyal ${infoIcon('Guests with a Risk Score under 30. Since Risk Score is not automatically calculated yet (it defaults to 0), this currently includes almost every guest.')}</div>
             <div class="crm-segment-count" id="segmentLoyalCount">0</div>
             <div class="crm-segment-ltv">Avg LTV: <span id="segmentLoyalLtv">--</span></div>
           </div>
           <div class="crm-segment-card" data-segment="occasional">
-            <div class="crm-segment-label">Occasional</div>
+            <div class="crm-segment-label">Occasional ${infoIcon('Guests with a Risk Score between 30 and 60. Since Risk Score is not automatically calculated yet (it defaults to 0), this segment is typically empty.')}</div>
             <div class="crm-segment-count" id="segmentOccasionalCount">0</div>
             <div class="crm-segment-ltv">Avg LTV: <span id="segmentOccasionalLtv">--</span></div>
           </div>
           <div class="crm-segment-card" data-segment="at-risk">
-            <div class="crm-segment-label">At-Risk</div>
+            <div class="crm-segment-label">At-Risk ${infoIcon('Guests with a Risk Score over 60. Since Risk Score is not automatically calculated yet (it defaults to 0), this segment is typically empty.')}</div>
             <div class="crm-segment-count" id="segmentAtRiskCount">0</div>
             <div class="crm-segment-ltv">Avg LTV: <span id="segmentAtRiskLtv">--</span></div>
           </div>
           <div class="crm-segment-card" data-segment="inactive">
-            <div class="crm-segment-label">Inactive</div>
+            <div class="crm-segment-label">Inactive ${infoIcon('Guests who have never been contacted, or not contacted in the last 90 days. Since contact dates are not automatically logged yet, this currently includes nearly every guest.')}</div>
             <div class="crm-segment-count" id="segmentInactiveCount">0</div>
             <div class="crm-segment-ltv">Avg LTV: <span id="segmentInactiveLtv">--</span></div>
           </div>
@@ -132,6 +133,7 @@ function renderCrmContainer() {
       </div>
 
       <div id="atRiskTabs" class="crm-tab-content" style="display: none;">
+        <h4 class="crm-section-title">At-Risk Guests ${infoIcon('Guests with a Risk Score above 50, meant to flag a higher chance of cancelling or not returning. Risk Score is not automatically calculated yet, so this list will typically be empty.')}</h4>
         <div id="atRiskList"></div>
       </div>
     </div>
@@ -147,15 +149,15 @@ function renderCrmContainer() {
             </div>
             <div class="crm-guest-stats">
               <div class="crm-stat-item">
-                <span class="crm-stat-label">Lifetime Value</span>
+                <span class="crm-stat-label">Lifetime Value ${infoIcon('Meant to be the total this guest has ever spent across all their bookings. This is not automatically calculated yet, so it currently shows $0.00 for every guest.')}</span>
                 <span class="crm-stat-value" id="detailLtv">--</span>
               </div>
               <div class="crm-stat-item">
-                <span class="crm-stat-label">Stays</span>
+                <span class="crm-stat-label">Stays ${infoIcon('Number of bookings on file for this guest, up to the 10 most recent shown below.')}</span>
                 <span class="crm-stat-value" id="detailStays">--</span>
               </div>
               <div class="crm-stat-item">
-                <span class="crm-stat-label">Risk Score</span>
+                <span class="crm-stat-label">Risk Score ${infoIcon('Meant to be a 0-100 score flagging guests likely to cancel or not return. This is not automatically calculated yet, so every guest currently shows as Low (0).')}</span>
                 <span class="crm-stat-value" id="detailRiskScore">--</span>
               </div>
             </div>

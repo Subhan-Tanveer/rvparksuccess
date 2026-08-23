@@ -80,11 +80,11 @@ export class MLOptimizationDashboard {
               <div class="ml-value" id="mlHealthStatus">--</div>
             </div>
             <div class="ml-health-item">
-              <div class="ml-label">Prediction Accuracy (MAE)</div>
+              <div class="ml-label">Prediction Accuracy (MAE) ${infoIcon('Right now this number comes from how strongly rate changes predicted occupancy in this site’s training data, not from checking predictions against real outcomes yet. A measured, outcomes-based accuracy number shows up under "Accuracy (Last 30 days)" in Recommendation Performance below once enough applied-rate history builds up.')}</div>
               <div class="ml-value" id="mlHealthAccuracy">--</div>
             </div>
             <div class="ml-health-item">
-              <div class="ml-label">Data Points</div>
+              <div class="ml-label">Data Points ${infoIcon('How many distinct days from this site’s last 6 months of booking history were used to train the model — one data point per day that had at least one booking. At least 5 are needed before the model is treated as having enough data to trust.')}</div>
               <div class="ml-value" id="mlHealthDataPoints">--</div>
             </div>
             <div class="ml-health-item">
@@ -181,19 +181,19 @@ export class MLOptimizationDashboard {
           </div>
           <div class="ml-performance-grid">
             <div class="ml-perf-item">
-              <div class="ml-perf-label">Accuracy (Last 30 days)</div>
+              <div class="ml-perf-label">Accuracy (Last 30 days) ${infoIcon('How closely the rate you actually set matched what the AI suggested for that day, averaged over the selected window — smaller is closer alignment. This tracks agreement with the AI’s suggestion, not occupancy or revenue prediction error.')}</div>
               <div class="ml-perf-value" id="mlPerfAccuracy">--</div>
             </div>
             <div class="ml-perf-item">
-              <div class="ml-perf-label">Adoption Rate</div>
+              <div class="ml-perf-label">Adoption Rate ${infoIcon('Percentage of days in this window where you set the exact rate the AI suggested for that day.')}</div>
               <div class="ml-perf-value" id="mlPerfAdoption">--</div>
             </div>
             <div class="ml-perf-item">
-              <div class="ml-perf-label">Avg Revenue / Night</div>
+              <div class="ml-perf-label">Avg Revenue / Night ${infoIcon('Average revenue actually collected per night across the selected window, including nights that didn’t book (counted as $0) — this is what really happened, not a forecast.')}</div>
               <div class="ml-perf-value" id="mlPerfRevenue">--</div>
             </div>
             <div class="ml-perf-item">
-              <div class="ml-perf-label">Sample Size</div>
+              <div class="ml-perf-label">Sample Size ${infoIcon('How many days of recorded performance data (set rate vs. AI suggestion vs. actual results) fall within the selected window — the other numbers here are calculated from this many days.')}</div>
               <div class="ml-perf-value" id="mlPerfSampleSize">--</div>
             </div>
           </div>

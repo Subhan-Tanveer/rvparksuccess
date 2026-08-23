@@ -60,7 +60,7 @@ function renderPricingSettings(settings, park) {
 
     <div class="pricing-cards">
       <div class="pricing-card">
-        <div class="card-label">Min Rate</div>
+        <div class="card-label">Min Rate <span class="info-icon" tabindex="0" role="img" aria-label="What this shows" title="A hard floor — the model will never suggest or auto-apply a nightly rate below this, no matter how low occupancy is.">?</span></div>
         <div class="card-value">${formatUsd(settings.minPriceCents)}</div>
         <input
           type="number"
@@ -73,7 +73,7 @@ function renderPricingSettings(settings, park) {
         >
       </div>
       <div class="pricing-card">
-        <div class="card-label">Max Rate</div>
+        <div class="card-label">Max Rate <span class="info-icon" tabindex="0" role="img" aria-label="What this shows" title="A hard ceiling — the model will never suggest or auto-apply a nightly rate above this, no matter how high demand is.">?</span></div>
         <div class="card-value">${formatUsd(settings.maxPriceCents)}</div>
         <input
           type="number"
@@ -86,7 +86,7 @@ function renderPricingSettings(settings, park) {
         >
       </div>
       <div class="pricing-card">
-        <div class="card-label">Occupancy Target</div>
+        <div class="card-label">Occupancy Target <span class="info-icon" tabindex="0" role="img" aria-label="What this shows" title="The occupancy percent the model treats as 'normal' for a given night. A night trending above this target gets pushed toward a higher rate; a night trending below it gets pushed toward a lower one — within your Min/Max above.">?</span></div>
         <div class="card-value">${formatPercent(settings.occupancyTargetPercent)}</div>
         <input
           type="number"

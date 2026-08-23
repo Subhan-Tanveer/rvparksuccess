@@ -52,7 +52,7 @@ function renderLayout() {
 
     <div class="exp-noi-grid">
       <div class="stat-card glass">
-        <div class="label">Revenue ${infoIcon('Real revenue from confirmed bookings in this period — the same figure Advanced Analytics shows.')}</div>
+        <div class="label">Revenue ${infoIcon('Full price of every confirmed booking (including deposit-only bookings) whose stay falls in this period — not just cash collected so far. This can differ slightly from Advanced Analytics, which counts only the deposit collected for deposit-only bookings.')}</div>
         <div class="value" id="expRevenue">$0</div>
       </div>
       <div class="stat-card glass">
@@ -137,7 +137,7 @@ function renderSummary(summary) {
   const breakdown = container.querySelector('#expCategoryBreakdown');
   const entries = Object.entries(summary.expensesByCategory || {}).filter(([, cents]) => cents > 0).sort((a, b) => b[1] - a[1]);
   breakdown.innerHTML = entries.length
-    ? `<h4>Expenses by Category</h4><div class="exp-category-rows">${entries.map(([cat, cents]) => `
+    ? `<h4>Expenses by Category ${infoIcon('How your recorded expenses for this period add up by category. Only categories with at least one expense are shown, ranked highest to lowest.')}</h4><div class="exp-category-rows">${entries.map(([cat, cents]) => `
         <div class="exp-category-row">
           <span class="exp-category-name">${escapeHtml(cat)}</span>
           <span class="exp-category-amount">${formatUsd(cents)}</span>

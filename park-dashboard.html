@@ -250,7 +250,7 @@
             <div style="font-size: 1.125rem; font-weight: 600;" id="subPlanName">—</div>
           </div>
           <div>
-            <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--cream-dim); margin-bottom: 4px;">Next Billing</div>
+            <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--cream-dim); margin-bottom: 4px;">Next Billing <span class="info-icon" tabindex="0" role="img" aria-label="What this shows" title="The date your current billing period ends and your card is charged again for the next period.">?</span></div>
             <div style="font-size: 1.125rem; font-weight: 600;" id="subNextBilling">—</div>
           </div>
         </div>
@@ -324,7 +324,7 @@
     </form>
     <div class="table-scroll">
     <table class="admin-table">
-      <thead><tr><th>Name</th><th>Type</th><th>Sleeps</th><th>Rate</th><th></th></tr></thead>
+      <thead><tr><th>Name</th><th>Type</th><th>Sleeps</th><th>Rate <span class="info-icon" tabindex="0" role="img" aria-label="What this shows" title="The nightly rate charged for a stay. If a seasonal rate is listed underneath and covers the stay dates (start date inclusive, end date exclusive), it overrides the base nightly rate for those nights.">?</span></th><th></th></tr></thead>
       <tbody id="sitesTableBody"></tbody>
     </table>
     </div>
@@ -362,7 +362,7 @@
     </div>
     <div class="table-scroll">
     <table class="admin-table">
-      <thead><tr><th>Guest</th><th>Dates</th><th>Source</th><th>Status</th><th>Total</th><th>Balance Due</th></tr></thead>
+      <thead><tr><th>Guest</th><th>Dates</th><th>Source</th><th>Status</th><th>Total</th><th>Balance Due <span class="info-icon" tabindex="0" role="img" aria-label="What this shows" title="Only shown for reservations with a status of &quot;deposit paid&quot; — the amount still owed on top of the deposit already collected. Other statuses show a dash because either nothing has been paid (pending) or the full total was already charged (confirmed).">?</span></th></tr></thead>
       <tbody id="reservationsTableBody"></tbody>
     </table>
     </div>
@@ -377,11 +377,11 @@
     </div>
     <div class="stats-grid" style="margin-bottom: var(--sp-3);">
       <div class="stat-card glass">
-        <div class="label">Owed to You</div>
+        <div class="label">Owed to You <span class="info-icon" tabindex="0" role="img" aria-label="What this shows" title="Money already collected on confirmed and deposit-paid bookings that were NOT paid directly into your connected Stripe account — total collected minus the platform fee. For deposit-paid bookings this counts only the deposit collected so far, not the full booking total. Excludes bookings already paid straight to your connected account, since those never sit in the platform account waiting on a manual payout.">?</span></div>
         <div class="value" id="payoutNet">$0</div>
       </div>
       <div class="stat-card glass">
-        <div class="label">Platform Fee Retained</div>
+        <div class="label">Platform Fee Retained <span class="info-icon" tabindex="0" role="img" aria-label="What this shows" title="The platform fee taken out of the &quot;Owed to You&quot; amount above, for that same set of bookings (manual payouts only — not bookings paid directly to your connected Stripe account).">?</span></div>
         <div class="value" id="payoutFee">$0</div>
       </div>
     </div>
