@@ -33,6 +33,29 @@
   outline: none;
 }
 
+/* -- info-icon's actual tooltip popup — a single shared element (see
+   src/js/info-icon.js), position: fixed and repositioned fresh every time
+   it's shown, so it can't be clipped by an ancestor's overflow:hidden or
+   go stale between re-renders the way an absolutely-positioned one would. -- */
+.info-icon-tooltip {
+  display: none;
+  position: fixed;
+  z-index: 2000;
+  max-width: 280px;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm, 10px);
+  background: var(--black);
+  border: 1px solid var(--border-glass);
+  color: var(--cream);
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: normal;
+  pointer-events: none;
+  box-shadow: 0 8px 24px -8px rgba(0, 0, 0, 0.5);
+}
+
 /* -- page-transition intro (wipes in from left, holds, wipes out right).
    Pure CSS animation (not JS-triggered) so it covers the screen from the very
    first paint — a JS-driven version always starts a beat late, after the
