@@ -1,6 +1,7 @@
 // Pricing Intelligence Dashboard — manages dynamic pricing UI
 
 import { confirmDialog, alertDialog, withLoading } from './ui-dialogs.js';
+import { renderAiInsightWidget } from './ai-insight-widget.js';
 
 let currentPricingSettings = null;
 let currentSuggestions = [];
@@ -268,7 +269,7 @@ function renderSuggestions(suggestions, potentialImpact) {
     byDate[s.date].push(s);
   }
 
-  let html = '';
+  let html = '<div id="pricingAiInsightSlot"></div>';
 
   // Show revenue impact summary if available
   if (potentialImpact) {
@@ -351,6 +352,36 @@ function renderSuggestions(suggestions, potentialImpact) {
   `;
 
   container.innerHTML = html;
+
+  const insightSlot = document.getElementById('pricingAiInsightSlot');
+  if (insightSlot) {
+    const widget = renderAiInsightWidget('pricing-intelligence');
+    widget.setBusy(() => {
+      const dates = Object.keys(byDate).sort();
+      let up = 0, down = 0, flat = 0, totalChangePercent = 0;
+      for (const s of suggestions) {
+        const change = s.suggestedRate - s.currentRate;
+        if (change > 0) up++; else if (change < 0) down++; else flat++;
+        totalChangePercent += s.currentRate > 0 ? ((change / s.currentRate) * 100) : 0;
+      }
+      return {
+        dateRange: { start: dates[0], end: dates[dates.length - 1] },
+        nightsConsidered: suggestions.length,
+        nightsUp: up,
+        nightsDown: down,
+        nightsFlat: flat,
+        averageChangePercent: suggestions.length ? Math.round((totalChangePercent / suggestions.length) * 10) / 10 : 0,
+        // A sample, not the full set — the model needs representative
+        // examples of the reasoning breakdown, not every line item.
+        sampleSuggestions: suggestions.slice(0, 6).map((s) => ({
+          date: s.date, site: s.siteName, occupancyPercent: s.occupancyPercent,
+          changePercent: s.currentRate > 0 ? Math.round(((s.suggestedRate - s.currentRate) / s.currentRate) * 1000) / 10 : 0,
+          reasoning: s.reasoning,
+        })),
+      };
+    });
+    insightSlot.appendChild(widget);
+  }
 }
 
 export async function applySuggestion(siteId, date, suggestedRate, currentRate) {

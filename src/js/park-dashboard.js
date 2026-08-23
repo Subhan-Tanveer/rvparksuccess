@@ -666,13 +666,26 @@ function renderReservations(reservations) {
   emptyEl.style.display = 'none';
   tbody.innerHTML = reservations.map((r) => `
     <tr>
-      <td>${escapeHtml(r.guestName)}</td>
+      <td>${escapeHtml(r.guestName)}${riskBadgeHtml(r)}</td>
       <td>${r.checkIn} → ${r.checkOut}</td>
       <td>${r.source === 'staff' ? 'Staff' : 'Website'}</td>
       <td>${statusSelectHtml(r)}</td>
       <td>${formatUsd(r.totalCents)}</td>
       <td>${r.status === 'confirmed-deposit' ? formatUsd(r.balanceCents) : '—'}</td>
     </tr>`).join('');
+}
+
+// Deterministic risk signals computed at booking time (see
+// computeRiskSignals in reservations-store.js) — this is a flag for
+// staff to look at, never an auto-block, so it's just a hover badge
+// next to the name, not anything that changes what the row can do.
+function riskBadgeHtml(r) {
+  if (!r.riskFlag) return '';
+  return ` <span class="risk-badge" tabindex="0" role="img" aria-label="Flagged for review" title="${escapeAttr(r.riskReason || 'Flagged for review')}">⚠ Review</span>`;
+}
+
+function escapeAttr(str) {
+  return escapeHtml(str).replace(/"/g, '&quot;');
 }
 
 const RESERVATION_STATUS_OPTIONS = [

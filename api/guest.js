@@ -6,6 +6,7 @@
 // GET  → the logged-in guest's profile + booking history across all parks
 import { createGuestSessionCookie, clearGuestSessionCookie, getGuestSession } from './_lib/auth.js';
 import { createGuestAccount, verifyGuestLogin, getGuestByEmail, getBookingsForGuest, cancelReservationForGuest } from './_lib/reservations-store.js';
+import { notifyWaitlistOfOpening } from './_lib/waitlist-matcher.js';
 
 export default async function handler(req, res) {
   if (req.method === 'GET') {
@@ -49,6 +50,7 @@ export default async function handler(req, res) {
       const { reservationId } = req.body;
       try {
         const reservation = await cancelReservationForGuest(reservationId, session.guestEmail);
+        notifyWaitlistOfOpening(reservation.parkId).catch((err) => console.error('Waitlist notify error:', err.message));
         return res.status(200).json({ ok: true, reservation });
       } catch (err) {
         return res.status(400).json({ error: err.message });

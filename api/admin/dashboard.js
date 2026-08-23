@@ -9,6 +9,7 @@
 import Stripe from 'stripe';
 import { requireSession } from '../_lib/auth.js';
 import { getPark, getParkWithMedia, getSitesForPark, getReservationsForPark, updateParkSettings, getParkStats, addPromoCode, removePromoCode, getWaitlistForPark, removeWaitlistEntry, getPayoutSummary, setParkStripeAccount, registerPark, getPropertiesForUser, addSite, updateSite, deleteSite, addSeasonalRate, removeSeasonalRate, createStaffReservation, updateReservationPaymentStatus } from '../_lib/reservations-store.js';
+import { notifyWaitlistOfOpening } from '../_lib/waitlist-matcher.js';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -39,6 +40,9 @@ export default async function handler(req, res) {
     const { reservationId, status } = req.body || {};
     try {
       const reservation = await updateReservationPaymentStatus(session.parkId, reservationId, status);
+      if (status === 'canceled') {
+        notifyWaitlistOfOpening(session.parkId).catch((err) => console.error('Waitlist notify error:', err.message));
+      }
       return res.status(200).json({ reservation });
     } catch (err) {
       return res.status(400).json({ error: err.message });

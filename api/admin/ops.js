@@ -104,6 +104,7 @@ import { OTAManager } from '../_lib/ota-manager.js';
 import * as store from '../_lib/reservations-store.js';
 import RateOptimizer, { serializeModel, deserializeModel } from '../_lib/ml-rate-optimizer.js';
 import { generateNarrative } from '../_lib/ai-insights.js';
+import { notifyWaitlistOfOpening } from '../_lib/waitlist-matcher.js';
 import { del as deleteBlob } from '@vercel/blob';
 import { handleUpload } from '@vercel/blob/client';
 
@@ -471,6 +472,9 @@ async function calendarHandler(req, res) {
         const reservation = await getReservationById(reservationId);
         if (!reservation || reservation.parkId !== session.parkId) return res.status(404).json({ error: 'Reservation not found' });
         await cancelReservation(reservationId);
+        // Best-effort — a notify failure should never surface as a
+        // failed cancellation, the cancellation itself already succeeded.
+        notifyWaitlistOfOpening(session.parkId).catch((err) => console.error('Waitlist notify error:', err.message));
         return res.status(200).json({ success: true });
       }
 
@@ -1659,6 +1663,7 @@ const AI_INSIGHT_SYSTEM_PROMPTS = {
   'rate-optimization': 'You are a pricing analyst for an RV park. Given a JSON object with the park\'s current rate, AI-suggested rate, predicted occupancy, and elasticity data, write a 2-3 sentence plain-English summary explaining the recommendation and why. No markdown, no bullet points, speak directly to the park owner.',
   'analytics': 'You are a hospitality revenue analyst for an RV park. Given a JSON object of recent revenue, occupancy, and booking-source KPIs, write a 2-3 sentence plain-English summary of what stands out and one concrete thing worth doing about it. Only state facts the numbers actually support: repeatGuestPercent is the real guest-retention figure — topBookingSources[].source is just the name of a booking channel (e.g. "guest" means bookings made through the park\'s own website booking flow, as opposed to a staff-entered walk-in) and has no connection to repeat guests, so never conflate the two or claim something about repeat guests unless repeatGuestPercent itself supports it. No markdown, no bullet points, speak directly to the park owner.',
   'occupancy-forecast': 'You are a hospitality operations analyst for an RV park. Given a JSON object of occupancy forecast data (today, 30/90-day averages, trend, peak dates), write a 2-3 sentence plain-English outlook and one concrete staffing or pricing implication. No markdown, no bullet points, speak directly to the park owner.',
+  'pricing-intelligence': 'You are a pricing analyst for an RV park. Given a JSON object with a date range, aggregate stats (how many nights are suggested to go up/down/stay flat, average change), and a sample of individual suggestions each with a reasoning breakdown (occupancy vs target, how far out the booking window is, season, day of week, final multiplier), write a 2-3 sentence plain-English summary of what\'s actually driving these price changes across the period — e.g. "most of the increase is weekend/peak-season pressure, not occupancy" or "these are mostly early-booking-window discounts." Only state what the reasoning data actually supports — never invent an external cause (a specific holiday, local event, weather) that isn\'t present in the data. No markdown, no bullet points, speak directly to the park owner.',
 };
 
 async function aiInsightHandler(req, res) {

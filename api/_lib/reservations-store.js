@@ -252,6 +252,11 @@ function ensureSchema() {
       -- Existing databases predate paid_via_connect (added for new
       -- installs above) -- backfill it here so production doesn't error.
       ALTER TABLE reservations ADD COLUMN IF NOT EXISTS paid_via_connect BOOLEAN NOT NULL DEFAULT false;
+      -- Deterministic risk signals computed at booking time (mismatched
+      -- contact info, rapid repeat bookings, short-lead-time + high value)
+      -- for staff to review — never used to auto-block a booking.
+      ALTER TABLE reservations ADD COLUMN IF NOT EXISTS risk_flag BOOLEAN NOT NULL DEFAULT false;
+      ALTER TABLE reservations ADD COLUMN IF NOT EXISTS risk_reason TEXT;
       CREATE INDEX IF NOT EXISTS idx_reservations_park ON reservations(park_id);
       CREATE INDEX IF NOT EXISTS idx_reservations_site_dates ON reservations(site_id, check_in, check_out);
       CREATE INDEX IF NOT EXISTS idx_reservations_guest_email ON reservations(guest_email);
@@ -269,6 +274,10 @@ function ensureSchema() {
         created_at TIMESTAMPTZ NOT NULL DEFAULT now()
       );
       CREATE INDEX IF NOT EXISTS idx_waitlist_park ON waitlist(park_id);
+      -- Set once this entry has been auto-notified that a matching site
+      -- opened up, so a park with several cancellations in a row doesn't
+      -- email the same person repeatedly for the same request.
+      ALTER TABLE waitlist ADD COLUMN IF NOT EXISTS notified_at TIMESTAMPTZ;
 
       CREATE TABLE IF NOT EXISTS pricing_log (
         id TEXT PRIMARY KEY,
@@ -868,6 +877,8 @@ function mapReservation(row) {
     canceledAt: row.canceled_at ? row.canceled_at.toISOString() : null,
     createdAt: row.created_at.toISOString(),
     paidViaConnect: row.paid_via_connect === true,
+    riskFlag: row.risk_flag === true,
+    riskReason: row.risk_reason,
   };
 }
 
@@ -879,6 +890,7 @@ function mapWaitlist(row) {
   return {
     id: row.id, parkId: row.park_id, checkIn: row.check_in, checkOut: row.check_out,
     name: row.name, email: row.email, phone: row.phone, notes: row.notes,
+    notifiedAt: row.notified_at ? row.notified_at.toISOString() : null,
     createdAt: row.created_at.toISOString(),
   };
 }
@@ -1206,6 +1218,17 @@ export async function getWaitlistForPark(parkId) {
   return res.rows.map(mapWaitlist);
 }
 
+// Entries nobody has been auto-notified for yet — what a cancellation
+// handler checks against to find who might now be able to book.
+export async function getUnnotifiedWaitlistForPark(parkId) {
+  const res = await query('SELECT * FROM waitlist WHERE park_id = $1 AND notified_at IS NULL ORDER BY created_at ASC', [parkId]);
+  return res.rows.map(mapWaitlist);
+}
+
+export async function markWaitlistNotified(entryId) {
+  await query('UPDATE waitlist SET notified_at = now() WHERE id = $1', [entryId]);
+}
+
 export async function removeWaitlistEntry(entryId, parkId) {
   const res = await query('DELETE FROM waitlist WHERE id = $1 AND park_id = $2', [entryId, parkId]);
   if (res.rowCount === 0) throw new Error('Unknown waitlist entry');
@@ -1254,6 +1277,50 @@ async function siteIsStillAvailable(client, siteId, checkIn, checkOut, guestEmai
   return overlap.rows.length === 0;
 }
 
+// Deterministic risk signals only — this never blocks or auto-cancels a
+// booking, it just flags it for staff to look at in the Reservations
+// table. The actual decision (real guest vs. worth a phone call) stays
+// with a human; guessing wrong here (a legitimate guest auto-declined)
+// is a worse outcome than a human spending 30 seconds glancing at a flag.
+const DISPOSABLE_EMAIL_DOMAINS = ['mailinator.com', 'guerrillamail.com', 'tempmail.com', '10minutemail.com', 'yopmail.com', 'throwawaymail.com'];
+const HIGH_VALUE_RUSH_CENTS = 50000; // $500+
+
+async function computeRiskSignals(client, { guestEmail, guestPhone, checkIn, totalCents }) {
+  const reasons = [];
+
+  const daysUntilArrival = Math.floor((new Date(checkIn) - new Date()) / (1000 * 60 * 60 * 24));
+  if (daysUntilArrival <= 1 && totalCents >= HIGH_VALUE_RUSH_CENTS) {
+    reasons.push(`Booked for ${daysUntilArrival <= 0 ? 'today' : 'tomorrow'} at a high value ($${(totalCents / 100).toFixed(2)})`);
+  }
+
+  const domain = (guestEmail || '').split('@')[1]?.toLowerCase();
+  if (domain && DISPOSABLE_EMAIL_DOMAINS.includes(domain)) {
+    reasons.push('Email uses a known disposable/temporary email domain');
+  }
+
+  if (guestPhone) {
+    const digits = guestPhone.replace(/\D/g, '');
+    if (digits.length > 0 && digits.length < 7) {
+      reasons.push('Phone number looks incomplete');
+    }
+  }
+
+  if (guestEmail) {
+    // This check runs before the current row is inserted, so `count` is
+    // prior reservations only — the row being created makes count + 1.
+    // Threshold at 2 prior (3 total) rather than 3 prior (4 total).
+    const recent = await client.query(
+      `SELECT COUNT(*)::int AS count FROM reservations WHERE lower(guest_email) = lower($1) AND created_at > now() - interval '1 hour'`,
+      [guestEmail]
+    );
+    if (recent.rows[0].count >= 2) {
+      reasons.push(`${recent.rows[0].count + 1} reservations from this email in the last hour`);
+    }
+  }
+
+  return { flagged: reasons.length > 0, reason: reasons.join('; ') || null };
+}
+
 export async function createPendingReservation({ parkId, siteId, checkIn, checkOut, guestName, guestEmail, guestPhone, promoCode = null }) {
   const park = await getPark(parkId);
   const site = await getSite(siteId);
@@ -1279,17 +1346,18 @@ export async function createPendingReservation({ parkId, siteId, checkIn, checkO
     const pricing = priceStay(park, subtotalCents, promoCode);
     const id = `res-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     const holdExpiresAt = new Date(Date.now() + PENDING_HOLD_MINUTES * 60 * 1000);
+    const risk = await computeRiskSignals(client, { guestEmail, guestPhone, checkIn, totalCents: pricing.totalCents });
 
     const res = await client.query(
       `INSERT INTO reservations
         (id, park_id, site_id, check_in, check_out, nights, guest_name, guest_email, guest_phone,
          subtotal_cents, discount_cents, applied_promo_code, tax_cents, tax_rate_percent, fee_cents,
-         total_cents, deposit_cents, balance_cents, status, hold_expires_at, source)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,'pending',$19,'guest')
+         total_cents, deposit_cents, balance_cents, status, hold_expires_at, source, risk_flag, risk_reason)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,'pending',$19,'guest',$20,$21)
        RETURNING *`,
       [id, parkId, siteId, checkIn, checkOut, nights, guestName, guestEmail, guestPhone,
         pricing.subtotalCents, pricing.discountCents, pricing.appliedPromoCode, pricing.taxCents, pricing.taxRatePercent, pricing.feeCents,
-        pricing.totalCents, pricing.depositCents, pricing.balanceCents, holdExpiresAt]
+        pricing.totalCents, pricing.depositCents, pricing.balanceCents, holdExpiresAt, risk.flagged, risk.reason]
     );
     return mapReservation(res.rows[0]);
   });
@@ -1322,17 +1390,18 @@ export async function createStaffReservation({ parkId, siteId, checkIn, checkOut
     // way an online guest's pending checkout does, just for longer.
     const status = isPayLater ? 'pending' : 'confirmed';
     const holdExpiresAt = isPayLater ? new Date(Date.now() + 24 * 60 * 60 * 1000) : null;
+    const risk = await computeRiskSignals(client, { guestEmail, guestPhone, checkIn, totalCents: pricing.totalCents });
 
     const res = await client.query(
       `INSERT INTO reservations
         (id, park_id, site_id, check_in, check_out, nights, guest_name, guest_email, guest_phone,
          subtotal_cents, discount_cents, applied_promo_code, tax_cents, tax_rate_percent, fee_cents,
-         total_cents, deposit_cents, balance_cents, status, hold_expires_at, source, payment_method, notes)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,'staff',$21,$22)
+         total_cents, deposit_cents, balance_cents, status, hold_expires_at, source, payment_method, notes, risk_flag, risk_reason)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,'staff',$21,$22,$23,$24)
        RETURNING *`,
       [id, parkId, siteId, checkIn, checkOut, nights, guestName, guestEmail || '', guestPhone || '',
         pricing.subtotalCents, pricing.discountCents, pricing.appliedPromoCode, pricing.taxCents, pricing.taxRatePercent, pricing.feeCents,
-        pricing.totalCents, pricing.depositCents, pricing.balanceCents, status, holdExpiresAt, paymentMethod, notes || '']
+        pricing.totalCents, pricing.depositCents, pricing.balanceCents, status, holdExpiresAt, paymentMethod, notes || '', risk.flagged, risk.reason]
     );
     return mapReservation(res.rows[0]);
   });
