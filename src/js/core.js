@@ -4,6 +4,7 @@ import Lenis from 'lenis';
 import { placeholderDataUri } from './placeholder.js';
 import { initGuestActivityTracking } from './guest-session.js';
 import { initGuestNav } from './guest-nav.js';
+import { initInfoIconTaps } from './info-icon.js';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -434,6 +435,7 @@ export function initCore() {
   initFloatingLabels();
   initGuestActivityTracking();
   initGuestNav();
+  initInfoIconTaps();
   return { lenis };
 }
 
