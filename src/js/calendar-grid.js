@@ -74,23 +74,23 @@ class CalendarGrid {
         <div class="calendar-legend">
           <div class="legend-item">
             <div class="legend-dot available"></div>
-            <span>Available</span>
+            <span>Available <span class="info-icon" tabindex="0" role="img" aria-label="What this shows" title="Open — click it to Quick Book that site/date.">?</span></span>
           </div>
           <div class="legend-item">
             <div class="legend-dot booked"></div>
-            <span>Booked</span>
+            <span>Booked <span class="info-icon" tabindex="0" role="img" aria-label="What this shows" title="Confirmed and fully paid.">?</span></span>
           </div>
           <div class="legend-item">
             <div class="legend-dot pending"></div>
-            <span>Pending</span>
+            <span>Pending <span class="info-icon" tabindex="0" role="img" aria-label="What this shows" title="A 'pay later' hold — the site is reserved but payment hasn't been collected yet. Still counts as occupied.">?</span></span>
           </div>
           <div class="legend-item">
             <div class="legend-dot partial"></div>
-            <span>Partial</span>
+            <span>Partial <span class="info-icon" tabindex="0" role="img" aria-label="What this shows" title="A deposit was paid but there's a balance still owed — see Balance Due in the Reservations table for the amount.">?</span></span>
           </div>
           <div class="legend-item">
             <div class="legend-dot blocked"></div>
-            <span>Blocked/Maintenance</span>
+            <span>Blocked/Maintenance <span class="info-icon" tabindex="0" role="img" aria-label="What this shows" title="You've manually blocked this date for this site — guests can't book it. Click it to unblock.">?</span></span>
           </div>
         </div>
 

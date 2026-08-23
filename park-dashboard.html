@@ -270,7 +270,7 @@
   <div class="admin-section glass dash-page" id="new-booking" data-reveal>
     <div class="section-head" style="margin-bottom: var(--sp-3);">
       <p class="eyebrow">Phone or Walk-In</p>
-      <h2 style="font-size: 1.375rem;">New Booking</h2>
+      <h2 style="font-size: 1.375rem;">New Booking <span class="info-icon" tabindex="0" role="img" aria-label="What this shows" title="For booking a guest yourself over the phone or at the desk. Enter dates and Check Availability searches every site at once; the calendar below instead shows one site's whole month so you can see open/booked days before picking dates.">?</span></h2>
     </div>
     <div class="field-row-2">
       <div class="field-float"><input id="bkCheckIn" type="date" required><label for="bkCheckIn">Check-In</label></div>
@@ -324,7 +324,7 @@
     </form>
     <div class="table-scroll">
     <table class="admin-table">
-      <thead><tr><th>Name</th><th>Type</th><th>Sleeps</th><th>Rate <span class="info-icon" tabindex="0" role="img" aria-label="What this shows" title="The nightly rate charged for a stay. If a seasonal rate is listed underneath and covers the stay dates (start date inclusive, end date exclusive), it overrides the base nightly rate for those nights.">?</span></th><th></th></tr></thead>
+      <thead><tr><th>Name</th><th>Type <span class="info-icon" tabindex="0" role="img" aria-label="What this shows" title="Free-text description of the site (e.g. 'RV — Full Hookup', 'Tent Site') — shown to guests when they're picking a site to book.">?</span></th><th>Sleeps <span class="info-icon" tabindex="0" role="img" aria-label="What this shows" title="Maximum number of people this site is set up for — informational for guests, not enforced anywhere in booking.">?</span></th><th>Rate <span class="info-icon" tabindex="0" role="img" aria-label="What this shows" title="The nightly rate charged for a stay. If a seasonal rate is listed underneath and covers the stay dates (start date inclusive, end date exclusive), it overrides the base nightly rate for those nights.">?</span></th><th></th></tr></thead>
       <tbody id="sitesTableBody"></tbody>
     </table>
     </div>
@@ -347,7 +347,7 @@
     <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); flex-wrap: wrap;">
       <div>
         <p class="eyebrow">Quick Access</p>
-        <h3 style="margin: 0; font-size: 1.125rem;">Interactive Calendar</h3>
+        <h3 style="margin: 0; font-size: 1.125rem;">Interactive Calendar <span class="info-icon" tabindex="0" role="img" aria-label="What this shows" title="Same calendar embedded in New Booking above — this opens it full-screen. Drag a reservation onto a different day/site to move it, click an open day to Quick Book it, or block a date range for maintenance.">?</span></h3>
         <p style="font-size: 0.9375rem; color: var(--cream-dim); margin-top: var(--sp-1);">Drag-drop reservations, quick-book available dates, and manage blocked dates.</p>
       </div>
       <a href="calendar-grid.html" class="btn btn-primary magnetic" style="flex-shrink: 0;"><span>Open Calendar</span></a>
@@ -358,11 +358,11 @@
   <div class="admin-section glass dash-page" id="reservations" data-reveal>
     <div class="section-head" style="margin-bottom: 0;">
       <p class="eyebrow">Recent Activity</p>
-      <h2 style="font-size: 1.375rem;">Reservations</h2>
+      <h2 style="font-size: 1.375rem;">Reservations <span class="info-icon" tabindex="0" role="img" aria-label="What this shows" title="Every reservation for this park, most recent first. Status is a dropdown you can change directly (e.g. mark a 'pay later' hold as confirmed once it's actually paid) — changing it updates the real record, it's not just a label.">?</span></h2>
     </div>
     <div class="table-scroll">
     <table class="admin-table">
-      <thead><tr><th>Guest</th><th>Dates</th><th>Source</th><th>Status</th><th>Total</th><th>Balance Due <span class="info-icon" tabindex="0" role="img" aria-label="What this shows" title="Only shown for reservations with a status of &quot;deposit paid&quot; — the amount still owed on top of the deposit already collected. Other statuses show a dash because either nothing has been paid (pending) or the full total was already charged (confirmed).">?</span></th></tr></thead>
+      <thead><tr><th>Guest</th><th>Dates</th><th>Source <span class="info-icon" tabindex="0" role="img" aria-label="What this shows" title="'Website' = the guest booked themselves through the public booking page. 'Staff' = entered by you for a phone/walk-in booking or via the calendar's Quick Book.">?</span></th><th>Status</th><th>Total</th><th>Balance Due <span class="info-icon" tabindex="0" role="img" aria-label="What this shows" title="Only shown for reservations with a status of &quot;deposit paid&quot; — the amount still owed on top of the deposit already collected. Other statuses show a dash because either nothing has been paid (pending) or the full total was already charged (confirmed).">?</span></th></tr></thead>
       <tbody id="reservationsTableBody"></tbody>
     </table>
     </div>
@@ -416,7 +416,7 @@
   <div class="admin-section glass dash-page" id="waitlist" data-reveal>
     <div class="section-head" style="margin-bottom: var(--sp-3);">
       <p class="eyebrow">Sold Out Dates</p>
-      <h2 style="font-size: 1.375rem;">Waitlist</h2>
+      <h2 style="font-size: 1.375rem;">Waitlist <span class="info-icon" tabindex="0" role="img" aria-label="What this shows" title="Guests who asked to be told if a site opens up for dates that were sold out. When a reservation gets canceled, everyone here who could now book their wanted dates is automatically emailed — no need to work this list by hand.">?</span></h2>
     </div>
     <div class="table-scroll">
     <table class="admin-table">
@@ -431,7 +431,7 @@
   <div class="admin-section glass dash-page" id="promo-codes" data-reveal>
     <div class="section-head" style="margin-bottom: var(--sp-3);">
       <p class="eyebrow">Marketing</p>
-      <h2 style="font-size: 1.375rem;">Promo Codes</h2>
+      <h2 style="font-size: 1.375rem;">Promo Codes <span class="info-icon" tabindex="0" role="img" aria-label="What this shows" title="A code a guest can enter at checkout on the public booking page to get a discount. Percent off applies to the room subtotal; Flat $ off subtracts a fixed dollar amount.">?</span></h2>
     </div>
     <form id="promoForm">
       <div class="field-row-3">
@@ -461,7 +461,7 @@
   <div class="admin-section glass dash-page" id="park-settings" data-reveal>
     <div class="section-head" style="margin-bottom: var(--sp-3);">
       <p class="eyebrow">Billing</p>
-      <h2 style="font-size: 1.375rem;">Park Settings</h2>
+      <h2 style="font-size: 1.375rem;">Park Settings <span class="info-icon" tabindex="0" role="img" aria-label="What this shows" title="Everything here is guest-facing — your logo, photos, description, amenities, address, and tax rate all show up on the public booking page or affect what a guest is charged. Each field below has its own note explaining exactly what it controls.">?</span></h2>
     </div>
     <div class="park-profile-media">
       <p class="form-note" style="margin-bottom: var(--sp-2);">Your park's own brand mark, shown to guests — separate from the RVPark Success logo in this dashboard's own header above.</p>
@@ -546,7 +546,7 @@
   <div class="admin-section glass dash-page" id="ghl-crm" data-reveal>
     <div class="section-head" style="margin-bottom: var(--sp-3);">
       <p class="eyebrow">Marketing &amp; Automation</p>
-      <h2 style="font-size: 1.375rem;">Marketing CRM</h2>
+      <h2 style="font-size: 1.375rem;">Marketing CRM <span class="info-icon" tabindex="0" role="img" aria-label="What this shows" title="A link out to your GoHighLevel sub-account for email/SMS marketing campaigns — separate from the native CRM tab (guest profiles/tags) elsewhere in this sidebar. Only visible on Growth and Maximum plans.">?</span></h2>
     </div>
     <div id="ghlCrmBox"></div>
   </div>
