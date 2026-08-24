@@ -8,9 +8,10 @@
 // limit.
 import Stripe from 'stripe';
 import { requireSession } from '../_lib/auth.js';
-import { getPark, getParkWithMedia, getSitesForPark, getReservationsForPark, updateParkSettings, getParkStats, addPromoCode, removePromoCode, getWaitlistForPark, removeWaitlistEntry, getPayoutSummary, setParkStripeAccount, registerPark, getPropertiesForUser, addSite, updateSite, deleteSite, addSeasonalRate, removeSeasonalRate, createStaffReservation, updateReservationPaymentStatus } from '../_lib/reservations-store.js';
+import { getPark, getParkWithMedia, getSitesForPark, getSite, getReservationsForPark, updateParkSettings, getParkStats, addPromoCode, removePromoCode, getWaitlistForPark, removeWaitlistEntry, getPayoutSummary, setParkStripeAccount, registerPark, getPropertiesForUser, addSite, updateSite, deleteSite, addSeasonalRate, removeSeasonalRate, createStaffReservation, updateReservationPaymentStatus } from '../_lib/reservations-store.js';
 import { notifyWaitlistOfOpening } from '../_lib/waitlist-matcher.js';
 import { syncReservationToGoogleCalendar, deleteReservationFromGoogleCalendar } from '../_lib/google-calendar.js';
+import { sendGuestConfirmationEmail } from '../_lib/booking-emails.js';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -38,6 +39,13 @@ export default async function handler(req, res) {
           syncReservationToGoogleCalendar(park, reservation).catch((err) =>
             console.error('Google Calendar sync failed:', err.message)
           );
+          // Guest still gets a confirmation email, but not an owner
+          // notification — staff already know, they're the ones who just
+          // entered this booking themselves.
+          const site = await getSite(reservation.siteId).catch(() => null);
+          sendGuestConfirmationEmail(park, reservation, site).catch((err) =>
+            console.error('Guest confirmation email failed:', err.message)
+          );
         }
       }
       return res.status(201).json({ reservation });
@@ -60,11 +68,17 @@ export default async function handler(req, res) {
         );
       } else if (status === 'confirmed' || status === 'confirmed-deposit') {
         // Covers a pay-later hold getting marked paid — this is the first
-        // time it becomes real enough to belong on the calendar.
+        // time it becomes real enough to belong on the calendar and to
+        // tell the guest it's confirmed. No owner notification here
+        // either — staff are the ones making this exact status change.
         const park = await getPark(session.parkId);
         if (park) {
           syncReservationToGoogleCalendar(park, reservation).catch((err) =>
             console.error('Google Calendar sync failed:', err.message)
+          );
+          const site = await getSite(reservation.siteId).catch(() => null);
+          sendGuestConfirmationEmail(park, reservation, site).catch((err) =>
+            console.error('Guest confirmation email failed:', err.message)
           );
         }
       }

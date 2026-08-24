@@ -106,6 +106,7 @@ import RateOptimizer, { serializeModel, deserializeModel } from '../_lib/ml-rate
 import { generateNarrative } from '../_lib/ai-insights.js';
 import { notifyWaitlistOfOpening } from '../_lib/waitlist-matcher.js';
 import { getGoogleAuthUrl, exchangeCodeForTokens, getGoogleAccountEmail, syncReservationToGoogleCalendar, deleteReservationFromGoogleCalendar, backfillGoogleCalendar } from '../_lib/google-calendar.js';
+import { sendGuestConfirmationEmail } from '../_lib/booking-emails.js';
 import { del as deleteBlob } from '@vercel/blob';
 import { handleUpload } from '@vercel/blob/client';
 
@@ -397,6 +398,11 @@ async function calendarHandler(req, res) {
           if (park) {
             syncReservationToGoogleCalendar(park, reservation).catch((err) =>
               console.error('Google Calendar sync failed:', err.message)
+            );
+            // Guest gets a confirmation, no owner notification — this IS
+            // the staff member booking it, via the calendar's Quick Book.
+            sendGuestConfirmationEmail(park, reservation, await store.getSite(siteId).catch(() => null)).catch((err) =>
+              console.error('Guest confirmation email failed:', err.message)
             );
           }
         }

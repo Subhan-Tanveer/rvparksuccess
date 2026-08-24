@@ -18,8 +18,9 @@
 // for the checkout.session.completed event). Never put this value in any
 // file in this repo.
 import Stripe from 'stripe';
-import { confirmReservationBySessionId, setParkPlan, getPark } from '../_lib/reservations-store.js';
+import { confirmReservationBySessionId, setParkPlan, getPark, getSite } from '../_lib/reservations-store.js';
 import { syncReservationToGoogleCalendar } from '../_lib/google-calendar.js';
+import { sendGuestConfirmationEmail, sendOwnerBookingNotificationEmail } from '../_lib/booking-emails.js';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -79,6 +80,13 @@ export default async function handler(req, res) {
         if (park) {
           syncReservationToGoogleCalendar(park, confirmed).catch((err) =>
             console.error('Google Calendar sync failed:', err.message)
+          );
+          const site = await getSite(confirmed.siteId).catch(() => null);
+          sendGuestConfirmationEmail(park, confirmed, site).catch((err) =>
+            console.error('Guest confirmation email failed:', err.message)
+          );
+          sendOwnerBookingNotificationEmail(park, confirmed, site).catch((err) =>
+            console.error('Owner notification email failed:', err.message)
           );
         }
       }
