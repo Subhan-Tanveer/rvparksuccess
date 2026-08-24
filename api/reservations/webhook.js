@@ -72,20 +72,25 @@ export default async function handler(req, res) {
       } else {
         // Best-effort — a park with no Google Calendar connected returns
         // immediately (see syncReservationToGoogleCalendar), and a real
-        // sync failure must never fail the webhook itself: Stripe retries
-        // a non-2xx response, which would re-run the whole confirmation
-        // path (already idempotent, but pointless) just because Google
-        // hiccuped.
+        // sync/send failure must never fail the webhook itself: Stripe
+        // retries a non-2xx response, which would re-run the whole
+        // confirmation path (already idempotent, but pointless) just
+        // because Google hiccuped. Each is still AWAITED (wrapped in its
+        // own try/catch) rather than fire-and-forget — Vercel's Node
+        // runtime can freeze the function as soon as the response is
+        // sent, silently killing any still-in-flight unawaited promise
+        // before its network call finishes, which was dropping the
+        // calendar sync and both emails with no error ever logged.
         const park = await getPark(confirmed.parkId);
         if (park) {
-          syncReservationToGoogleCalendar(park, confirmed).catch((err) =>
+          const site = await getSite(confirmed.siteId).catch(() => null);
+          await syncReservationToGoogleCalendar(park, confirmed).catch((err) =>
             console.error('Google Calendar sync failed:', err.message)
           );
-          const site = await getSite(confirmed.siteId).catch(() => null);
-          sendGuestConfirmationEmail(park, confirmed, site).catch((err) =>
+          await sendGuestConfirmationEmail(park, confirmed, site).catch((err) =>
             console.error('Guest confirmation email failed:', err.message)
           );
-          sendOwnerBookingNotificationEmail(park, confirmed, site).catch((err) =>
+          await sendOwnerBookingNotificationEmail(park, confirmed, site).catch((err) =>
             console.error('Owner notification email failed:', err.message)
           );
         }

@@ -394,14 +394,17 @@ async function calendarHandler(req, res) {
         });
 
         if (reservation.status === 'confirmed' || reservation.status === 'confirmed-deposit') {
+          // Awaited — Vercel's Node runtime can freeze the function right
+          // after the response is sent, silently killing an unawaited
+          // promise before its network call (Calendar/Gmail API) finishes.
           const park = await getPark(session.parkId);
           if (park) {
-            syncReservationToGoogleCalendar(park, reservation).catch((err) =>
+            await syncReservationToGoogleCalendar(park, reservation).catch((err) =>
               console.error('Google Calendar sync failed:', err.message)
             );
             // Guest gets a confirmation, no owner notification — this IS
             // the staff member booking it, via the calendar's Quick Book.
-            sendGuestConfirmationEmail(park, reservation, await store.getSite(siteId).catch(() => null)).catch((err) =>
+            await sendGuestConfirmationEmail(park, reservation, await store.getSite(siteId).catch(() => null)).catch((err) =>
               console.error('Guest confirmation email failed:', err.message)
             );
           }
@@ -461,7 +464,7 @@ async function calendarHandler(req, res) {
         if (updated.status === 'confirmed' || updated.status === 'confirmed-deposit') {
           const park = await getPark(session.parkId);
           if (park) {
-            syncReservationToGoogleCalendar(park, updated).catch((err) =>
+            await syncReservationToGoogleCalendar(park, updated).catch((err) =>
               console.error('Google Calendar sync failed:', err.message)
             );
           }
@@ -500,8 +503,10 @@ async function calendarHandler(req, res) {
         await cancelReservation(reservationId);
         // Best-effort — a notify failure should never surface as a
         // failed cancellation, the cancellation itself already succeeded.
-        notifyWaitlistOfOpening(session.parkId).catch((err) => console.error('Waitlist notify error:', err.message));
-        deleteReservationFromGoogleCalendar(session.parkId, reservation).catch((err) =>
+        // Awaited (not fire-and-forget) so Vercel's Node runtime doesn't
+        // freeze the function before these network calls finish.
+        await notifyWaitlistOfOpening(session.parkId).catch((err) => console.error('Waitlist notify error:', err.message));
+        await deleteReservationFromGoogleCalendar(session.parkId, reservation).catch((err) =>
           console.error('Google Calendar delete failed:', err.message)
         );
         return res.status(200).json({ success: true });

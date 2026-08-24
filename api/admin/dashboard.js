@@ -34,16 +34,21 @@ export default async function handler(req, res) {
       // marked paid via resource:'reservation-status' below, not now,
       // so a park's calendar doesn't fill up with holds nobody confirmed.
       if (reservation.status === 'confirmed' || reservation.status === 'confirmed-deposit') {
+        // Awaited (each wrapped in its own try/catch below) rather than
+        // fire-and-forget — Vercel's Node runtime can freeze the function
+        // right after the response is sent, silently killing an
+        // unawaited promise before its network call (Calendar/Gmail API)
+        // finishes.
         const park = await getPark(session.parkId);
         if (park) {
-          syncReservationToGoogleCalendar(park, reservation).catch((err) =>
+          await syncReservationToGoogleCalendar(park, reservation).catch((err) =>
             console.error('Google Calendar sync failed:', err.message)
           );
           // Guest still gets a confirmation email, but not an owner
           // notification — staff already know, they're the ones who just
           // entered this booking themselves.
           const site = await getSite(reservation.siteId).catch(() => null);
-          sendGuestConfirmationEmail(park, reservation, site).catch((err) =>
+          await sendGuestConfirmationEmail(park, reservation, site).catch((err) =>
             console.error('Guest confirmation email failed:', err.message)
           );
         }
@@ -62,8 +67,8 @@ export default async function handler(req, res) {
     try {
       const reservation = await updateReservationPaymentStatus(session.parkId, reservationId, status);
       if (status === 'canceled') {
-        notifyWaitlistOfOpening(session.parkId).catch((err) => console.error('Waitlist notify error:', err.message));
-        deleteReservationFromGoogleCalendar(session.parkId, reservation).catch((err) =>
+        await notifyWaitlistOfOpening(session.parkId).catch((err) => console.error('Waitlist notify error:', err.message));
+        await deleteReservationFromGoogleCalendar(session.parkId, reservation).catch((err) =>
           console.error('Google Calendar delete failed:', err.message)
         );
       } else if (status === 'confirmed' || status === 'confirmed-deposit') {
@@ -71,13 +76,14 @@ export default async function handler(req, res) {
         // time it becomes real enough to belong on the calendar and to
         // tell the guest it's confirmed. No owner notification here
         // either — staff are the ones making this exact status change.
+        // Awaited for the same reason as the staff-booking branch above.
         const park = await getPark(session.parkId);
         if (park) {
-          syncReservationToGoogleCalendar(park, reservation).catch((err) =>
+          await syncReservationToGoogleCalendar(park, reservation).catch((err) =>
             console.error('Google Calendar sync failed:', err.message)
           );
           const site = await getSite(reservation.siteId).catch(() => null);
-          sendGuestConfirmationEmail(park, reservation, site).catch((err) =>
+          await sendGuestConfirmationEmail(park, reservation, site).catch((err) =>
             console.error('Guest confirmation email failed:', err.message)
           );
         }
