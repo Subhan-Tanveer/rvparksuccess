@@ -11,6 +11,7 @@ import {
   getGoogleCalendarCredentials,
   setReservationGoogleEventId,
   getReservationGoogleEventId,
+  getUpcomingConfirmedReservationsForPark,
 } from './reservations-store.js';
 
 const SCOPE = 'https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/userinfo.email';
@@ -156,4 +157,28 @@ export async function deleteReservationFromGoogleCalendar(parkId, reservation) {
     const data = await res.json().catch(() => ({}));
     throw new Error(data.error?.message || 'Could not remove Google Calendar event');
   }
+}
+
+// Run once, right after a park connects a calendar for the first time —
+// without this, only reservations made AFTER connecting would ever show
+// up, leaving every booking that already existed invisible on the
+// newly-connected calendar (exactly the bug reported: bookings already on
+// the reservation calendar not appearing in Google Calendar after
+// connecting). One reservation failing to sync doesn't stop the rest —
+// each is isolated so a single bad event can't silently swallow the
+// whole backfill.
+export async function backfillGoogleCalendar(park) {
+  const reservations = await getUpcomingConfirmedReservationsForPark(park.id);
+  let synced = 0;
+  let failed = 0;
+  for (const reservation of reservations) {
+    try {
+      await syncReservationToGoogleCalendar(park, reservation);
+      synced++;
+    } catch (err) {
+      failed++;
+      console.error(`Backfill sync failed for reservation ${reservation.id}:`, err.message);
+    }
+  }
+  return { total: reservations.length, synced, failed };
 }

@@ -2471,6 +2471,22 @@ export async function getReservationById(reservationId) {
   return res.rows[0] ? mapReservation(res.rows[0]) : null;
 }
 
+// Backfill target when a park first connects Google Calendar — every
+// still-relevant confirmed booking, not just ones made after connecting.
+// Scoped to check_out >= today so a park with years of past history
+// doesn't get flooded with events for stays that already happened.
+export async function getUpcomingConfirmedReservationsForPark(parkId) {
+  const res = await query(
+    `SELECT * FROM reservations
+     WHERE park_id = $1
+       AND status IN ('confirmed', 'confirmed-deposit')
+       AND check_out >= CURRENT_DATE
+     ORDER BY check_in ASC`,
+    [parkId]
+  );
+  return res.rows.map(mapReservation);
+}
+
 export async function getReservationsForParkInRange(parkId, startDate, endDate) {
   const startStr = startDate instanceof Date ? startDate.toISOString().split('T')[0] : startDate;
   const endStr = endDate instanceof Date ? endDate.toISOString().split('T')[0] : endDate;

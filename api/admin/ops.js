@@ -105,7 +105,7 @@ import * as store from '../_lib/reservations-store.js';
 import RateOptimizer, { serializeModel, deserializeModel } from '../_lib/ml-rate-optimizer.js';
 import { generateNarrative } from '../_lib/ai-insights.js';
 import { notifyWaitlistOfOpening } from '../_lib/waitlist-matcher.js';
-import { getGoogleAuthUrl, exchangeCodeForTokens, getGoogleAccountEmail, syncReservationToGoogleCalendar, deleteReservationFromGoogleCalendar } from '../_lib/google-calendar.js';
+import { getGoogleAuthUrl, exchangeCodeForTokens, getGoogleAccountEmail, syncReservationToGoogleCalendar, deleteReservationFromGoogleCalendar, backfillGoogleCalendar } from '../_lib/google-calendar.js';
 import { del as deleteBlob } from '@vercel/blob';
 import { handleUpload } from '@vercel/blob/client';
 
@@ -1794,9 +1794,20 @@ async function googleCalendarHandler(req, res) {
         return redirectBack('no-refresh-token');
       }
       const email = await getGoogleAccountEmail(tokens.access_token);
-      await store.setGoogleCalendarConnection(session.parkId, {
+      const park = await store.setGoogleCalendarConnection(session.parkId, {
         refreshToken: tokens.refresh_token, calendarId: 'primary', email,
       });
+      // Without this, only reservations made AFTER connecting would ever
+      // show up — every booking that already existed would stay invisible
+      // on the newly-connected calendar. Awaited (not fire-and-forget)
+      // since the connect flow should be the one moment it's worth a
+      // couple extra seconds for the owner to actually see their existing
+      // bookings land, not just future ones.
+      try {
+        await backfillGoogleCalendar(park);
+      } catch (err) {
+        console.error('Google Calendar backfill failed:', err.message);
+      }
       return redirectBack('connected');
     } catch (err) {
       console.error('Google Calendar OAuth callback error:', err.message);
