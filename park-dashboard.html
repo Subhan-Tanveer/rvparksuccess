@@ -355,14 +355,8 @@
 
     <div style="margin-top: var(--sp-4); padding-top: var(--sp-4); border-top: 1px solid var(--border-glass);">
       <p class="eyebrow" style="margin-bottom: var(--sp-2);">Sync</p>
-      <h3 style="margin: 0 0 var(--sp-2); font-size: 1.125rem;">Google Calendar <span class="info-icon" tabindex="0" role="img" aria-label="What this shows" title="One-way sync: every confirmed reservation for this park gets added as an event on the Google Calendar you connect, so you can see bookings alongside everything else on your calendar. Canceling a reservation removes its event too. Edits made directly in Google Calendar don't sync back — this dashboard stays the source of truth. Independent of the Gmail connection below — connect either one on its own.">?</span></h3>
+      <h3 style="margin: 0 0 var(--sp-2); font-size: 1.125rem;">Google Calendar <span class="info-icon" tabindex="0" role="img" aria-label="What this shows" title="One-way sync: every confirmed reservation for this park gets added as an event on the Google Calendar you connect, so you can see bookings alongside everything else on your calendar. Canceling a reservation removes its event too. Edits made directly in Google Calendar don't sync back — this dashboard stays the source of truth.">?</span></h3>
       <div id="googleCalendarBox" style="padding: var(--sp-3); border-radius: var(--radius-md); background: var(--surface-glass); border: 1px solid var(--border-glass);"></div>
-    </div>
-
-    <div style="margin-top: var(--sp-4); padding-top: var(--sp-4); border-top: 1px solid var(--border-glass);">
-      <p class="eyebrow" style="margin-bottom: var(--sp-2);">Sync</p>
-      <h3 style="margin: 0 0 var(--sp-2); font-size: 1.125rem;">Gmail <span class="info-icon" tabindex="0" role="img" aria-label="What this shows" title="Guest confirmation and owner new-booking notification emails send from your own connected Gmail address instead of the shared RVPark Success one. Independent of the Google Calendar connection above — connect either one on its own, and each can be a different Google account if you want.">?</span></h3>
-      <div id="googleGmailBox" style="padding: var(--sp-3); border-radius: var(--radius-md); background: var(--surface-glass); border: 1px solid var(--border-glass);"></div>
     </div>
   </div>
 
@@ -498,6 +492,12 @@
       <button type="submit" class="btn btn-ghost" id="saveSettingsBtn"><span>Save Settings</span></button>
       <div class="admin-alert" id="settingsAlert"></div>
     </form>
+
+    <div style="margin-top: var(--sp-5); padding-top: var(--sp-4); border-top: 1px solid var(--border-glass);">
+      <p class="eyebrow" style="margin-bottom: var(--sp-2);">Sync</p>
+      <h3 style="margin: 0 0 var(--sp-2); font-size: 1.125rem;">Gmail <span class="info-icon" tabindex="0" role="img" aria-label="What this shows" title="Guest confirmation and owner new-booking notification emails send from your own connected Gmail address instead of the shared RVPark Success one. Independent of the Google Calendar connection in the Calendar section — connect either one on its own, and each can be a different Google account if you want.">?</span></h3>
+      <div id="googleGmailBox" style="padding: var(--sp-3); border-radius: var(--radius-md); background: var(--surface-glass); border: 1px solid var(--border-glass);"></div>
+    </div>
   </div>
 
   <!-- Advanced Analytics Dashboard -->
