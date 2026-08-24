@@ -125,6 +125,13 @@ function ensureSchema() {
       ALTER TABLE parks ADD COLUMN IF NOT EXISTS google_calendar_refresh_token TEXT;
       ALTER TABLE parks ADD COLUMN IF NOT EXISTS google_calendar_id TEXT;
       ALTER TABLE parks ADD COLUMN IF NOT EXISTS google_calendar_email TEXT;
+      -- Separate connection for sending booking emails as the owner's own
+      -- Gmail — deliberately independent of the Calendar connection above
+      -- (own refresh token, own OAuth consent, own connect/disconnect),
+      -- so an owner can connect either one on its own, or connect each to
+      -- a different Google account if they want to.
+      ALTER TABLE parks ADD COLUMN IF NOT EXISTS google_gmail_refresh_token TEXT;
+      ALTER TABLE parks ADD COLUMN IF NOT EXISTS google_gmail_email TEXT;
       -- Precise pinpoint location for the guest-facing "Get Directions"
       -- feature (Marie's ask: a map from wherever the guest is to the
       -- campground). The 'location' column above is just a free-text
@@ -859,6 +866,9 @@ function mapPark(row, promoCodes = []) {
     // connected. Only a connected/not + which email is safe to show.
     googleCalendarConnected: !!row.google_calendar_refresh_token,
     googleCalendarEmail: row.google_calendar_email,
+    // Same reasoning as above — never expose google_gmail_refresh_token.
+    gmailConnected: !!row.google_gmail_refresh_token,
+    gmailEmail: row.google_gmail_email,
     createdAt: row.created_at.toISOString(),
     promoCodes: promoCodes.map(mapPromo),
   };
@@ -1664,6 +1674,38 @@ export async function getGoogleCalendarCredentials(parkId) {
   const row = res.rows[0];
   if (!row || !row.google_calendar_refresh_token) return null;
   return { refreshToken: row.google_calendar_refresh_token, calendarId: row.google_calendar_id || 'primary' };
+}
+
+/* ---------------------------------------------------------------- */
+/* Gmail — sending booking emails as the owner's own account, fully   */
+/* independent of the Calendar connection above (separate consent,    */
+/* separate refresh token, can point at a different Google account). */
+/* ---------------------------------------------------------------- */
+
+export async function setGmailConnection(parkId, { refreshToken, email }) {
+  const res = await query(
+    `UPDATE parks SET google_gmail_refresh_token = $2, google_gmail_email = $3 WHERE id = $1 RETURNING *`,
+    [parkId, refreshToken, email]
+  );
+  if (!res.rows[0]) throw new Error('Unknown park');
+  return mapPark(res.rows[0]);
+}
+
+export async function removeGmailConnection(parkId) {
+  const res = await query(
+    `UPDATE parks SET google_gmail_refresh_token = NULL, google_gmail_email = NULL WHERE id = $1 RETURNING *`,
+    [parkId]
+  );
+  if (!res.rows[0]) throw new Error('Unknown park');
+  return mapPark(res.rows[0]);
+}
+
+// Server-side only, same reasoning as getGoogleCalendarCredentials above.
+export async function getGmailCredentials(parkId) {
+  const res = await query('SELECT google_gmail_refresh_token FROM parks WHERE id = $1', [parkId]);
+  const row = res.rows[0];
+  if (!row || !row.google_gmail_refresh_token) return null;
+  return { refreshToken: row.google_gmail_refresh_token };
 }
 
 export async function setReservationGoogleEventId(reservationId, googleEventId) {

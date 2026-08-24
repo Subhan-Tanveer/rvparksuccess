@@ -1014,54 +1014,79 @@ async function startStripeOnboarding(btn) {
 document.getElementById('stripeConnectBtn').addEventListener('click', (e) => startStripeOnboarding(e.currentTarget));
 document.getElementById('stripeContinueBtn').addEventListener('click', (e) => startStripeOnboarding(e.currentTarget));
 
-/* -- Google Account (one-way Calendar sync + sending booking emails as
-   the owner's own Gmail instead of the platform's shared sender) -- */
-const GOOGLE_CALENDAR_STATUS_MESSAGES = {
-  connected: { text: 'Google Account connected — new confirmed reservations will appear on your calendar, and booking emails will send from your own Gmail.', cls: 'is-success' },
-  denied: { text: 'Connection canceled — you declined the Google permission screen.', cls: 'is-error' },
-  error: { text: 'Could not connect your Google Account. Please try again.', cls: 'is-error' },
-  'no-refresh-token': { text: "Google didn't grant long-term access this time — please try connecting again.", cls: 'is-error' },
+/* -- Google connections: Calendar sync and Gmail sending are two fully
+   independent OAuth connections (separate consent, separate accounts
+   allowed) — each rendered the same way via this shared config-driven
+   function, not a shared "Google Account" box. -- */
+const GOOGLE_CONNECTIONS = {
+  calendar: {
+    boxId: 'googleCalendarBox', alertId: 'googleCalendarAlert', queryParam: 'googleCalendar',
+    connectedField: 'googleCalendarConnected', emailField: 'googleCalendarEmail',
+    connectLabel: 'Connect Google Calendar',
+    connectBlurb: 'Connect your Google Calendar to see confirmed reservations there automatically.',
+    disconnectTitle: 'Disconnect Google Calendar?',
+    disconnectBlurb: 'Future reservations will stop syncing. Events already on the calendar are left as-is.',
+    statusMessages: {
+      connected: { text: 'Google Calendar connected — new confirmed reservations will start appearing there.', cls: 'is-success' },
+      denied: { text: 'Connection canceled — you declined the Google permission screen.', cls: 'is-error' },
+      error: { text: 'Could not connect Google Calendar. Please try again.', cls: 'is-error' },
+      'no-refresh-token': { text: "Google didn't grant long-term access this time — please try connecting again.", cls: 'is-error' },
+    },
+  },
+  gmail: {
+    boxId: 'googleGmailBox', alertId: 'googleGmailAlert', queryParam: 'googleGmail',
+    connectedField: 'gmailConnected', emailField: 'gmailEmail',
+    connectLabel: 'Connect Gmail',
+    connectBlurb: 'Connect your Gmail to send guest confirmation and new-booking emails from your own address instead of the shared RVPark Success one.',
+    disconnectTitle: 'Disconnect Gmail?',
+    disconnectBlurb: 'Booking emails will send from the shared RVPark Success address again.',
+    statusMessages: {
+      connected: { text: 'Gmail connected — booking emails will now send from your own address.', cls: 'is-success' },
+      denied: { text: 'Connection canceled — you declined the Google permission screen.', cls: 'is-error' },
+      error: { text: 'Could not connect Gmail. Please try again.', cls: 'is-error' },
+      'no-refresh-token': { text: "Google didn't grant long-term access this time — please try connecting again.", cls: 'is-error' },
+    },
+  },
 };
 
-async function startGoogleConnect(btn) {
+async function startGoogleConnect(purpose, btn) {
   await withLoading(btn, async () => {
     try {
-      const res = await fetch('/api/admin/ops?resource=google-calendar&action=connect-url');
+      const res = await fetch(`/api/admin/ops?resource=google-calendar&action=connect-url&purpose=${purpose}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Could not start Google connection');
       window.location.href = data.url;
     } catch (err) {
-      const alertEl = document.getElementById('googleCalendarAlert');
+      const alertEl = document.getElementById(GOOGLE_CONNECTIONS[purpose].alertId);
       if (alertEl) { alertEl.textContent = err.message; alertEl.classList.add('is-visible', 'is-error'); }
     }
   });
 }
 
-function renderGoogleCalendarBox(park) {
-  const box = document.getElementById('googleCalendarBox');
+function renderGoogleConnectionBox(purpose) {
+  const cfg = GOOGLE_CONNECTIONS[purpose];
+  const box = document.getElementById(cfg.boxId);
   if (!box) return;
+  const park = currentPark;
 
-  if (park.googleCalendarConnected) {
+  if (park[cfg.connectedField]) {
     box.innerHTML = `
-      <p style="font-size:0.9375rem; color: var(--amber-light); margin-bottom: var(--sp-2);">✓ Connected${park.googleCalendarEmail ? ` — ${escapeHtml(park.googleCalendarEmail)}` : ''}</p>
-      <p class="form-note" style="margin-bottom: var(--sp-2);">Already connected? If it was before email sending was added here, click Reconnect once to grant that permission too — it won't lose your calendar sync.</p>
-      <div style="display:flex; gap: var(--sp-2); flex-wrap: wrap;">
-        <button type="button" class="btn btn-ghost btn-sm" id="googleCalendarReconnectBtn"><span>Reconnect</span></button>
-        <button type="button" class="btn btn-ghost btn-sm" id="googleCalendarDisconnectBtn"><span>Disconnect</span></button>
-      </div>
-      <div class="admin-alert" id="googleCalendarAlert"></div>
+      <p style="font-size:0.9375rem; color: var(--amber-light); margin-bottom: var(--sp-2);">✓ Connected${park[cfg.emailField] ? ` — ${escapeHtml(park[cfg.emailField])}` : ''}</p>
+      <button type="button" class="btn btn-ghost btn-sm" id="${cfg.boxId}DisconnectBtn"><span>Disconnect</span></button>
+      <div class="admin-alert" id="${cfg.alertId}"></div>
     `;
-    document.getElementById('googleCalendarReconnectBtn').addEventListener('click', (e) => startGoogleConnect(e.currentTarget));
-    document.getElementById('googleCalendarDisconnectBtn').addEventListener('click', async (e) => {
-      const ok = await confirmDialog({ title: 'Disconnect Google Account?', message: 'Future reservations will stop syncing to your calendar, and booking emails will send from the shared RVPark Success address again. Events already on your calendar are left as-is.', confirmLabel: 'Disconnect', danger: true });
+    document.getElementById(`${cfg.boxId}DisconnectBtn`).addEventListener('click', async (e) => {
+      const ok = await confirmDialog({ title: cfg.disconnectTitle, message: cfg.disconnectBlurb, confirmLabel: 'Disconnect', danger: true });
       if (!ok) return;
       await withLoading(e.currentTarget, async () => {
         try {
-          const res = await fetch('/api/admin/ops?resource=google-calendar&action=disconnect', { method: 'POST' });
+          const res = await fetch('/api/admin/ops?resource=google-calendar&action=disconnect', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ purpose }),
+          });
           const data = await res.json();
           if (!res.ok) throw new Error(data.error || 'Could not disconnect');
           currentPark = data.park;
-          renderGoogleCalendarBox(currentPark);
+          renderGoogleConnectionBox(purpose);
         } catch (err) {
           alertDialog({ title: 'Error', message: err.message });
         }
@@ -1069,29 +1094,34 @@ function renderGoogleCalendarBox(park) {
     });
   } else {
     box.innerHTML = `
-      <p style="font-size:0.9375rem; margin-bottom: var(--sp-2);">Connect your Google Account to see confirmed reservations on your own Google Calendar, and send booking emails from your own Gmail instead of a shared address.</p>
-      <button type="button" class="btn btn-primary" id="googleCalendarConnectBtn"><span>Connect Google Account</span></button>
-      <div class="admin-alert" id="googleCalendarAlert"></div>
+      <p style="font-size:0.9375rem; margin-bottom: var(--sp-2);">${cfg.connectBlurb}</p>
+      <button type="button" class="btn btn-primary" id="${cfg.boxId}ConnectBtn"><span>${cfg.connectLabel}</span></button>
+      <div class="admin-alert" id="${cfg.alertId}"></div>
     `;
-    document.getElementById('googleCalendarConnectBtn').addEventListener('click', (e) => startGoogleConnect(e.currentTarget));
+    document.getElementById(`${cfg.boxId}ConnectBtn`).addEventListener('click', (e) => startGoogleConnect(purpose, e.currentTarget));
   }
 
-  // Show the outcome of a just-completed OAuth redirect (see the
-  // googleCalendar= query param api/admin/ops.js's oauth-callback sets),
-  // then strip it from the URL so refreshing the page doesn't re-show it.
+  // Show the outcome of a just-completed OAuth redirect, then strip it
+  // from the URL so refreshing the page doesn't re-show it.
   const params = new URLSearchParams(window.location.search);
-  const status = params.get('googleCalendar');
-  if (status && GOOGLE_CALENDAR_STATUS_MESSAGES[status]) {
-    const alertEl = document.getElementById('googleCalendarAlert');
+  const status = params.get(cfg.queryParam);
+  if (status && cfg.statusMessages[status]) {
+    const alertEl = document.getElementById(cfg.alertId);
     if (alertEl) {
-      const { text, cls } = GOOGLE_CALENDAR_STATUS_MESSAGES[status];
+      const { text, cls } = cfg.statusMessages[status];
       alertEl.textContent = text;
       alertEl.classList.add('is-visible', cls);
     }
-    params.delete('googleCalendar');
+    params.delete(cfg.queryParam);
     const newSearch = params.toString();
     window.history.replaceState({}, '', `${window.location.pathname}${newSearch ? `?${newSearch}` : ''}${window.location.hash}`);
   }
+}
+
+function renderGoogleCalendarBox(park) {
+  currentPark = park;
+  renderGoogleConnectionBox('calendar');
+  renderGoogleConnectionBox('gmail');
 }
 
 loadDashboard();

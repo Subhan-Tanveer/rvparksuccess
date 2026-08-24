@@ -1,48 +1,50 @@
-// A park's single "Connect Google Account" OAuth connection, used for two
-// things sharing one refresh token (one consent, one set of stored
-// credentials, despite the filename): one-way Google Calendar sync (a
-// park's reservations get pushed to whatever calendar the owner
-// connected, as read-only-in-intent events — we never read changes back)
-// and sending booking emails as the owner's own Gmail address instead of
-// the platform's shared sender (see sendEmailViaGmail(), used by
-// api/_lib/booking-emails.js). Deliberately plain fetch() against
-// Google's REST APIs rather than the `googleapis` npm package — that
-// package pulls in a large dependency tree for what's really a handful of
-// small HTTP calls, matching this app's existing preference for a
-// minimal hand-rolled client over a heavy SDK (see api/_lib/mailer.js).
+// Two INDEPENDENT Google OAuth connections a park can make — Calendar
+// sync and Gmail sending are deliberately separate consents, separate
+// refresh tokens, connect/disconnect independently of each other (an
+// owner can connect either alone, or connect each to a different Google
+// account). They share this one file only because the OAuth mechanics
+// (auth URL, token exchange/refresh) are identical either way. Deliberately
+// plain fetch() against Google's REST APIs rather than the `googleapis`
+// npm package — that package pulls in a large dependency tree for what's
+// really a handful of small HTTP calls, matching this app's existing
+// preference for a minimal hand-rolled client over a heavy SDK (see
+// api/_lib/mailer.js).
 import {
   getGoogleCalendarCredentials,
+  getGmailCredentials,
   setReservationGoogleEventId,
   getReservationGoogleEventId,
   getUpcomingConfirmedReservationsForPark,
 } from './reservations-store.js';
 
-const SCOPE = 'https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/userinfo.email';
+export const CALENDAR_SCOPE = 'https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/userinfo.email';
+export const GMAIL_SCOPE = 'https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/userinfo.email';
 
 function requireEnv() {
   const clientId = process.env.GOOGLE_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-  if (!clientId || !clientSecret) throw new Error('Google Calendar is not configured (GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET missing)');
+  if (!clientId || !clientSecret) throw new Error('Google sign-in is not configured (GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET missing)');
   return { clientId, clientSecret };
 }
 
-// `state` carries the parkId through Google's redirect so the callback
-// knows which park to connect — signed by requireSession on the way in
-// (the callback still requires a valid staff session for that park, state
-// alone is not treated as authorization) and just used to route which
-// park's tokens get saved once the callback confirms who's logged in.
-export function getGoogleAuthUrl(redirectUri, state) {
+// `state` carries the parkId (and which of the two connections this is
+// for) through Google's redirect so the callback knows what to save —
+// cross-checked against the actual logged-in session on the way back in
+// (state alone is not treated as authorization), just used to route which
+// park + which connection type once the callback confirms who's logged in.
+export function getGoogleAuthUrl(redirectUri, state, scope) {
   const { clientId } = requireEnv();
   const params = new URLSearchParams({
     client_id: clientId,
     redirect_uri: redirectUri,
     response_type: 'code',
-    scope: SCOPE,
+    scope,
     access_type: 'offline',
     // Google only returns a refresh_token on the FIRST consent for a given
-    // account+app — prompt=consent forces the consent screen (and a fresh
-    // refresh_token) every time, so reconnecting after a disconnect works
-    // instead of silently getting no refresh_token back on the 2nd+ try.
+    // account+app+scope — prompt=consent forces the consent screen (and a
+    // fresh refresh_token) every time, so reconnecting after a disconnect
+    // works instead of silently getting no refresh_token back on the 2nd+
+    // try.
     prompt: 'consent',
     state,
   });
@@ -111,7 +113,7 @@ function buildRawEmail({ to, subject, html }) {
 // so every park keeps getting these emails whether or not they've
 // connected their own account.
 export async function sendEmailViaGmail(parkId, { to, subject, html }) {
-  const creds = await getGoogleCalendarCredentials(parkId);
+  const creds = await getGmailCredentials(parkId);
   if (!creds) return false;
 
   const accessToken = await getAccessToken(creds.refreshToken);

@@ -105,7 +105,7 @@ import * as store from '../_lib/reservations-store.js';
 import RateOptimizer, { serializeModel, deserializeModel } from '../_lib/ml-rate-optimizer.js';
 import { generateNarrative } from '../_lib/ai-insights.js';
 import { notifyWaitlistOfOpening } from '../_lib/waitlist-matcher.js';
-import { getGoogleAuthUrl, exchangeCodeForTokens, getGoogleAccountEmail, syncReservationToGoogleCalendar, deleteReservationFromGoogleCalendar, backfillGoogleCalendar } from '../_lib/google-calendar.js';
+import { getGoogleAuthUrl, exchangeCodeForTokens, getGoogleAccountEmail, syncReservationToGoogleCalendar, deleteReservationFromGoogleCalendar, backfillGoogleCalendar, CALENDAR_SCOPE, GMAIL_SCOPE } from '../_lib/google-calendar.js';
 import { sendGuestConfirmationEmail } from '../_lib/booking-emails.js';
 import { del as deleteBlob } from '@vercel/blob';
 import { handleUpload } from '@vercel/blob/client';
@@ -1758,14 +1758,27 @@ async function availabilityBlockersHandler(req, res) {
 
 const GOOGLE_REDIRECT_URI = 'https://www.rvparksuccess.com/api/admin/ops?resource=google-calendar&action=oauth-callback';
 
+// Two independent connections share this one OAuth callback endpoint
+// (registering a second redirect URI in Google Cloud Console for a
+// second connection is real friction for the person doing that setup —
+// avoided by using `purpose` to pick the right scope up front and
+// encoding it into `state` so the single callback below knows which
+// connection a given redirect belongs to).
+const GOOGLE_PURPOSES = {
+  calendar: { scope: CALENDAR_SCOPE, save: store.setGoogleCalendarConnection, backfill: true },
+  gmail: { scope: GMAIL_SCOPE, save: store.setGmailConnection, backfill: false },
+};
+
 async function googleCalendarHandler(req, res) {
   const { action } = req.query;
 
   if (req.method === 'GET' && action === 'connect-url') {
     const session = requireSession(req, res, { role: 'park-staff' });
     if (!session) return;
+    const purpose = GOOGLE_PURPOSES[req.query.purpose] ? req.query.purpose : null;
+    if (!purpose) return res.status(400).json({ error: 'purpose must be "calendar" or "gmail"' });
     try {
-      const url = getGoogleAuthUrl(GOOGLE_REDIRECT_URI, session.parkId);
+      const url = getGoogleAuthUrl(GOOGLE_REDIRECT_URI, `${session.parkId}:${purpose}`, GOOGLE_PURPOSES[purpose].scope);
       return res.status(200).json({ url });
     } catch (err) {
       return res.status(400).json({ error: err.message });
@@ -1780,43 +1793,50 @@ async function googleCalendarHandler(req, res) {
     if (!session) return;
 
     const { code, state, error: googleError } = req.query;
-    const redirectBack = (status) => res.redirect(302, `/park-dashboard.html?googleCalendar=${status}#park-settings`);
+    const [statedParkId, purpose] = typeof state === 'string' ? state.split(':') : [];
+    const redirectBack = (status) => res.redirect(302, `/park-dashboard.html?google${purpose === 'gmail' ? 'Gmail' : 'Calendar'}=${status}#park-settings`);
 
     if (googleError) return redirectBack('denied');
     if (!code) return redirectBack('error');
-    // `state` carries the parkId that started this flow — cross-checked
-    // against the actual logged-in session so the connection can never be
-    // saved onto a different park than the one that clicked Connect.
-    if (state !== session.parkId) return redirectBack('error');
+    // `state` carries the parkId + which connection this is for —
+    // cross-checked against the actual logged-in session so it can never
+    // be saved onto a different park than the one that clicked Connect.
+    if (statedParkId !== session.parkId || !GOOGLE_PURPOSES[purpose]) return redirectBack('error');
 
     try {
       const tokens = await exchangeCodeForTokens(code, GOOGLE_REDIRECT_URI);
       if (!tokens.refresh_token) {
         // Google only issues a refresh_token on first-ever consent for
-        // this account+app; prompt=consent in getGoogleAuthUrl() should
-        // always force a fresh one, so landing here means something
-        // upstream changed — safer to say so than silently save a
-        // connection that can't actually refresh its access token later.
+        // this account+app+scope; prompt=consent in getGoogleAuthUrl()
+        // should always force a fresh one, so landing here means
+        // something upstream changed — safer to say so than silently
+        // save a connection that can't actually refresh its access token
+        // later.
         return redirectBack('no-refresh-token');
       }
       const email = await getGoogleAccountEmail(tokens.access_token);
-      const park = await store.setGoogleCalendarConnection(session.parkId, {
-        refreshToken: tokens.refresh_token, calendarId: 'primary', email,
-      });
-      // Without this, only reservations made AFTER connecting would ever
-      // show up — every booking that already existed would stay invisible
-      // on the newly-connected calendar. Awaited (not fire-and-forget)
-      // since the connect flow should be the one moment it's worth a
-      // couple extra seconds for the owner to actually see their existing
-      // bookings land, not just future ones.
-      try {
-        await backfillGoogleCalendar(park);
-      } catch (err) {
-        console.error('Google Calendar backfill failed:', err.message);
+      const { save, backfill } = GOOGLE_PURPOSES[purpose];
+      const park = purpose === 'calendar'
+        ? await save(session.parkId, { refreshToken: tokens.refresh_token, calendarId: 'primary', email })
+        : await save(session.parkId, { refreshToken: tokens.refresh_token, email });
+
+      if (backfill) {
+        // Without this, only reservations made AFTER connecting would
+        // ever show up — every booking that already existed would stay
+        // invisible on the newly-connected calendar. Awaited (not
+        // fire-and-forget) since the connect flow should be the one
+        // moment it's worth a couple extra seconds for the owner to
+        // actually see their existing bookings land, not just future
+        // ones.
+        try {
+          await backfillGoogleCalendar(park);
+        } catch (err) {
+          console.error('Google Calendar backfill failed:', err.message);
+        }
       }
       return redirectBack('connected');
     } catch (err) {
-      console.error('Google Calendar OAuth callback error:', err.message);
+      console.error('Google OAuth callback error:', err.message);
       return redirectBack('error');
     }
   }
@@ -1824,8 +1844,12 @@ async function googleCalendarHandler(req, res) {
   if (req.method === 'POST' && action === 'disconnect') {
     const session = requireSession(req, res, { role: 'park-staff' });
     if (!session) return;
+    const purpose = GOOGLE_PURPOSES[req.body?.purpose] ? req.body.purpose : null;
+    if (!purpose) return res.status(400).json({ error: 'purpose must be "calendar" or "gmail"' });
     try {
-      const park = await store.removeGoogleCalendarConnection(session.parkId);
+      const park = purpose === 'calendar'
+        ? await store.removeGoogleCalendarConnection(session.parkId)
+        : await store.removeGmailConnection(session.parkId);
       return res.status(200).json({ park });
     } catch (err) {
       return res.status(400).json({ error: err.message });
