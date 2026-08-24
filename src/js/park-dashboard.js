@@ -243,6 +243,7 @@ async function loadDashboard() {
   document.getElementById('payoutNet').textContent = formatUsd(data.payout.netOwedToParkCents);
   document.getElementById('payoutFee').textContent = formatUsd(data.payout.platformFeeCollectedCents);
   renderStripeStatus(data.stripeStatus);
+  renderGoogleCalendarBox(currentPark);
 
   const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
   const twoNightsLater = new Date(tomorrow); twoNightsLater.setDate(twoNightsLater.getDate() + 2);
@@ -1012,5 +1013,77 @@ async function startStripeOnboarding(btn) {
 
 document.getElementById('stripeConnectBtn').addEventListener('click', (e) => startStripeOnboarding(e.currentTarget));
 document.getElementById('stripeContinueBtn').addEventListener('click', (e) => startStripeOnboarding(e.currentTarget));
+
+/* -- Google Calendar (one-way reservation sync) -- */
+const GOOGLE_CALENDAR_STATUS_MESSAGES = {
+  connected: { text: 'Google Calendar connected — new confirmed reservations will start appearing there.', cls: 'is-success' },
+  denied: { text: 'Connection canceled — you declined the Google permission screen.', cls: 'is-error' },
+  error: { text: 'Could not connect Google Calendar. Please try again.', cls: 'is-error' },
+  'no-refresh-token': { text: "Google didn't grant long-term access this time — please try connecting again.", cls: 'is-error' },
+};
+
+function renderGoogleCalendarBox(park) {
+  const box = document.getElementById('googleCalendarBox');
+  if (!box) return;
+
+  if (park.googleCalendarConnected) {
+    box.innerHTML = `
+      <p style="font-size:0.9375rem; color: var(--amber-light); margin-bottom: var(--sp-2);">✓ Connected${park.googleCalendarEmail ? ` — ${escapeHtml(park.googleCalendarEmail)}` : ''}</p>
+      <button type="button" class="btn btn-ghost btn-sm" id="googleCalendarDisconnectBtn"><span>Disconnect</span></button>
+      <div class="admin-alert" id="googleCalendarAlert"></div>
+    `;
+    document.getElementById('googleCalendarDisconnectBtn').addEventListener('click', async (e) => {
+      const ok = await confirmDialog({ title: 'Disconnect Google Calendar?', message: 'Future reservations will stop syncing. Events already on the calendar are left as-is.', confirmLabel: 'Disconnect', danger: true });
+      if (!ok) return;
+      await withLoading(e.currentTarget, async () => {
+        try {
+          const res = await fetch('/api/admin/ops?resource=google-calendar&action=disconnect', { method: 'POST' });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || 'Could not disconnect');
+          currentPark = data.park;
+          renderGoogleCalendarBox(currentPark);
+        } catch (err) {
+          alertDialog({ title: 'Error', message: err.message });
+        }
+      });
+    });
+  } else {
+    box.innerHTML = `
+      <p style="font-size:0.9375rem; margin-bottom: var(--sp-2);">Connect a Google Calendar to see your confirmed reservations there automatically.</p>
+      <button type="button" class="btn btn-primary" id="googleCalendarConnectBtn"><span>Connect Google Calendar</span></button>
+      <div class="admin-alert" id="googleCalendarAlert"></div>
+    `;
+    document.getElementById('googleCalendarConnectBtn').addEventListener('click', async (e) => {
+      await withLoading(e.currentTarget, async () => {
+        try {
+          const res = await fetch('/api/admin/ops?resource=google-calendar&action=connect-url');
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || 'Could not start Google connection');
+          window.location.href = data.url;
+        } catch (err) {
+          const alertEl = document.getElementById('googleCalendarAlert');
+          if (alertEl) { alertEl.textContent = err.message; alertEl.classList.add('is-visible', 'is-error'); }
+        }
+      });
+    });
+  }
+
+  // Show the outcome of a just-completed OAuth redirect (see the
+  // googleCalendar= query param api/admin/ops.js's oauth-callback sets),
+  // then strip it from the URL so refreshing the page doesn't re-show it.
+  const params = new URLSearchParams(window.location.search);
+  const status = params.get('googleCalendar');
+  if (status && GOOGLE_CALENDAR_STATUS_MESSAGES[status]) {
+    const alertEl = document.getElementById('googleCalendarAlert');
+    if (alertEl) {
+      const { text, cls } = GOOGLE_CALENDAR_STATUS_MESSAGES[status];
+      alertEl.textContent = text;
+      alertEl.classList.add('is-visible', cls);
+    }
+    params.delete('googleCalendar');
+    const newSearch = params.toString();
+    window.history.replaceState({}, '', `${window.location.pathname}${newSearch ? `?${newSearch}` : ''}${window.location.hash}`);
+  }
+}
 
 loadDashboard();

@@ -7,6 +7,7 @@
 import { createGuestSessionCookie, clearGuestSessionCookie, getGuestSession } from './_lib/auth.js';
 import { createGuestAccount, verifyGuestLogin, getGuestByEmail, getBookingsForGuest, cancelReservationForGuest } from './_lib/reservations-store.js';
 import { notifyWaitlistOfOpening } from './_lib/waitlist-matcher.js';
+import { deleteReservationFromGoogleCalendar } from './_lib/google-calendar.js';
 
 export default async function handler(req, res) {
   if (req.method === 'GET') {
@@ -51,6 +52,9 @@ export default async function handler(req, res) {
       try {
         const reservation = await cancelReservationForGuest(reservationId, session.guestEmail);
         notifyWaitlistOfOpening(reservation.parkId).catch((err) => console.error('Waitlist notify error:', err.message));
+        deleteReservationFromGoogleCalendar(reservation.parkId, reservation).catch((err) =>
+          console.error('Google Calendar delete failed:', err.message)
+        );
         return res.status(200).json({ ok: true, reservation });
       } catch (err) {
         return res.status(400).json({ error: err.message });

@@ -18,7 +18,8 @@
 // for the checkout.session.completed event). Never put this value in any
 // file in this repo.
 import Stripe from 'stripe';
-import { confirmReservationBySessionId, setParkPlan } from '../_lib/reservations-store.js';
+import { confirmReservationBySessionId, setParkPlan, getPark } from '../_lib/reservations-store.js';
+import { syncReservationToGoogleCalendar } from '../_lib/google-calendar.js';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -65,7 +66,22 @@ export default async function handler(req, res) {
       }
     } else {
       const confirmed = await confirmReservationBySessionId(session.id);
-      if (!confirmed) console.warn('Webhook confirmed a session with no matching reservation:', session.id);
+      if (!confirmed) {
+        console.warn('Webhook confirmed a session with no matching reservation:', session.id);
+      } else {
+        // Best-effort — a park with no Google Calendar connected returns
+        // immediately (see syncReservationToGoogleCalendar), and a real
+        // sync failure must never fail the webhook itself: Stripe retries
+        // a non-2xx response, which would re-run the whole confirmation
+        // path (already idempotent, but pointless) just because Google
+        // hiccuped.
+        const park = await getPark(confirmed.parkId);
+        if (park) {
+          syncReservationToGoogleCalendar(park, confirmed).catch((err) =>
+            console.error('Google Calendar sync failed:', err.message)
+          );
+        }
+      }
     }
   }
 

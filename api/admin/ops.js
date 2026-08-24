@@ -105,6 +105,7 @@ import * as store from '../_lib/reservations-store.js';
 import RateOptimizer, { serializeModel, deserializeModel } from '../_lib/ml-rate-optimizer.js';
 import { generateNarrative } from '../_lib/ai-insights.js';
 import { notifyWaitlistOfOpening } from '../_lib/waitlist-matcher.js';
+import { getGoogleAuthUrl, exchangeCodeForTokens, getGoogleAccountEmail, syncReservationToGoogleCalendar, deleteReservationFromGoogleCalendar } from '../_lib/google-calendar.js';
 import { del as deleteBlob } from '@vercel/blob';
 import { handleUpload } from '@vercel/blob/client';
 
@@ -138,6 +139,8 @@ export default async function handler(req, res) {
       return expensesHandler(req, res);
     case 'availability-blockers':
       return availabilityBlockersHandler(req, res);
+    case 'google-calendar':
+      return googleCalendarHandler(req, res);
     default:
       return res.status(400).json({ error: 'Unknown or missing resource parameter' });
   }
@@ -389,6 +392,15 @@ async function calendarHandler(req, res) {
           paymentMethod: paymentMethod || 'cash',
         });
 
+        if (reservation.status === 'confirmed' || reservation.status === 'confirmed-deposit') {
+          const park = await getPark(session.parkId);
+          if (park) {
+            syncReservationToGoogleCalendar(park, reservation).catch((err) =>
+              console.error('Google Calendar sync failed:', err.message)
+            );
+          }
+        }
+
         return res.status(201).json({
           success: true,
           reservation: {
@@ -440,6 +452,14 @@ async function calendarHandler(req, res) {
         if (checkOut <= checkIn) return res.status(400).json({ error: 'Invalid dates' });
 
         const updated = await moveReservation(reservationId, newSiteId, checkIn, checkOut);
+        if (updated.status === 'confirmed' || updated.status === 'confirmed-deposit') {
+          const park = await getPark(session.parkId);
+          if (park) {
+            syncReservationToGoogleCalendar(park, updated).catch((err) =>
+              console.error('Google Calendar sync failed:', err.message)
+            );
+          }
+        }
         return res.status(200).json({
           success: true,
           reservation: {
@@ -475,6 +495,9 @@ async function calendarHandler(req, res) {
         // Best-effort — a notify failure should never surface as a
         // failed cancellation, the cancellation itself already succeeded.
         notifyWaitlistOfOpening(session.parkId).catch((err) => console.error('Waitlist notify error:', err.message));
+        deleteReservationFromGoogleCalendar(session.parkId, reservation).catch((err) =>
+          console.error('Google Calendar delete failed:', err.message)
+        );
         return res.status(200).json({ success: true });
       }
 
@@ -1716,6 +1739,83 @@ async function availabilityBlockersHandler(req, res) {
 
   const blockers = await store.getBlockingReservations(session.parkId, checkIn, checkOut);
   return res.status(200).json({ blockers });
+}
+
+/* ================================================================== */
+/* google-calendar — one-way sync (see api/_lib/google-calendar.js).    */
+/* Hardcoded redirect URI: must byte-match what's registered as an      */
+/* Authorized redirect URI in Google Cloud Console AND what's sent in    */
+/* both the auth-url request and the token exchange, so it's a fixed    */
+/* constant rather than derived from request headers (which could be    */
+/* spoofed, and would drift across preview/production hostnames).       */
+/* ================================================================== */
+
+const GOOGLE_REDIRECT_URI = 'https://www.rvparksuccess.com/api/admin/ops?resource=google-calendar&action=oauth-callback';
+
+async function googleCalendarHandler(req, res) {
+  const { action } = req.query;
+
+  if (req.method === 'GET' && action === 'connect-url') {
+    const session = requireSession(req, res, { role: 'park-staff' });
+    if (!session) return;
+    try {
+      const url = getGoogleAuthUrl(GOOGLE_REDIRECT_URI, session.parkId);
+      return res.status(200).json({ url });
+    } catch (err) {
+      return res.status(400).json({ error: err.message });
+    }
+  }
+
+  // Google redirects the browser here after consent — a real top-level
+  // navigation, not a fetch(), so this always redirects back into the
+  // dashboard (success or failure) rather than returning JSON.
+  if (req.method === 'GET' && action === 'oauth-callback') {
+    const session = requireSession(req, res, { role: 'park-staff' });
+    if (!session) return;
+
+    const { code, state, error: googleError } = req.query;
+    const redirectBack = (status) => res.redirect(302, `/park-dashboard.html?googleCalendar=${status}#park-settings`);
+
+    if (googleError) return redirectBack('denied');
+    if (!code) return redirectBack('error');
+    // `state` carries the parkId that started this flow — cross-checked
+    // against the actual logged-in session so the connection can never be
+    // saved onto a different park than the one that clicked Connect.
+    if (state !== session.parkId) return redirectBack('error');
+
+    try {
+      const tokens = await exchangeCodeForTokens(code, GOOGLE_REDIRECT_URI);
+      if (!tokens.refresh_token) {
+        // Google only issues a refresh_token on first-ever consent for
+        // this account+app; prompt=consent in getGoogleAuthUrl() should
+        // always force a fresh one, so landing here means something
+        // upstream changed — safer to say so than silently save a
+        // connection that can't actually refresh its access token later.
+        return redirectBack('no-refresh-token');
+      }
+      const email = await getGoogleAccountEmail(tokens.access_token);
+      await store.setGoogleCalendarConnection(session.parkId, {
+        refreshToken: tokens.refresh_token, calendarId: 'primary', email,
+      });
+      return redirectBack('connected');
+    } catch (err) {
+      console.error('Google Calendar OAuth callback error:', err.message);
+      return redirectBack('error');
+    }
+  }
+
+  if (req.method === 'POST' && action === 'disconnect') {
+    const session = requireSession(req, res, { role: 'park-staff' });
+    if (!session) return;
+    try {
+      const park = await store.removeGoogleCalendarConnection(session.parkId);
+      return res.status(200).json({ park });
+    } catch (err) {
+      return res.status(400).json({ error: err.message });
+    }
+  }
+
+  return res.status(400).json({ error: 'Unknown action' });
 }
 
 /* ================================================================== */

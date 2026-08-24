@@ -116,6 +116,15 @@ function ensureSchema() {
       ALTER TABLE parks ADD COLUMN IF NOT EXISTS vrbo_listing_id TEXT;
       ALTER TABLE parks ADD COLUMN IF NOT EXISTS ota_integration_enabled BOOLEAN NOT NULL DEFAULT false;
       ALTER TABLE parks ADD COLUMN IF NOT EXISTS ghl_crm_url TEXT;
+      -- One-way Google Calendar sync: this park's reservations get pushed
+      -- to google_calendar_id on the connected Google account as events.
+      -- Only a refresh token is stored (long-lived); an access token is
+      -- requested fresh from Google right before each sync call rather
+      -- than cached, since it expires in ~1 hour and caching it would
+      -- just add a second expiry to track for no real benefit.
+      ALTER TABLE parks ADD COLUMN IF NOT EXISTS google_calendar_refresh_token TEXT;
+      ALTER TABLE parks ADD COLUMN IF NOT EXISTS google_calendar_id TEXT;
+      ALTER TABLE parks ADD COLUMN IF NOT EXISTS google_calendar_email TEXT;
       -- Precise pinpoint location for the guest-facing "Get Directions"
       -- feature (Marie's ask: a map from wherever the guest is to the
       -- campground). The 'location' column above is just a free-text
@@ -257,6 +266,10 @@ function ensureSchema() {
       -- for staff to review — never used to auto-block a booking.
       ALTER TABLE reservations ADD COLUMN IF NOT EXISTS risk_flag BOOLEAN NOT NULL DEFAULT false;
       ALTER TABLE reservations ADD COLUMN IF NOT EXISTS risk_reason TEXT;
+      -- One-way Google Calendar sync (our reservation -> their calendar
+      -- event). google_event_id lets us find the right event to update/
+      -- delete later without re-searching Google's calendar by content.
+      ALTER TABLE reservations ADD COLUMN IF NOT EXISTS google_event_id TEXT;
       CREATE INDEX IF NOT EXISTS idx_reservations_park ON reservations(park_id);
       CREATE INDEX IF NOT EXISTS idx_reservations_site_dates ON reservations(site_id, check_in, check_out);
       CREATE INDEX IF NOT EXISTS idx_reservations_guest_email ON reservations(guest_email);
@@ -840,6 +853,12 @@ function mapPark(row, promoCodes = []) {
     description: row.description,
     features: row.features || [],
     logoUrl: row.logo_url,
+    // Never expose google_calendar_refresh_token itself here — this object
+    // flows straight to the browser via GET /api/admin/dashboard, and that
+    // token grants standing access to whatever Google Calendar is
+    // connected. Only a connected/not + which email is safe to show.
+    googleCalendarConnected: !!row.google_calendar_refresh_token,
+    googleCalendarEmail: row.google_calendar_email,
     createdAt: row.created_at.toISOString(),
     promoCodes: promoCodes.map(mapPromo),
   };
@@ -1611,6 +1630,49 @@ export async function setParkStripeAccount(parkId, stripeAccountId) {
   const res = await query('UPDATE parks SET stripe_account_id = $2 WHERE id = $1 RETURNING *', [parkId, stripeAccountId]);
   if (!res.rows[0]) throw new Error('Unknown park');
   return mapPark(res.rows[0]);
+}
+
+/* ---------------------------------------------------------------- */
+/* Google Calendar — one-way sync (our reservations -> their         */
+/* calendar). Only setGoogleCalendarConnection's caller ever sees the */
+/* refresh token; mapPark() deliberately never exposes it.            */
+/* ---------------------------------------------------------------- */
+
+export async function setGoogleCalendarConnection(parkId, { refreshToken, calendarId, email }) {
+  const res = await query(
+    `UPDATE parks SET google_calendar_refresh_token = $2, google_calendar_id = $3, google_calendar_email = $4 WHERE id = $1 RETURNING *`,
+    [parkId, refreshToken, calendarId || 'primary', email]
+  );
+  if (!res.rows[0]) throw new Error('Unknown park');
+  return mapPark(res.rows[0]);
+}
+
+export async function removeGoogleCalendarConnection(parkId) {
+  const res = await query(
+    `UPDATE parks SET google_calendar_refresh_token = NULL, google_calendar_id = NULL, google_calendar_email = NULL WHERE id = $1 RETURNING *`,
+    [parkId]
+  );
+  if (!res.rows[0]) throw new Error('Unknown park');
+  return mapPark(res.rows[0]);
+}
+
+// Server-side only — includes the actual refresh token, unlike getPark()/
+// mapPark(). Used by the sync functions in google-calendar.js right before
+// they call Google's API, never returned from an API route to the browser.
+export async function getGoogleCalendarCredentials(parkId) {
+  const res = await query('SELECT google_calendar_refresh_token, google_calendar_id FROM parks WHERE id = $1', [parkId]);
+  const row = res.rows[0];
+  if (!row || !row.google_calendar_refresh_token) return null;
+  return { refreshToken: row.google_calendar_refresh_token, calendarId: row.google_calendar_id || 'primary' };
+}
+
+export async function setReservationGoogleEventId(reservationId, googleEventId) {
+  await query('UPDATE reservations SET google_event_id = $2 WHERE id = $1', [reservationId, googleEventId]);
+}
+
+export async function getReservationGoogleEventId(reservationId) {
+  const res = await query('SELECT google_event_id FROM reservations WHERE id = $1', [reservationId]);
+  return res.rows[0]?.google_event_id || null;
 }
 
 // Promo codes — park-level, applied against the room subtotal at checkout

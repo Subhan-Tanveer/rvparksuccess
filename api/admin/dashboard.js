@@ -10,6 +10,7 @@ import Stripe from 'stripe';
 import { requireSession } from '../_lib/auth.js';
 import { getPark, getParkWithMedia, getSitesForPark, getReservationsForPark, updateParkSettings, getParkStats, addPromoCode, removePromoCode, getWaitlistForPark, removeWaitlistEntry, getPayoutSummary, setParkStripeAccount, registerPark, getPropertiesForUser, addSite, updateSite, deleteSite, addSeasonalRate, removeSeasonalRate, createStaffReservation, updateReservationPaymentStatus } from '../_lib/reservations-store.js';
 import { notifyWaitlistOfOpening } from '../_lib/waitlist-matcher.js';
+import { syncReservationToGoogleCalendar, deleteReservationFromGoogleCalendar } from '../_lib/google-calendar.js';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -27,6 +28,18 @@ export default async function handler(req, res) {
         parkId: session.parkId, siteId, checkIn, checkOut,
         guestName, guestEmail, guestPhone, paymentMethod, notes,
       });
+      // Only sync once it's actually real (cash/card confirm immediately).
+      // A pay-later hold is still just 'pending' — sync it once it's
+      // marked paid via resource:'reservation-status' below, not now,
+      // so a park's calendar doesn't fill up with holds nobody confirmed.
+      if (reservation.status === 'confirmed' || reservation.status === 'confirmed-deposit') {
+        const park = await getPark(session.parkId);
+        if (park) {
+          syncReservationToGoogleCalendar(park, reservation).catch((err) =>
+            console.error('Google Calendar sync failed:', err.message)
+          );
+        }
+      }
       return res.status(201).json({ reservation });
     } catch (err) {
       return res.status(400).json({ error: err.message });
@@ -42,6 +55,18 @@ export default async function handler(req, res) {
       const reservation = await updateReservationPaymentStatus(session.parkId, reservationId, status);
       if (status === 'canceled') {
         notifyWaitlistOfOpening(session.parkId).catch((err) => console.error('Waitlist notify error:', err.message));
+        deleteReservationFromGoogleCalendar(session.parkId, reservation).catch((err) =>
+          console.error('Google Calendar delete failed:', err.message)
+        );
+      } else if (status === 'confirmed' || status === 'confirmed-deposit') {
+        // Covers a pay-later hold getting marked paid — this is the first
+        // time it becomes real enough to belong on the calendar.
+        const park = await getPark(session.parkId);
+        if (park) {
+          syncReservationToGoogleCalendar(park, reservation).catch((err) =>
+            console.error('Google Calendar sync failed:', err.message)
+          );
+        }
       }
       return res.status(200).json({ reservation });
     } catch (err) {
