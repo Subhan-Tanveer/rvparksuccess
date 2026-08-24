@@ -1014,13 +1014,28 @@ async function startStripeOnboarding(btn) {
 document.getElementById('stripeConnectBtn').addEventListener('click', (e) => startStripeOnboarding(e.currentTarget));
 document.getElementById('stripeContinueBtn').addEventListener('click', (e) => startStripeOnboarding(e.currentTarget));
 
-/* -- Google Calendar (one-way reservation sync) -- */
+/* -- Google Account (one-way Calendar sync + sending booking emails as
+   the owner's own Gmail instead of the platform's shared sender) -- */
 const GOOGLE_CALENDAR_STATUS_MESSAGES = {
-  connected: { text: 'Google Calendar connected — new confirmed reservations will start appearing there.', cls: 'is-success' },
+  connected: { text: 'Google Account connected — new confirmed reservations will appear on your calendar, and booking emails will send from your own Gmail.', cls: 'is-success' },
   denied: { text: 'Connection canceled — you declined the Google permission screen.', cls: 'is-error' },
-  error: { text: 'Could not connect Google Calendar. Please try again.', cls: 'is-error' },
+  error: { text: 'Could not connect your Google Account. Please try again.', cls: 'is-error' },
   'no-refresh-token': { text: "Google didn't grant long-term access this time — please try connecting again.", cls: 'is-error' },
 };
+
+async function startGoogleConnect(btn) {
+  await withLoading(btn, async () => {
+    try {
+      const res = await fetch('/api/admin/ops?resource=google-calendar&action=connect-url');
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not start Google connection');
+      window.location.href = data.url;
+    } catch (err) {
+      const alertEl = document.getElementById('googleCalendarAlert');
+      if (alertEl) { alertEl.textContent = err.message; alertEl.classList.add('is-visible', 'is-error'); }
+    }
+  });
+}
 
 function renderGoogleCalendarBox(park) {
   const box = document.getElementById('googleCalendarBox');
@@ -1029,11 +1044,16 @@ function renderGoogleCalendarBox(park) {
   if (park.googleCalendarConnected) {
     box.innerHTML = `
       <p style="font-size:0.9375rem; color: var(--amber-light); margin-bottom: var(--sp-2);">✓ Connected${park.googleCalendarEmail ? ` — ${escapeHtml(park.googleCalendarEmail)}` : ''}</p>
-      <button type="button" class="btn btn-ghost btn-sm" id="googleCalendarDisconnectBtn"><span>Disconnect</span></button>
+      <p class="form-note" style="margin-bottom: var(--sp-2);">Already connected? If it was before email sending was added here, click Reconnect once to grant that permission too — it won't lose your calendar sync.</p>
+      <div style="display:flex; gap: var(--sp-2); flex-wrap: wrap;">
+        <button type="button" class="btn btn-ghost btn-sm" id="googleCalendarReconnectBtn"><span>Reconnect</span></button>
+        <button type="button" class="btn btn-ghost btn-sm" id="googleCalendarDisconnectBtn"><span>Disconnect</span></button>
+      </div>
       <div class="admin-alert" id="googleCalendarAlert"></div>
     `;
+    document.getElementById('googleCalendarReconnectBtn').addEventListener('click', (e) => startGoogleConnect(e.currentTarget));
     document.getElementById('googleCalendarDisconnectBtn').addEventListener('click', async (e) => {
-      const ok = await confirmDialog({ title: 'Disconnect Google Calendar?', message: 'Future reservations will stop syncing. Events already on the calendar are left as-is.', confirmLabel: 'Disconnect', danger: true });
+      const ok = await confirmDialog({ title: 'Disconnect Google Account?', message: 'Future reservations will stop syncing to your calendar, and booking emails will send from the shared RVPark Success address again. Events already on your calendar are left as-is.', confirmLabel: 'Disconnect', danger: true });
       if (!ok) return;
       await withLoading(e.currentTarget, async () => {
         try {
@@ -1049,23 +1069,11 @@ function renderGoogleCalendarBox(park) {
     });
   } else {
     box.innerHTML = `
-      <p style="font-size:0.9375rem; margin-bottom: var(--sp-2);">Connect a Google Calendar to see your confirmed reservations there automatically.</p>
-      <button type="button" class="btn btn-primary" id="googleCalendarConnectBtn"><span>Connect Google Calendar</span></button>
+      <p style="font-size:0.9375rem; margin-bottom: var(--sp-2);">Connect your Google Account to see confirmed reservations on your own Google Calendar, and send booking emails from your own Gmail instead of a shared address.</p>
+      <button type="button" class="btn btn-primary" id="googleCalendarConnectBtn"><span>Connect Google Account</span></button>
       <div class="admin-alert" id="googleCalendarAlert"></div>
     `;
-    document.getElementById('googleCalendarConnectBtn').addEventListener('click', async (e) => {
-      await withLoading(e.currentTarget, async () => {
-        try {
-          const res = await fetch('/api/admin/ops?resource=google-calendar&action=connect-url');
-          const data = await res.json();
-          if (!res.ok) throw new Error(data.error || 'Could not start Google connection');
-          window.location.href = data.url;
-        } catch (err) {
-          const alertEl = document.getElementById('googleCalendarAlert');
-          if (alertEl) { alertEl.textContent = err.message; alertEl.classList.add('is-visible', 'is-error'); }
-        }
-      });
-    });
+    document.getElementById('googleCalendarConnectBtn').addEventListener('click', (e) => startGoogleConnect(e.currentTarget));
   }
 
   // Show the outcome of a just-completed OAuth redirect (see the

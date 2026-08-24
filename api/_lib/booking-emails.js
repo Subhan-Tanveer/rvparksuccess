@@ -4,9 +4,27 @@
 // dashboard.js, api/admin/ops.js). Deterministic templates, not the
 // AI-drafted style used for waitlist-matcher.js's opportunity emails — a
 // confirmation email needs to be reliable and identical every time, not
-// creatively varied. Reuses the same Gmail sender already wired up in
-// api/_lib/mailer.js; no new setup needed.
-import { sendEmail } from './mailer.js';
+// creatively varied.
+//
+// Sent as the park owner's own connected Gmail (via the same "Connect
+// Google Account" OAuth used for Calendar sync) when they've connected
+// one, so a guest sees the actual park's email address, not a shared
+// platform one — falls back to the shared sender in api/_lib/mailer.js
+// for any park that hasn't connected, so this always sends either way.
+import { sendEmail as sendViaSharedMailer } from './mailer.js';
+import { sendEmailViaGmail } from './google-calendar.js';
+
+async function send(parkId, { to, subject, html }) {
+  try {
+    const sentAsOwner = await sendEmailViaGmail(parkId, { to, subject, html });
+    if (sentAsOwner) return;
+  } catch (err) {
+    // Connected but the send itself failed (expired grant, API hiccup) —
+    // fall through to the shared sender rather than losing the email.
+    console.error('Owner Gmail send failed, falling back to shared sender:', err.message);
+  }
+  await sendViaSharedMailer({ to, subject, html });
+}
 
 function formatUsd(cents) {
   return '$' + (cents / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -47,7 +65,7 @@ export async function sendGuestConfirmationEmail(park, reservation, site) {
     <p>See you soon!</p>
   `;
 
-  await sendEmail({
+  await send(park.id, {
     to: reservation.guestEmail,
     subject: `Confirmed: your stay at ${park.name}`,
     html,
@@ -70,7 +88,7 @@ export async function sendOwnerBookingNotificationEmail(park, reservation, site)
     <p><a href="https://www.rvparksuccess.com/park-dashboard.html#reservations">View in Dashboard</a></p>
   `;
 
-  await sendEmail({
+  await send(park.id, {
     to: park.ownerEmail,
     subject: `New booking: ${reservation.guestName}, ${formatDate(reservation.checkIn)} – ${formatDate(reservation.checkOut)}`,
     html,

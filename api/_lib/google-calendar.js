@@ -1,12 +1,15 @@
-// One-way Google Calendar sync — a park's reservations get pushed to
-// whatever Google Calendar the park owner connected, as read-only-in-
-// intent events (we never read changes back from Google; the dashboard
-// stays the single source of truth for availability/payment). Deliberately
-// plain fetch() against Google's REST APIs rather than the `googleapis`
-// npm package — that package pulls in a large dependency tree for what's
-// really three small HTTP calls (token exchange, token refresh, event
-// CRUD), matching this app's existing preference for a minimal
-// hand-rolled client over a heavy SDK (see api/_lib/mailer.js).
+// A park's single "Connect Google Account" OAuth connection, used for two
+// things sharing one refresh token (one consent, one set of stored
+// credentials, despite the filename): one-way Google Calendar sync (a
+// park's reservations get pushed to whatever calendar the owner
+// connected, as read-only-in-intent events — we never read changes back)
+// and sending booking emails as the owner's own Gmail address instead of
+// the platform's shared sender (see sendEmailViaGmail(), used by
+// api/_lib/booking-emails.js). Deliberately plain fetch() against
+// Google's REST APIs rather than the `googleapis` npm package — that
+// package pulls in a large dependency tree for what's really a handful of
+// small HTTP calls, matching this app's existing preference for a
+// minimal hand-rolled client over a heavy SDK (see api/_lib/mailer.js).
 import {
   getGoogleCalendarCredentials,
   setReservationGoogleEventId,
@@ -14,7 +17,7 @@ import {
   getUpcomingConfirmedReservationsForPark,
 } from './reservations-store.js';
 
-const SCOPE = 'https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/userinfo.email';
+const SCOPE = 'https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/userinfo.email';
 
 function requireEnv() {
   const clientId = process.env.GOOGLE_CLIENT_ID;
@@ -83,6 +86,45 @@ export async function getGoogleAccountEmail(accessToken) {
   if (!res.ok) return null;
   const data = await res.json();
   return data.email || null;
+}
+
+// Gmail API sends raw RFC 2822 messages, base64url-encoded — no From
+// header needed: Gmail always sends as the authenticated account itself
+// (it won't let you spoof a different From address without a verified
+// "send-as" alias), which is exactly what we want here.
+function buildRawEmail({ to, subject, html }) {
+  const message = [
+    `To: ${to}`,
+    `Subject: ${subject}`,
+    'Content-Type: text/html; charset=utf-8',
+    'MIME-Version: 1.0',
+    '',
+    html,
+  ].join('\r\n');
+  return Buffer.from(message, 'utf-8').toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+// Sends as the park owner's own connected Google account instead of the
+// platform's shared sender. Returns `false` (not an error) when this park
+// simply hasn't connected a Google account yet — callers (see
+// api/_lib/booking-emails.js) use that to fall back to the shared mailer,
+// so every park keeps getting these emails whether or not they've
+// connected their own account.
+export async function sendEmailViaGmail(parkId, { to, subject, html }) {
+  const creds = await getGoogleCalendarCredentials(parkId);
+  if (!creds) return false;
+
+  const accessToken = await getAccessToken(creds.refreshToken);
+  const res = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+    body: JSON.stringify({ raw: buildRawEmail({ to, subject, html }) }),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error?.message || 'Gmail send failed');
+  }
+  return true;
 }
 
 function reservationToEventBody(park, reservation) {
