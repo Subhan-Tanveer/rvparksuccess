@@ -21,6 +21,7 @@ import Stripe from 'stripe';
 import { confirmReservationBySessionId, setParkPlan, getPark, getSite } from '../_lib/reservations-store.js';
 import { syncReservationToGoogleCalendar } from '../_lib/google-calendar.js';
 import { sendGuestConfirmationEmail, sendOwnerBookingNotificationEmail } from '../_lib/booking-emails.js';
+import { syncReservationToGhl } from '../_lib/ghl-sync.js';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -92,6 +93,9 @@ export default async function handler(req, res) {
           );
           await sendOwnerBookingNotificationEmail(park, confirmed, site).catch((err) =>
             console.error('Owner notification email failed:', err.message)
+          );
+          await syncReservationToGhl(park, confirmed).catch((err) =>
+            console.error('GHL sync failed:', err.message)
           );
         }
       }
