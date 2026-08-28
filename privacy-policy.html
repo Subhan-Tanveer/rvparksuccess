@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Privacy Policy — RVPark Success</title>
+<meta name="description" content="How RVPark Success collects, uses, and protects data — including what Google Calendar access is used for." />
+<link rel="icon" type="image/png" href="/favicon.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/src/css/tokens.css">
+<link rel="stylesheet" href="/src/css/components.css">
+<style>
+  .legal-content { max-width: 760px; }
+  .legal-content h2 { font-size: 1.375rem; margin-top: var(--sp-6); margin-bottom: var(--sp-2); }
+  .legal-content h2:first-child { margin-top: 0; }
+  .legal-content p, .legal-content li { color: var(--cream-dim); line-height: 1.7; font-size: 0.9375rem; }
+  .legal-content ul { padding-left: 1.25rem; margin: var(--sp-2) 0; }
+  .legal-content li { margin-bottom: 6px; }
+  .legal-content strong { color: var(--cream); }
+  .legal-updated { color: var(--cream-dim); font-size: 0.875rem; margin-bottom: var(--sp-4); }
+</style>
+</head>
+<body>
+
+<div class="scroll-progress"><div class="scroll-progress-bar"></div></div>
+<div class="cursor-dot"></div>
+<div class="cursor-ring"></div>
+
+<div class="nav-pill-wrap">
+  <div class="nav-pill">
+    <a href="index.html" class="nav-brand"><span class="mark mark-logo"><img src="/images/logo/rvparksuccess-icon.png" alt="RVPark Success logo"></span><span class="name">RVPark Success</span></a>
+  </div>
+  <div style="display:flex; gap: var(--sp-2); pointer-events:auto;">
+    <div class="nav-links-desktop">
+      <a href="index.html">Home</a>
+      <a href="packages.html">Pricing</a>
+      <a href="how-it-works.html">How It Works</a>
+      <a href="results.html">Results</a>
+      <a href="find-a-park.html">Find a Park</a>
+      <a href="login.html" class="nav-account-link" data-account-slot="desktop">Log In</a>
+      <a href="contact.html">Contact</a>
+    </div>
+    <button class="nav-menu-btn" aria-label="Open menu" style="pointer-events:auto;"><span>Menu</span><span class="burger-mini"><span></span><span></span></span></button>
+  </div>
+</div>
+
+<div class="mobile-menu">
+  <div class="mobile-menu-top">
+    <a href="index.html" class="nav-brand"><span class="mark mark-logo"><img src="/images/logo/rvparksuccess-icon.png" alt="RVPark Success logo"></span>RVPark Success</a>
+    <button class="mobile-menu-close" aria-label="Close menu">&times;</button>
+  </div>
+  <div class="mobile-menu-links">
+    <a href="index.html">Home</a>
+    <a href="packages.html">Packages</a>
+    <a href="how-it-works.html">How It Works</a>
+    <a href="results.html">Results</a>
+    <a href="find-a-park.html">Find a Park</a>
+    <a href="login.html" class="nav-account-link" data-account-slot="mobile">Log In</a>
+    <a href="contact.html">Contact</a>
+  </div>
+</div>
+
+<header style="padding: var(--sp-16) 0 var(--sp-6);">
+  <div class="wrap" data-reveal>
+    <p class="eyebrow">Legal</p>
+    <h1 data-split-in="words">Privacy Policy</h1>
+  </div>
+</header>
+
+<section class="section" style="padding-top:0;">
+  <div class="wrap">
+    <div class="legal-content" data-reveal>
+      <p class="legal-updated">Last updated: August 24, 2026</p>
+
+      <p>RVPark Success ("we," "us") provides a reservation and management platform for RV park owners, and a booking experience for their guests. This policy explains what data we collect, how we use it, and the choices you have — including specifically what our optional Google Calendar connection does with your data.</p>
+
+      <h2>What we collect</h2>
+      <ul>
+        <li><strong>Park owner accounts:</strong> name, email, phone, and park details (name, address, amenities, photos) you provide when you sign up and set up your park.</li>
+        <li><strong>Guest bookings:</strong> name, email, phone, and stay dates, whether entered by a guest booking directly or by park staff on their behalf.</li>
+        <li><strong>Payments:</strong> processed by Stripe. We never see or store your full card number — Stripe handles that directly and shares only what's needed to confirm a charge (amount, last 4 digits, transaction status).</li>
+        <li><strong>Usage data:</strong> standard web log data (pages visited, browser type) used only to keep the site running and diagnose problems.</li>
+      </ul>
+
+      <h2>Google Calendar access</h2>
+      <p>If a park owner chooses to connect a Google Calendar (entirely optional, from the Calendar section of their dashboard), we request permission to create, update, and delete events on the specific calendar they select — nothing more. Specifically:</p>
+      <ul>
+        <li>We create a calendar event for each confirmed reservation at that park (guest name, stay dates, and basic contact info in the event description), so the park owner can see bookings alongside the rest of their calendar.</li>
+        <li>If a reservation is canceled, we delete the corresponding event.</li>
+        <li><strong>We never read, list, or otherwise access any other events already on that calendar</strong> — our access is limited to the events we ourselves create for reservation sync.</li>
+        <li>This sync is one-way. Changes made directly in Google Calendar are never read back into RVPark Success.</li>
+        <li>A park owner can disconnect at any time from their dashboard, which stops all future syncing immediately. Events already created remain on the calendar until manually deleted.</li>
+        <li>We store only a Google-issued refresh token needed to perform this sync, encrypted at rest. We never receive or store a park owner's Google password.</li>
+      </ul>
+
+      <h2>Other third-party services</h2>
+      <ul>
+        <li><strong>Stripe</strong> — payment processing and (for parks that opt in) direct payouts.</li>
+        <li><strong>Google Maps</strong> — address autocomplete and driving directions shown to guests.</li>
+        <li><strong>Google Calendar API</strong> — the reservation sync described above, only for parks that connect it.</li>
+        <li><strong>Gmail (SMTP)</strong> — sending transactional emails, such as waitlist availability notifications.</li>
+        <li><strong>NVIDIA AI</strong> — generates plain-English summaries of already-computed business metrics (revenue, occupancy, pricing trends) for a park's own dashboard. Guest personal information is not sent to this service.</li>
+      </ul>
+
+      <h2>How we use data</h2>
+      <p>Data is used only to operate the reservation system: processing bookings and payments, showing park owners their own business data, sending confirmations and notifications, and — where a park owner has explicitly connected it — syncing to their Google Calendar. We do not sell personal data to third parties.</p>
+
+      <h2>Data retention</h2>
+      <p>Reservation and account records are kept for as long as an account is active, to maintain accurate booking history and financial records. A park owner can request deletion of their account and associated data by contacting us (below); we'll retain only what we're legally required to keep (e.g. transaction records).</p>
+
+      <h2>Your choices</h2>
+      <ul>
+        <li>Disconnect Google Calendar sync at any time from your dashboard.</li>
+        <li>Request a copy of, correction to, or deletion of your data by contacting us.</li>
+        <li>Guests can cancel their own reservations and view their booking history from their guest account.</li>
+      </ul>
+
+      <h2>Security</h2>
+      <p>Data is stored with a managed database provider over encrypted connections. Payment data is handled entirely by Stripe's PCI-compliant infrastructure. Access tokens (including Google Calendar refresh tokens) are stored encrypted and are never exposed to the browser or to park staff accounts.</p>
+
+      <h2>Children's privacy</h2>
+      <p>This service is intended for adults booking or managing RV park stays and is not directed at children under 13.</p>
+
+      <h2>Changes to this policy</h2>
+      <p>If this policy changes materially, we'll update the date at the top of this page.</p>
+
+      <h2>Contact</h2>
+      <p>Questions about this policy or your data — including Google Calendar disconnection or data deletion requests — can be sent to <a href="mailto:marie@rvparksales.com">marie@rvparksales.com</a>.</p>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="wrap">
+    <div class="footer-grid">
+      <div>
+        <a href="index.html" class="nav-brand"><span class="mark mark-logo"><img src="/images/logo/rvparksuccess-icon.png" alt="RVPark Success logo"></span>RVPark Success</a>
+        <p style="margin-top: var(--sp-2); font-size: 0.875rem; color: var(--cream-dim); max-width: 320px; line-height: 1.6;">Done-for-you AI marketing for RV park owners who want higher occupancy today and maximum sale value down the road.</p>
+      </div>
+      <div>
+        <h4>Explore</h4>
+        <div class="footer-links">
+          <a href="packages.html">Pricing</a>
+          <a href="how-it-works.html">How It Works</a>
+          <a href="results.html">Results</a>
+          <a href="find-a-park.html">Find a Park</a>
+        </div>
+      </div>
+      <div>
+        <h4>Company</h4>
+        <div class="footer-links">
+          <a href="contact.html">Contact</a>
+          <a href="privacy-policy.html">Privacy Policy</a>
+          <a href="login.html" class="nav-account-link" data-account-slot="footer">Log In</a>
+        </div>
+      </div>
+      <div>
+        <h4>Get in touch</h4>
+        <div class="footer-links">
+          <a href="mailto:marie@rvparksales.com">marie@rvparksales.com</a>
+          <a href="tel:+18505550199">(850) 555-0199</a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-partner">RVParkSuccess.com is proudly partnered with <a href="https://www.rvparksales.com" target="_blank" rel="noopener">RVParkSales.com</a> — when you're ready to sell, we're ready to get you maximum value.</div>
+    <div class="footer-bottom">
+      <span>© 2026 RVPark Success. All rights reserved.</span>
+    </div>
+  </div>
+</footer>
+
+<script type="module" src="/src/js/privacy-policy.js"></script>
+</body>
+</html>

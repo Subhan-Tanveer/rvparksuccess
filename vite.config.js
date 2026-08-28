@@ -23,6 +23,7 @@ export default defineConfig({
         parkDashboard: resolve(__dirname, 'park-dashboard.html'),
         calendarGrid: resolve(__dirname, 'calendar-grid.html'),
         portfolioDashboard: resolve(__dirname, 'portfolio-dashboard.html'),
+        privacyPolicy: resolve(__dirname, 'privacy-policy.html'),
       },
     },
   },
