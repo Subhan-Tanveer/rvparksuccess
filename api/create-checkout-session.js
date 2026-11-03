@@ -13,7 +13,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 // All are month-to-month subscriptions — no setup fees, no contracts. The
 // website is its own product; either reservation level can add it on.
 const SERVICES = {
-  website: { name: 'RVPark Success — Park Website', setup: 0, monthly: 30000 },
+  website: { name: 'RVPark Success — Park Website', setup: 0, monthly: 50000 },
   basic: { name: 'RVPark Success — Level 1: Basic Reservation System', setup: 0, monthly: 69900 },
   advanced: { name: 'RVPark Success — Level 2: Advanced Reservation System', setup: 0, monthly: 99700 },
 };

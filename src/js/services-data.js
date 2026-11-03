@@ -1,5 +1,5 @@
 /**
- * RVPark Success pricing (Nov 2026): the park website is its own $300
+ * RVPark Success pricing (Nov 2026): the park website is its own $500
  * product, and reservations come in two levels — Basic and Advanced (which
  * adds the GoHighLevel marketing CRM). Everything is month-to-month. A
  * level can be bought with the website added on. All prices in cents
@@ -12,7 +12,7 @@
 export const WEBSITE = {
   key: 'website',
   name: 'Park Website',
-  monthly: 30000,
+  monthly: 50000,
   commitment: 'Month-to-month',
   tagline: 'A modern website built for your park, sold on its own.',
   features: [
