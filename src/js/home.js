@@ -1,28 +1,14 @@
 import '../css/tokens.css';
 import { initCore, initHeroVideo, buildMarquee } from './core.js';
-import { PACKAGES, formatUsd } from './services-data.js';
+import { LEVELS, packageCardHtml } from './services-data.js';
 
 initCore();
 initHeroVideo({ placeholderLabel: 'RVPARK SUCCESS — HERO VIDEO COMING SOON' });
 
-const CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
-
-/* -- pricing levels grid: same three-level structure as the pricing page -- */
+/* -- pricing levels grid: same two levels as the pricing page -- */
 const homePackageGrid = document.getElementById('homePackageGrid');
 if (homePackageGrid) {
-  homePackageGrid.innerHTML = PACKAGES.map((p) => `
-    <div class="tilt-card package-card${p.featured ? ' is-featured' : ''}${p.startHere ? ' is-start-here' : ''}">
-      ${p.featured ? '<span class="badge-pop">Most Popular</span>' : ''}
-      ${p.startHere ? `<span class="badge-pop is-start-here">${p.badgeLabel}</span>` : ''}
-      <div class="package-level">${p.startHere ? p.name : `Level ${p.level} — ${p.name}`}</div>
-      <div class="price">${formatUsd(p.monthly)}<span>/month</span></div>
-      <div class="package-commitment${p.startHere ? ' is-no-commitment' : ''}">${p.commitment}${p.noStartupFee ? ' · No startup fee' : ''}</div>
-      <p class="package-tagline">${p.tagline}</p>
-      ${p.includesPrior ? `<p class="includes-prior">${p.includesPrior}</p>` : ''}
-      <ul>${p.features.map((f) => `<li>${CHECK}<span>${f}</span></li>`).join('')}</ul>
-      <a href="packages.html" class="btn ${p.featured ? 'btn-primary' : 'btn-ghost'} magnetic"><span>Learn More</span></a>
-      <p class="package-note">${p.note}</p>
-    </div>`).join('');
+  homePackageGrid.innerHTML = LEVELS.map((p) => packageCardHtml(p, `<a href="packages.html" class="btn ${p.featured ? 'btn-primary' : 'btn-ghost'} magnetic"><span>Learn More</span></a>`)).join('');
 }
 
 /* -- recently-updated marquee -- */

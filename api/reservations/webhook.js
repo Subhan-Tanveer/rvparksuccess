@@ -60,11 +60,18 @@ export default async function handler(req, res) {
       if (!session.client_reference_id) {
         console.warn('Subscription checkout completed with no client_reference_id — cannot attribute a plan to any park:', session.id);
       } else {
+        // setParkPlan() throws on an unrecognized parkId (e.g. a
+        // Stripe-generated test event with a placeholder
+        // client_reference_id that was never a real park) — that must
+        // never crash the handler uncaught, which Vercel turns into an
+        // HTTP 500 and Stripe then retries forever for an event that was
+        // never going to succeed.
         await setParkPlan(session.client_reference_id, {
           planKey: session.metadata?.service || null,
           stripeCustomerId: session.customer,
           stripeSubscriptionId: session.subscription,
-        });
+          websiteAddon: session.metadata?.website === '1',
+        }).catch((err) => console.error('setParkPlan failed (non-fatal):', err.message));
       }
     } else {
       const confirmed = await confirmReservationBySessionId(session.id);

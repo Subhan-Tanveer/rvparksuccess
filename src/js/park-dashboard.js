@@ -1,7 +1,7 @@
 import '../css/tokens.css';
 import { initCore } from './core.js';
 import { confirmDialog, formDialog, alertDialog, withLoading } from './ui-dialogs.js';
-import { PACKAGES, formatUsd as formatUsdWhole } from './services-data.js';
+import { WEBSITE, planFor, CRM_PLAN_KEYS, ADVANCED_TABS, hasAdvancedTabs, formatUsd as formatUsdWhole } from './services-data.js';
 import { initPricingDashboard } from './pricing-dashboard.js';
 import AnalyticsDashboard from './analytics-dashboard.js';
 import { initCrmDashboard } from './crm-dashboard.js';
@@ -21,7 +21,7 @@ const PARK_FEATURES = [
 import { loadGoogleMaps } from './google-maps-loader.js';
 // Campaigns, Social Media, and Competitors are intentionally not wired
 // into the dashboard nav — the Marketing CRM (GoHighLevel) tab below covers
-// that ground for Growth/Maximum plans instead. Those modules are still on
+// that ground for Advanced (and the retired Growth/Maximum) plans instead. Those modules are still on
 // disk (campaigns-dashboard.js, social-dashboard.js,
 // competitive-intelligence-dashboard.js) in case we bring them back. The
 // native CRM (guest profiles/tags/risk-scoring, not marketing) is its own
@@ -164,8 +164,8 @@ function renderSubscriptionDetails(details) {
   }
   canceledEl.style.display = 'none';
 
-  const pkg = PACKAGES.find((p) => p.key === currentPark.planKey);
-  document.getElementById('subPlanName').textContent = pkg ? pkg.name : 'Unknown Plan';
+  const pkg = planFor(currentPark.planKey);
+  document.getElementById('subPlanName').textContent = pkg ? `${pkg.name}${currentPark.websiteAddon ? ' + Park Website' : ''}` : 'Unknown Plan';
   document.getElementById('subNextBilling').textContent = new Date(details.currentPeriodEnd * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   document.getElementById('subPaymentMethod').textContent = `Payment method: ${details.paymentMethodLast4 ? `••••${details.paymentMethodLast4}` : 'Not available'}`;
 
@@ -200,7 +200,8 @@ async function loadDashboard() {
 
   document.getElementById('gate').style.display = 'block';
   document.getElementById('parkNameHeading').textContent = `${currentPark.name} — Staff`;
-  renderPlan(currentPark.planKey);
+  renderPlan(currentPark);
+  renderPlanTabs(currentPark.planKey);
   subscriptionDetails = data.subscriptionDetails;
   renderSubscriptionDetails(subscriptionDetails);
   renderSites(currentSites);
@@ -293,15 +294,14 @@ async function loadDashboard() {
   window.__occupancyForecastingDashboard = occupancyForecastingDashboard;
 }
 
-/* -- Marketing CRM (GoHighLevel) tab — Growth/Maximum plans only -- */
-const CRM_ELIGIBLE_PLAN_KEYS = ['growth', 'maximum'];
+/* -- Marketing CRM (GoHighLevel) tab — Advanced (and retired Growth/Maximum) plans only -- */
 
 function renderGhlCrmTab(park) {
   const navLink = document.getElementById('navGhlCrm');
   const box = document.getElementById('ghlCrmBox');
   if (!navLink || !box) return;
 
-  if (!CRM_ELIGIBLE_PLAN_KEYS.includes(park.planKey)) {
+  if (!CRM_PLAN_KEYS.includes(park.planKey)) {
     navLink.style.display = 'none';
     return;
   }
@@ -346,16 +346,16 @@ function renderUpgradeNudge(park, stats) {
   if (!el) return;
 
   const dismissKey = `rvps_upgrade_nudge_dismissed_${park.id}`;
-  const eligible = park.planKey === 'website-booking' && (stats.totalReservations || 0) >= UPGRADE_NUDGE_BOOKING_THRESHOLD;
+  const eligible = ['basic', 'website-booking'].includes(park.planKey) && (stats.totalReservations || 0) >= UPGRADE_NUDGE_BOOKING_THRESHOLD;
   if (!eligible || localStorage.getItem(dismissKey)) {
     el.style.display = 'none';
     return;
   }
 
   el.innerHTML = `
-    <p>You're getting real bookings — ${stats.totalReservations} so far. Ready to add marketing and grow faster?</p>
+    <p>You're getting real bookings — ${stats.totalReservations} so far. Ready for GoHighLevel marketing and smart pricing?</p>
     <div class="upgrade-nudge-actions">
-      <a href="packages.html" class="btn btn-primary btn-sm"><span>See Growth Plans</span></a>
+      <a href="packages.html" class="btn btn-primary btn-sm"><span>See the Advanced Level</span></a>
       <button type="button" class="upgrade-nudge-dismiss" aria-label="Dismiss">&times;</button>
     </div>
   `;
@@ -397,6 +397,7 @@ function renderSites(sites) {
       <td style="text-align:right; white-space:nowrap;">
         <button type="button" class="btn btn-ghost btn-sm" data-edit-site="${s.id}">Edit Rate</button>
         <button type="button" class="btn btn-ghost btn-sm" data-add-season="${s.id}">+ Season</button>
+        <button type="button" class="btn btn-ghost btn-sm" data-copy-ical="${s.id}">Copy Calendar Link</button>
         <button type="button" class="btn btn-ghost btn-sm" data-delete-site="${s.id}">Delete</button>
       </td>
     </tr>`).join('');
@@ -407,6 +408,25 @@ document.getElementById('sitesTableBody').addEventListener('click', async (e) =>
   const deleteBtn = e.target.closest('[data-delete-site]');
   const addSeasonBtn = e.target.closest('[data-add-season]');
   const removeSeasonBtn = e.target.closest('[data-remove-season]');
+  const copyIcalBtn = e.target.closest('[data-copy-ical]');
+
+  // The link a park owner pastes into Hipcamp/Airbnb/VRBO's "sync an
+  // external calendar" field — see api/reservations/availability.js's
+  // ?format=ical branch. Works with
+  // any platform that accepts an iCal import URL, no partner API
+  // approval needed.
+  if (copyIcalBtn) {
+    const url = `${window.location.origin}/api/reservations/availability?format=ical&siteId=${copyIcalBtn.dataset.copyIcal}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      siteAlert.textContent = 'Calendar link copied — paste it into Hipcamp, Airbnb, or VRBO\'s calendar sync settings.';
+      siteAlert.classList.remove('is-error');
+      siteAlert.classList.add('is-visible', 'is-success');
+    } catch {
+      siteAlertShow(`Could not copy automatically — here's the link: ${url}`);
+    }
+    return;
+  }
 
   if (addSeasonBtn) {
     const site = currentSites.find((s) => s.id === addSeasonBtn.dataset.addSeason);
@@ -968,11 +988,24 @@ document.getElementById('cancelSubscriptionBtn').addEventListener('click', async
 });
 
 /* -- current plan -- */
-function renderPlan(planKey) {
+function renderPlan(park) {
   const el = document.getElementById('planBadge');
   if (!el) return;
-  const pkg = PACKAGES.find((p) => p.key === planKey);
-  el.textContent = pkg ? `${pkg.name} — ${formatUsdWhole(pkg.monthly)}/mo` : 'No active plan';
+  const pkg = planFor(park.planKey);
+  if (!pkg) { el.textContent = 'No active plan'; return; }
+  const monthly = pkg.monthly + (park.websiteAddon ? WEBSITE.monthly : 0);
+  el.textContent = `${pkg.name}${park.websiteAddon ? ' + Park Website' : ''} — ${formatUsdWhole(monthly)}/mo`;
+}
+
+// Basic (and website-only) parks don't get the Advanced level's tabs.
+function renderPlanTabs(planKey) {
+  if (hasAdvancedTabs(planKey)) return;
+  for (const id of ADVANCED_TABS) {
+    const link = document.querySelector(`#dashSidebarNav a[href="#${id}"]`);
+    if (link) link.style.display = 'none';
+    const section = document.getElementById(id);
+    if (section) section.style.display = 'none';
+  }
 }
 
 /* -- Stripe Connect (automated payouts) -- */

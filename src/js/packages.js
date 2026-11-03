@@ -1,6 +1,6 @@
 import '../css/tokens.css';
 import { initCore, initHeroVideo } from './core.js';
-import { PACKAGES, formatUsd } from './services-data.js';
+import { PACKAGES, LEVELS, WEBSITE, formatUsd, packageCardHtml } from './services-data.js';
 
 initCore();
 initHeroVideo({ placeholderLabel: 'PRICING — HERO VIDEO COMING SOON' });
@@ -11,25 +11,13 @@ if (new URLSearchParams(location.search).get('checkout') === 'canceled') {
   pkgBanner.classList.add('is-visible', 'is-canceled');
 }
 
-const CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
+const cta = (p) => `<button class="btn ${p.featured ? 'btn-primary' : 'btn-ghost'} btn-get-started magnetic" data-key="${p.key}"><span>Get Started</span></button>`;
 
-/* -- Three-level pricing grid -- */
+/* -- the two reservation levels, then the website on its own -- */
 const packageGrid = document.getElementById('packageGrid');
-if (packageGrid) {
-  packageGrid.innerHTML = PACKAGES.map((p) => `
-    <div class="tilt-card package-card${p.featured ? ' is-featured' : ''}${p.startHere ? ' is-start-here' : ''}">
-      ${p.featured ? '<span class="badge-pop">Most Popular</span>' : ''}
-      ${p.startHere ? `<span class="badge-pop is-start-here">${p.badgeLabel}</span>` : ''}
-      <div class="package-level">${p.startHere ? p.name : `Level ${p.level} — ${p.name}`}</div>
-      <div class="price">${formatUsd(p.monthly)}<span>/month</span></div>
-      <div class="package-commitment${p.startHere ? ' is-no-commitment' : ''}">${p.commitment}${p.noStartupFee ? ' · No startup fee' : ''}</div>
-      <p class="package-tagline">${p.tagline}</p>
-      ${p.includesPrior ? `<p class="includes-prior">${p.includesPrior}</p>` : ''}
-      <ul>${p.features.map((f) => `<li>${CHECK}<span>${f}</span></li>`).join('')}</ul>
-      <button class="btn ${p.featured ? 'btn-primary' : 'btn-ghost'} btn-get-started magnetic" data-key="${p.key}"><span>Get Started</span></button>
-      <p class="package-note">${p.note}</p>
-    </div>`).join('');
-}
+if (packageGrid) packageGrid.innerHTML = LEVELS.map((p) => packageCardHtml(p, cta(p))).join('');
+const websiteGrid = document.getElementById('websiteGrid');
+if (websiteGrid) websiteGrid.innerHTML = packageCardHtml(WEBSITE, cta(WEBSITE));
 
 /* -- Payment modal: Stripe Checkout only, works for any monthly-subscription package -- */
 const backdrop = document.getElementById('payModalBackdrop');
@@ -40,7 +28,17 @@ const breakdown = document.getElementById('payModalBreakdown');
 const cardBtn = document.getElementById('cardBtn');
 const cardBtnSub = document.getElementById('cardBtnSub');
 
+const addonRow = document.getElementById('websiteAddonRow');
+const addonInput = document.getElementById('websiteAddon');
+
 let selectedPackage = null;
+
+function renderTotal() {
+  const monthly = selectedPackage.monthly + (addonInput.checked ? WEBSITE.monthly : 0);
+  headline.textContent = `${formatUsd(monthly)}/mo`;
+  breakdown.innerHTML = `<div class="item"><div class="val is-monthly">${formatUsd(monthly)}</div><div class="lbl">Per Month${addonInput.checked ? ' (incl. website)' : ''}</div></div><div class="item"><div class="val is-setup">${selectedPackage.commitment}</div><div class="lbl">Commitment</div></div>`;
+}
+addonInput.addEventListener('change', renderTotal);
 
 document.addEventListener('click', (e) => {
   const btn = e.target.closest('.btn-get-started');
@@ -49,11 +47,11 @@ document.addEventListener('click', (e) => {
   if (!pkg) return;
   selectedPackage = pkg;
 
-  serviceLabel.textContent = `Level ${pkg.level} — ${pkg.name}`;
-  headline.textContent = `${formatUsd(pkg.monthly)}/mo`;
-
-  breakdown.innerHTML = `<div class="item"><div class="val is-monthly">${formatUsd(pkg.monthly)}</div><div class="lbl">Per Month</div></div><div class="item"><div class="val is-setup">${pkg.commitment}</div><div class="lbl">Commitment</div></div>`;
-
+  // Either level can take the website as an add-on; the website itself can't.
+  addonRow.hidden = !pkg.level;
+  addonInput.checked = false;
+  serviceLabel.textContent = pkg.level ? `Level ${pkg.level} — ${pkg.name}` : pkg.name;
+  renderTotal();
   cardBtn.disabled = false;
   cardBtnSub.textContent = 'Secure payment powered by Stripe';
   backdrop.classList.add('is-open');
@@ -68,7 +66,7 @@ cardBtn.addEventListener('click', async () => {
     const res = await fetch('/api/create-checkout-session', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ service: selectedPackage.key }),
+      body: JSON.stringify({ service: selectedPackage.key, addWebsite: !!selectedPackage.level && addonInput.checked }),
     });
     if (res.status === 401) {
       // Picking a plan requires an owner account first — send them to sign

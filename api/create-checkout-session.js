@@ -9,14 +9,15 @@ import { requireSession } from './_lib/auth.js';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
-// Prices in cents. Keep in sync with src/js/services-data.js (PACKAGES).
-// All are monthly subscriptions — no one-time setup fees.
+// Prices in cents. Keep in sync with src/js/services-data.js.
+// All are month-to-month subscriptions — no setup fees, no contracts. The
+// website is its own product; either reservation level can add it on.
 const SERVICES = {
-  foundation: { name: 'RVPark Success — Level 1: Foundation', setup: 0, monthly: 69500 },
-  growth: { name: 'RVPark Success — Level 2: Growth', setup: 0, monthly: 129500 },
-  maximum: { name: 'RVPark Success — Level 3: Maximum', setup: 0, monthly: 199500 },
-  'website-booking': { name: 'RVPark Success — Website & Booking System', setup: 0, monthly: 30000 },
+  website: { name: 'RVPark Success — Park Website', setup: 0, monthly: 30000 },
+  basic: { name: 'RVPark Success — Level 1: Basic Reservation System', setup: 0, monthly: 69900 },
+  advanced: { name: 'RVPark Success — Level 2: Advanced Reservation System', setup: 0, monthly: 99700 },
 };
+const LEVEL_KEYS = ['basic', 'advanced'];
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -34,6 +35,7 @@ export default async function handler(req, res) {
   const svcKey = req.body?.service;
   const svc = SERVICES[svcKey];
   if (!svc) return res.status(400).json({ error: 'Unknown service' });
+  const addWebsite = LEVEL_KEYS.includes(svcKey) && req.body?.addWebsite === true;
 
   try {
     const origin = req.headers.origin || `https://${req.headers.host}`;
@@ -45,6 +47,17 @@ export default async function handler(req, res) {
           currency: 'usd',
           product_data: { name: svc.name },
           unit_amount: svc.monthly,
+          recurring: { interval: 'month' },
+        },
+        quantity: 1,
+      });
+    }
+    if (addWebsite) {
+      lineItems.push({
+        price_data: {
+          currency: 'usd',
+          product_data: { name: SERVICES.website.name },
+          unit_amount: SERVICES.website.monthly,
           recurring: { interval: 'month' },
         },
         quantity: 1,
@@ -69,7 +82,7 @@ export default async function handler(req, res) {
       payment_method_types: ['card'],
       line_items: lineItems,
       client_reference_id: session.parkId,
-      metadata: { type: 'subscription', service: svcKey },
+      metadata: { type: 'subscription', service: svcKey, website: addWebsite ? '1' : '0' },
       success_url: `${origin}/register-park.html?checkout=success`,
       cancel_url: `${origin}/packages.html?checkout=canceled`,
     });

@@ -107,6 +107,7 @@ function ensureSchema() {
       ALTER TABLE parks ADD COLUMN IF NOT EXISTS plan_key TEXT;
       ALTER TABLE parks ADD COLUMN IF NOT EXISTS stripe_customer_id TEXT;
       ALTER TABLE parks ADD COLUMN IF NOT EXISTS stripe_subscription_id TEXT;
+      ALTER TABLE parks ADD COLUMN IF NOT EXISTS website_addon BOOLEAN NOT NULL DEFAULT false;
       ALTER TABLE parks ADD COLUMN IF NOT EXISTS dynamic_pricing_enabled BOOLEAN NOT NULL DEFAULT false;
       ALTER TABLE parks ADD COLUMN IF NOT EXISTS min_price_cents INTEGER NOT NULL DEFAULT 2000;
       ALTER TABLE parks ADD COLUMN IF NOT EXISTS max_price_cents INTEGER NOT NULL DEFAULT 50000;
@@ -277,6 +278,18 @@ function ensureSchema() {
       -- event). google_event_id lets us find the right event to update/
       -- delete later without re-searching Google's calendar by content.
       ALTER TABLE reservations ADD COLUMN IF NOT EXISTS google_event_id TEXT;
+      -- Set when a cancellation actually processes a Stripe refund (see
+      -- finalizeGuestCancellation) — lets staff see what was refunded
+      -- without cross-referencing Stripe directly. refund_cents can be 0
+      -- (policy allowed no refund) while still being non-null, distinct
+      -- from a reservation that was never paid in the first place.
+      ALTER TABLE reservations ADD COLUMN IF NOT EXISTS refund_cents INTEGER;
+      ALTER TABLE reservations ADD COLUMN IF NOT EXISTS refund_reason TEXT;
+      ALTER TABLE reservations ADD COLUMN IF NOT EXISTS stripe_refund_id TEXT;
+      -- Party size, collected on the guest booking form so Group Size
+      -- rules (see booking-rules-engine.js) have something real to check.
+      -- Nullable: older rows and staff-entered bookings may not have it.
+      ALTER TABLE reservations ADD COLUMN IF NOT EXISTS guest_count INTEGER;
       CREATE INDEX IF NOT EXISTS idx_reservations_park ON reservations(park_id);
       CREATE INDEX IF NOT EXISTS idx_reservations_site_dates ON reservations(site_id, check_in, check_out);
       CREATE INDEX IF NOT EXISTS idx_reservations_guest_email ON reservations(guest_email);
@@ -845,6 +858,7 @@ function mapPark(row, promoCodes = []) {
     staffUsername: row.staff_username, passwordHash: row.password_hash,
     stripeAccountId: row.stripe_account_id,
     planKey: row.plan_key, stripeCustomerId: row.stripe_customer_id, stripeSubscriptionId: row.stripe_subscription_id,
+    websiteAddon: row.website_addon || false,
     dynamicPricingEnabled: row.dynamic_pricing_enabled || false,
     minPriceCents: Number(row.min_price_cents) || 2000,
     maxPriceCents: Number(row.max_price_cents) || 50000,
@@ -872,6 +886,31 @@ function mapPark(row, promoCodes = []) {
     createdAt: row.created_at.toISOString(),
     promoCodes: promoCodes.map(mapPromo),
   };
+}
+
+// mapPark() above is the internal shape — used by authenticated staff/
+// admin code paths that legitimately need staffUsername, passwordHash,
+// and the Stripe/CRM identifiers (e.g. checking Connect onboarding
+// status). api/reservations/parks.js and api/reservations/availability.js
+// are UNAUTHENTICATED public endpoints (the guest-facing "Find a Park"
+// and booking pages) and were passing that same full object straight
+// through — publicly exposing every owner's bcrypt password hash,
+// Stripe account/customer/subscription IDs, and contact email/phone to
+// anyone. This strips it down to only what the public booking flow
+// actually reads (id/name/location/address/description/features/media/
+// map coordinates) before either public route sends a park object back.
+export function sanitizeParkForPublic(park) {
+  if (!park) return null;
+  const {
+    ownerName, ownerEmail, ownerPhone, staffUsername, passwordHash,
+    stripeAccountId, stripeCustomerId, stripeSubscriptionId, planKey,
+    ghlCrmUrl, googleCalendarEmail, gmailEmail, minPriceCents, maxPriceCents,
+    occupancyTargetPercent, dynamicPricingEnabled, airbnbListingId,
+    bookingListingId, vrboListingId, otaIntegrationEnabled,
+    googleCalendarConnected, gmailConnected,
+    ...publicFields
+  } = park;
+  return publicFields;
 }
 
 function mapPromo(row) {
@@ -908,6 +947,10 @@ function mapReservation(row) {
     paidViaConnect: row.paid_via_connect === true,
     riskFlag: row.risk_flag === true,
     riskReason: row.risk_reason,
+    refundCents: row.refund_cents,
+    refundReason: row.refund_reason,
+    stripeRefundId: row.stripe_refund_id,
+    guestCount: row.guest_count,
   };
 }
 
@@ -1350,7 +1393,7 @@ async function computeRiskSignals(client, { guestEmail, guestPhone, checkIn, tot
   return { flagged: reasons.length > 0, reason: reasons.join('; ') || null };
 }
 
-export async function createPendingReservation({ parkId, siteId, checkIn, checkOut, guestName, guestEmail, guestPhone, promoCode = null }) {
+export async function createPendingReservation({ parkId, siteId, checkIn, checkOut, guestName, guestEmail, guestPhone, promoCode = null, guestCount = null }) {
   const park = await getPark(parkId);
   const site = await getSite(siteId);
   if (!park || !site || site.parkId !== parkId) throw new Error('Unknown park or site');
@@ -1381,12 +1424,12 @@ export async function createPendingReservation({ parkId, siteId, checkIn, checkO
       `INSERT INTO reservations
         (id, park_id, site_id, check_in, check_out, nights, guest_name, guest_email, guest_phone,
          subtotal_cents, discount_cents, applied_promo_code, tax_cents, tax_rate_percent, fee_cents,
-         total_cents, deposit_cents, balance_cents, status, hold_expires_at, source, risk_flag, risk_reason)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,'pending',$19,'guest',$20,$21)
+         total_cents, deposit_cents, balance_cents, status, hold_expires_at, source, risk_flag, risk_reason, guest_count)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,'pending',$19,'guest',$20,$21,$22)
        RETURNING *`,
       [id, parkId, siteId, checkIn, checkOut, nights, guestName, guestEmail, guestPhone,
         pricing.subtotalCents, pricing.discountCents, pricing.appliedPromoCode, pricing.taxCents, pricing.taxRatePercent, pricing.feeCents,
-        pricing.totalCents, pricing.depositCents, pricing.balanceCents, holdExpiresAt, risk.flagged, risk.reason]
+        pricing.totalCents, pricing.depositCents, pricing.balanceCents, holdExpiresAt, risk.flagged, risk.reason, guestCount]
     );
     return mapReservation(res.rows[0]);
   });
@@ -1544,10 +1587,11 @@ export async function registerPark(parkId, { parkName, location }) {
 // Records which subscription plan an owner is on — called from the Stripe
 // webhook once their subscription checkout completes (see
 // api/reservations/webhook.js's 'subscription' mode branch).
-export async function setParkPlan(parkId, { planKey, stripeCustomerId, stripeSubscriptionId }) {
+// websiteAddon: a reservation level bought with the $300 park website added.
+export async function setParkPlan(parkId, { planKey, stripeCustomerId, stripeSubscriptionId, websiteAddon = false }) {
   const res = await query(
-    'UPDATE parks SET plan_key = $2, stripe_customer_id = $3, stripe_subscription_id = $4 WHERE id = $1 RETURNING *',
-    [parkId, planKey, stripeCustomerId, stripeSubscriptionId]
+    'UPDATE parks SET plan_key = $2, stripe_customer_id = $3, stripe_subscription_id = $4, website_addon = $5 WHERE id = $1 RETURNING *',
+    [parkId, planKey, stripeCustomerId, stripeSubscriptionId, websiteAddon]
   );
   if (!res.rows[0]) throw new Error('Unknown park');
   return mapPark(res.rows[0]);
@@ -2214,14 +2258,30 @@ export async function getBookingsForGuest(email) {
 // Self-service cancellation — scoped to the guest's own email so a guest
 // can never cancel someone else's booking even if they guessed a
 // reservation id.
-export async function cancelReservationForGuest(reservationId, guestEmail) {
+// Looks up + validates a reservation for guest self-service cancellation
+// without mutating anything — split out so api/guest.js can compute and
+// process a Stripe refund (needs the pre-cancellation totalCents/
+// checkIn/parkId/stripeSessionId) before calling finalizeGuestCancellation
+// below to actually flip the status.
+export async function getReservationForGuestCancellation(reservationId, guestEmail) {
   const res = await query('SELECT * FROM reservations WHERE id = $1', [reservationId]);
   const row = res.rows[0];
   if (!row || normalizeEmail(row.guest_email) !== normalizeEmail(guestEmail)) throw new Error('Reservation not found');
   if (row.status === 'canceled') throw new Error('Already canceled');
   if (new Date(row.check_in) <= new Date()) throw new Error("Can't cancel a stay that's already started");
+  return mapReservation(row);
+}
 
-  const updated = await query(`UPDATE reservations SET status = 'canceled', canceled_at = now() WHERE id = $1 RETURNING *`, [reservationId]);
+// Records the cancellation + whatever refund outcome the caller already
+// determined (or null/0 if the reservation was never paid, or the refund
+// attempt itself failed — the cancellation still needs to go through
+// either way, per the same "side effects never block the primary action"
+// rule used throughout this file).
+export async function finalizeGuestCancellation(reservationId, { refundCents = null, refundReason = null, stripeRefundId = null } = {}) {
+  const updated = await query(
+    `UPDATE reservations SET status = 'canceled', canceled_at = now(), refund_cents = $2, refund_reason = $3, stripe_refund_id = $4 WHERE id = $1 RETURNING *`,
+    [reservationId, refundCents, refundReason, stripeRefundId]
+  );
   return mapReservation(updated.rows[0]);
 }
 

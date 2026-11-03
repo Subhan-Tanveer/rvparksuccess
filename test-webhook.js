@@ -17,7 +17,7 @@ const mockEvent = {
       subscription: 'sub_test_' + crypto.randomBytes(10).toString('hex'),
       metadata: {
         type: 'subscription',
-        service: 'foundation', // or 'growth', 'maximum'
+        service: 'basic', // or 'advanced', 'website'
       },
     },
   },

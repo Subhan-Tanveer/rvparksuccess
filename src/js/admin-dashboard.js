@@ -1,6 +1,6 @@
 import '../css/tokens.css';
 import { initCore } from './core.js';
-import { PACKAGES } from './services-data.js';
+import { planFor, CRM_PLAN_KEYS } from './services-data.js';
 import { alertDialog, confirmDialog } from './ui-dialogs.js';
 
 initCore();
@@ -9,9 +9,8 @@ const gate = document.getElementById('gate');
 const tbody = document.getElementById('parksTableBody');
 const emptyEl = document.getElementById('parksEmpty');
 
-// GHL CRM access is only sold as part of Growth/Maximum — Foundation and
-// the bare Website & Booking add-on don't include it.
-const CRM_ELIGIBLE_PLAN_KEYS = ['growth', 'maximum'];
+// GHL CRM access is only sold with the Advanced level (and the retired
+// Growth/Maximum plans) — see CRM_PLAN_KEYS.
 
 async function loadParks() {
   const res = await fetch('/api/admin/ops?resource=parks');
@@ -38,8 +37,8 @@ function renderParks(parks) {
   }
   emptyEl.style.display = 'none';
   tbody.innerHTML = parks.map((p) => {
-    const plan = PACKAGES.find((pkg) => pkg.key === p.planKey);
-    const crmEligible = CRM_ELIGIBLE_PLAN_KEYS.includes(p.planKey);
+    const plan = planFor(p.planKey);
+    const crmEligible = CRM_PLAN_KEYS.includes(p.planKey);
     const crmCell = crmEligible
       ? `<div style="display:flex; gap:6px; align-items:center;">
            <input type="url" class="crm-url-input" data-park-id="${p.id}" value="${escapeHtml(p.ghlCrmUrl || '')}" placeholder="https://..." style="min-width:180px; padding:6px 8px; border-radius:6px; border:1px solid var(--border-glass); background:transparent; color:var(--cream); font-size:0.8125rem;">
@@ -52,7 +51,7 @@ function renderParks(parks) {
       <td>${escapeHtml(p.name)}</td>
       <td>${escapeHtml(p.location)}</td>
       <td><code>${escapeHtml(p.staffUsername)}</code></td>
-      <td>${plan ? escapeHtml(plan.name) : '<span style="color:var(--cream-dim);">None</span>'}</td>
+      <td>${plan ? escapeHtml(plan.name + (p.websiteAddon ? ' + Website' : '')) : '<span style="color:var(--cream-dim);">None</span>'}</td>
       <td>${p.siteCount}</td>
       <td>${new Date(p.createdAt).toLocaleDateString()}</td>
       <td>${crmCell}</td>
