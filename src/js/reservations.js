@@ -289,6 +289,9 @@ resultsEl.addEventListener('click', (e) => {
   modalSiteName.textContent = card.querySelector('h3').textContent;
   document.getElementById('promoCodeInput').value = '';
   document.getElementById('promoNote').style.display = 'none';
+  const guestCountInput = document.getElementById('guestCount');
+  guestCountInput.value = '1';
+  guestCountInput.max = site?.capacity || '';
   if (site) renderModalSummary(site);
   modalBackdrop.classList.add('is-open');
 });
@@ -348,6 +351,7 @@ guestForm.addEventListener('submit', async (e) => {
         guestName: document.getElementById('guestName').value,
         guestEmail: document.getElementById('guestEmail').value,
         guestPhone: document.getElementById('guestPhone').value,
+        guestCount: Number(document.getElementById('guestCount').value),
         promoCode: appliedPromoCode,
       }),
     });

@@ -4,9 +4,16 @@
 // Requires STRIPE_SECRET_KEY — see api/create-checkout-session.js for the
 // same secret-key handling notes; nothing sensitive lives in this repo.
 import Stripe from 'stripe';
-import { createPendingReservation, attachStripeSession, getPark, getSite } from '../_lib/reservations-store.js';
+import { createPendingReservation, attachStripeSession, getPark, getSite, getBookingRules, getBlackoutDates } from '../_lib/reservations-store.js';
+import { validateBooking } from '../_lib/booking-rules-engine.js';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
+// Same shape booking-rules-engine.js expects — mirrors the store object
+// api/admin/ops.js already builds for the dashboard's "Test Booking"
+// simulator, so real checkouts are now checked against the identical
+// rules an owner sees previewed there.
+const bookingRuleStore = { getBookingRules, getBlackoutDates };
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -14,9 +21,13 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { parkId, siteId, checkIn, checkOut, guestName, guestEmail, guestPhone, promoCode } = req.body || {};
+  const { parkId, siteId, checkIn, checkOut, guestName, guestEmail, guestPhone, promoCode, guestCount } = req.body || {};
   if (!parkId || !siteId || !checkIn || !checkOut || !guestName || !guestEmail) {
     return res.status(400).json({ error: 'Missing required booking details' });
+  }
+  const partySize = Number.isInteger(guestCount) && guestCount > 0 ? guestCount : null;
+  if (!partySize) {
+    return res.status(400).json({ error: 'Number of guests is required' });
   }
 
   const [park, site] = await Promise.all([getPark(parkId), getSite(siteId)]);
@@ -24,9 +35,18 @@ export default async function handler(req, res) {
     return res.status(404).json({ error: 'Unknown park or site' });
   }
 
+  // Stay-length, booking-window, blackout-date, and group-size rules the
+  // park has configured (see booking-rules-dashboard.html) — previously
+  // only ever checked by that dashboard's own "Test Booking" preview
+  // tool, never against a real checkout.
+  const ruleCheck = await validateBooking({ checkIn, checkOut, siteId, parkId, guestCount: partySize }, bookingRuleStore);
+  if (!ruleCheck.allowed) {
+    return res.status(400).json({ error: ruleCheck.reasons.join(' ') });
+  }
+
   let reservation;
   try {
-    reservation = await createPendingReservation({ parkId, siteId, checkIn, checkOut, guestName, guestEmail, guestPhone, promoCode });
+    reservation = await createPendingReservation({ parkId, siteId, checkIn, checkOut, guestName, guestEmail, guestPhone, promoCode, guestCount: partySize });
   } catch (err) {
     return res.status(409).json({ error: err.message });
   }

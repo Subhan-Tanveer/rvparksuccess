@@ -2,7 +2,7 @@
 // Powers the "Find a Park" search: returns every RVPark Success client
 // park, optionally filtered by a free-text location query (matches
 // against park name, city/location, and state).
-import { listParks } from '../_lib/reservations-store.js';
+import { listParks, sanitizeParkForPublic } from '../_lib/reservations-store.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
@@ -12,5 +12,5 @@ export default async function handler(req, res) {
 
   const { location } = req.query;
   const parks = await listParks(location || '');
-  res.status(200).json({ parks });
+  res.status(200).json({ parks: parks.map(sanitizeParkForPublic) });
 }

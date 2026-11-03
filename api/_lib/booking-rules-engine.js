@@ -225,23 +225,29 @@ export async function enforceCancellationPolicy(
   cancellationDate,
   store
 ) {
-  const { park_id, total_cents, check_in } = reservation;
+  // reservation comes from mapReservation() (see reservations-store.js),
+  // which is camelCase everywhere in this codebase — this function
+  // previously destructured snake_case names that never matched, so
+  // park_id/total_cents/check_in were always undefined and every
+  // cancellation silently fell through to "No cancellation policy" (full
+  // refund) regardless of what was actually configured.
+  const { parkId, totalCents, checkIn } = reservation;
 
   try {
-    const rules = await store.getBookingRules(park_id);
+    const rules = await store.getBookingRules(parkId);
     const cancelRules = rules.filter((r) => r.rule_type === 'cancellation');
 
     if (cancelRules.length === 0) {
       // No rule = full refund
       return {
-        refund_cents: total_cents,
+        refund_cents: totalCents,
         charge_cents: 0,
         reason: 'No cancellation policy',
       };
     }
 
     const policy = JSON.parse(cancelRules[0].rule_config_json);
-    const checkInDate = new Date(check_in);
+    const checkInDate = new Date(checkIn);
     const daysBeforeCheckIn = Math.ceil(
       (checkInDate - cancellationDate) / (1000 * 60 * 60 * 24)
     );
@@ -257,8 +263,8 @@ export async function enforceCancellationPolicy(
       }
     }
 
-    const refund = Math.round(total_cents * (refundPercent / 100));
-    const charge = total_cents - refund;
+    const refund = Math.round(totalCents * (refundPercent / 100));
+    const charge = totalCents - refund;
 
     return {
       refund_cents: refund,
@@ -268,7 +274,7 @@ export async function enforceCancellationPolicy(
   } catch (err) {
     console.error('[booking-rules-engine] cancellation calculation error:', err);
     return {
-      refund_cents: total_cents,
+      refund_cents: totalCents,
       charge_cents: 0,
       reason: 'Error calculating refund',
     };

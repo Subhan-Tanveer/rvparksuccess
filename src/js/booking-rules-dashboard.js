@@ -19,7 +19,7 @@ export function initBookingRulesDashboard() {
     <div class="booking-rules-section">
       <div class="section-head" style="margin-bottom: var(--sp-3);">
         <p class="eyebrow">Booking Control</p>
-        <h2 style="font-size: 1.375rem;">Booking Rules ${infoIcon("Define policies like stay length, booking window, group size, blackout dates, cancellation refunds, and seasonal rules for this park. Important: none of these rules are currently checked automatically when a guest books, cancels, or a price is calculated on the live site — they only take effect when you run them yourself using the 'Test Booking' tool below.")}</h2>
+        <h2 style="font-size: 1.375rem;">Booking Rules ${infoIcon("Define policies like stay length, booking window, group size, blackout dates, cancellation refunds, and seasonal rules for this park. Stay-length, booking-window, group-size, and blackout-date rules are all checked automatically on the real guest checkout — a booking that violates one is rejected before payment. When a guest cancels their own reservation, your Cancellation Policy rule (if any) is used to automatically calculate and issue their Stripe refund.")}</h2>
       </div>
 
       <!-- Site Selector -->
@@ -46,9 +46,9 @@ export function initBookingRulesDashboard() {
       <div style="display: flex; gap: var(--sp-2); margin-bottom: var(--sp-4); flex-wrap: wrap;">
         <button id="createRuleBtn" class="btn btn-primary btn-sm">+ New Rule</button>
         <button id="validateBookingBtn" class="btn btn-secondary btn-sm">Test Booking</button>
-        ${infoIcon("Runs a what-if check: pick a site, dates, and guest count, and this shows which active rules would block or warn about that booking, plus the estimated cost. It only previews the result here — it does not affect real availability or actually enforce anything on the live booking site.")}
+        ${infoIcon("Runs a what-if check: pick a site, dates, and guest count, and this shows which active rules would block or warn about that booking, plus the estimated cost — useful for previewing a rule before a guest hits it for real. Results here match what the live checkout actually enforces.")}
         <button id="blackoutDatesBtn" class="btn btn-secondary btn-sm">Blackout Dates</button>
-        ${infoIcon("Lets you record date ranges you want blocked off, and they'll show as blocked if you run Test Booking for those dates. They are not yet wired into the live booking site, so guests can currently still book sites during a blackout period through the real checkout flow.")}
+        ${infoIcon("Records date ranges you want blocked off. These are enforced on the real guest checkout — a booking that overlaps a blackout range is rejected before payment.")}
       </div>
 
       <!-- Rules Table -->
@@ -216,7 +216,7 @@ export function initBookingRulesDashboard() {
 
         <div class="modal-body">
           <div class="form-group">
-            <label>Rule Type * ${infoIcon("Pick what kind of policy this is: Minimum/Maximum Stay (nights allowed), Booking Window (how far ahead a guest can or must book), Group Size Limit, Cancellation Policy (refund by days before check-in), or Seasonal Rules. Whichever you pick, it's only checked by this dashboard's Test Booking tool, not the real guest checkout.")}</label>
+            <label>Rule Type * ${infoIcon("Pick what kind of policy this is: Minimum/Maximum Stay (nights allowed), Booking Window (how far ahead a guest can or must book), Group Size Limit, Cancellation Policy (refund by days before check-in), or Seasonal Rules. All of these except Seasonal Rules are enforced on the real guest checkout or cancellation flow.")}</label>
             <select id="ruleTypeSelect" ${ruleId ? 'disabled' : ''} style="width: 100%; padding: var(--sp-2); border: 1px solid var(--border-glass); border-radius: var(--radius-md); background: var(--surface-glass); color: var(--cream);">
               <option value="">-- Select --</option>
               <option value="min_stay" ${config.nights !== undefined && rule?.rule_type === 'min_stay' ? 'selected' : ''}>Minimum Stay</option>
@@ -425,7 +425,7 @@ export function initBookingRulesDashboard() {
       <div class="modal-overlay"></div>
       <div class="modal-content">
         <div class="modal-header">
-          <h2>Test Booking Validation ${infoIcon("Simulates a booking against your active rules and blackout dates for the chosen site, dates, and guest count, and shows what would happen. This is a preview only — it does not create a real booking and does not reflect what the live checkout flow currently enforces.")}</h2>
+          <h2>Test Booking Validation ${infoIcon("Simulates a booking against your active rules and blackout dates for the chosen site, dates, and guest count, and shows what would happen — without creating a real booking. Results here match what the live checkout actually enforces.")}</h2>
           <button class="modal-close">&times;</button>
         </div>
 
@@ -547,7 +547,7 @@ export function initBookingRulesDashboard() {
       <div class="modal-overlay"></div>
       <div class="modal-content" style="max-height: 80vh; overflow-y: auto;">
         <div class="modal-header">
-          <h2>Blackout Dates ${infoIcon("Records date ranges you don't want booked. Right now, dates listed here only get flagged as blocked when you run Test Booking — they don't stop guests from booking those dates on the live site.")}</h2>
+          <h2>Blackout Dates ${infoIcon("Records date ranges you don't want booked. These are enforced on the real guest checkout — a booking that overlaps a blackout range is rejected before payment.")}</h2>
           <button class="modal-close">&times;</button>
         </div>
 

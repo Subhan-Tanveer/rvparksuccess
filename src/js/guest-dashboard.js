@@ -80,6 +80,15 @@ document.getElementById('bookingsTableBody').addEventListener('click', async (e)
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Could not cancel');
       loadDashboard();
+
+      const { refundCents, refundReason } = data.reservation;
+      let message = 'Your reservation has been canceled.';
+      if (typeof refundCents === 'number' && refundCents > 0) {
+        message = `Your reservation has been canceled. A refund of $${(refundCents / 100).toFixed(2)} is being processed (${refundReason}).`;
+      } else if (refundReason) {
+        message = `Your reservation has been canceled. ${refundReason}`;
+      }
+      await alertDialog({ title: 'Reservation Canceled', message });
     } catch (err) {
       await alertDialog({ title: 'Error', message: err.message });
     }
